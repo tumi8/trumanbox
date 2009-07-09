@@ -1,0 +1,20 @@
+2008/02/16: version 0.2
+	- original header are extracted from conntrack (no interception
+	anymore)
+
+2008/01/10: version 0.1.03
+	- adding non bridging, single interface emulation support
+	- fixing typos in main menue
+	- fixing ftp: applying new "connection" data structure
+	- fixed ipq-handle error-message 16
+
+2007/09/27: version 0.1.02
+	- fixed race condition in append_to_file function (semaphore added)
+
+2007/07/10: version 0.1.01
+	- dump of unknown payloads
+	- single warning if there is preexisting logfiles
+	- restricting firewall 
+	- bugfix: infinite loop with output: "0 characters have been read"
+
+2007/07/01: version 0.1

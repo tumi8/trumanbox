@@ -1,0 +1,364 @@
+#include "dispatching.h"
+#include "wrapper.h"
+#include "helper_file.h"
+#include "helper_net.h"
+#include "payload_ident.h"
+#include "payload_alter_log.h"
+
+
+void init_dispatch_server(int *tcpfd, int *udpfd) {
+	int val=1;
+
+	struct sockaddr_in saddr;
+
+	// create tcp socket...
+	*tcpfd = Socket(AF_INET, SOCK_STREAM, 0);
+	
+	bzero(&saddr, sizeof(saddr));
+	saddr.sin_family      = AF_INET;
+	saddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	saddr.sin_port        = htons(TB_LISTEN_PORT);
+
+	setsockopt(*tcpfd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val));
+
+	Bind(*tcpfd, (SA *) &saddr, sizeof(saddr));
+
+	Listen(*tcpfd, LISTENQ);	
+
+	// create udp socket...
+	*udpfd = Socket(AF_INET, SOCK_DGRAM, 0);
+
+	bzero(&saddr, sizeof(saddr));
+	saddr.sin_family      = AF_INET;
+	saddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	saddr.sin_port        = htons(TB_LISTEN_PORT);
+
+	Bind(*udpfd, (SA *) &saddr, sizeof(saddr));
+}
+
+/*
+wait for incomming connection and return the protocol (tcp, udp, unknown)
+*/
+protocols_net wait_for_incomming_connection(int tcpfd, int udpfd) {
+	fd_set	read_set;
+	int	maxfdp1, notready;
+
+	FD_ZERO(&read_set);
+	maxfdp1 = max(tcpfd, udpfd) + 1;
+
+	FD_SET(tcpfd, &read_set);
+	FD_SET(udpfd, &read_set);
+
+	// FIXME: is it possible to retrieve tcp and udp connection simultanously???
+	if ( (notready = select(maxfdp1, &read_set, NULL, NULL, NULL)) < 0) {
+		if (errno == EINTR)
+			return ERROR;
+		else {
+			printf("ERROR during select!\n");
+			return ERROR;
+		}
+	}
+
+	if (FD_ISSET(tcpfd, &read_set))
+		return TCP;		
+	else if (FD_ISSET(udpfd, &read_set))
+		return UDP;
+	else
+		return UNKNOWN;
+}
+
+void dispatching(int mode) {
+	int			tcpfd,
+				udpfd,
+				inconnfd,
+				targetservicefd,
+				maxfdp,
+				tries_pars_ct;
+	pid_t			childpid;
+	struct sockaddr_in	targetservaddr,
+				cliaddr;
+	socklen_t		clilen;
+	char			payload[MAXLINE],
+				to_drop[MAXLINE],
+				*ptr,
+				*protocol_dir;
+	ssize_t			r, w, d;
+	fd_set 			rset;
+	struct timeval 		tv;
+	connection_t 		connection;
+
+
+	init_dispatch_server(&tcpfd, &udpfd);
+
+	Signal(SIGCHLD, sig_chld);
+
+	for ( ; ; ) {
+	start:
+		connection.net_proto = wait_for_incomming_connection(tcpfd, udpfd);
+
+		if (connection.net_proto == ERROR)
+			continue;
+
+		if (connection.net_proto == TCP) {
+			clilen = sizeof(cliaddr);
+			inconnfd = Accept(tcpfd, (SA *) &cliaddr, &clilen);
+			
+			Inet_ntop(AF_INET, &cliaddr.sin_addr, connection.source, 15);
+			connection.sport = ntohs(cliaddr.sin_port);
+			tries_pars_ct = 0;
+
+			while ( parse_conntrack(&connection) != 0 ) {
+				printf("could not parse conntrack table, trying again in 2sec...\n");
+				sleep(2);
+				tries_pars_ct++;
+				if (tries_pars_ct > 5) {
+					Close_conn(inconnfd, "incomming connection, because conntrack table could not be parsed\n");
+					goto start;
+				}
+			}
+				
+			// on connect create a child that handles the connection
+			if ( (childpid = Fork()) == 0) {	/* child process */
+				Close(tcpfd);	/* close listening socket within child process */
+	
+				targetservicefd = Socket(AF_INET, SOCK_STREAM, 0);
+				
+				bzero(&targetservaddr, sizeof(targetservaddr));
+				targetservaddr.sin_family = AF_INET;
+				targetservaddr.sin_port = htons((uint16_t)connection.dport);
+				Inet_pton(AF_INET, connection.dest, &targetservaddr.sin_addr);
+	
+				printf("we start doing protocol identification by payload...\n");
+
+				protocol_identified_by_payload(mode, &connection, inconnfd, payload);
+	
+				if (connection.app_proto == UNKNOWN) {
+					printf("...failed!\nso we try doing (weak) protocol identification by port...\n");
+					protocol_identified_by_port(mode, &connection, payload);
+				}
+	
+				if (connection.app_proto == UNKNOWN) {
+					fprintf(stderr, "failed!\nthe protocol could not be identified, so we stop handling this connection.\n \
+							the dumped payload can be found in %s/%s:%d\n\n", DUMP_FOLDER, connection.dest, connection.dport);
+					append_to_file(payload, &connection, DUMP_FOLDER);
+					Close_conn(inconnfd, "incomming connection, because of unknown protocol");
+					Exit(1);
+				}
+	
+				// now we know the protocol
+	
+				if (mode < 3) {
+	
+					bzero(&targetservaddr, sizeof(targetservaddr));
+					targetservaddr.sin_family = AF_INET;
+	
+					Inet_pton(AF_INET, "127.0.0.1", &targetservaddr.sin_addr);
+					switch(connection.app_proto) {
+						case FTP:
+							targetservaddr.sin_port = htons((uint16_t)21);
+							break;
+						case FTP_anonym:
+							targetservaddr.sin_port = htons((uint16_t)21);
+							break;
+						case FTP_data:
+							printf("so we set port to: %d\n", connection.dport);
+							targetservaddr.sin_port = htons((uint16_t)connection.dport);
+							break;
+						case SMTP:
+							targetservaddr.sin_port = htons((uint16_t)25);
+							break;
+						case HTTP:
+							targetservaddr.sin_port = htons((uint16_t)80);
+							break;
+						case IRC:
+							targetservaddr.sin_port = htons((uint16_t)6667);
+							break;
+						default:
+							Exit(1);
+					}
+				}
+	
+				if (Connect(targetservicefd, (SA *) &targetservaddr, sizeof(targetservaddr)) < 0) {
+					Close_conn(inconnfd, "connection to targetservice could not be established");
+					Exit(1);
+				}
+				else
+					printf("the connection to the targetservice is established and we can now start forwarding\n");
+	
+				// now we are definitely connected to the targetservice ...
+	
+				switch(connection.app_proto) {
+					case FTP:
+						protocol_dir = FTP_COLLECTING_DIR;
+						break;
+					case FTP_anonym:
+						protocol_dir = FTP_COLLECTING_DIR;
+						break;
+					case FTP_data:
+						protocol_dir = FTP_COLLECTING_DIR;
+						break;
+					case SMTP:
+						protocol_dir = SMTP_COLLECTING_DIR;
+						break;
+					case HTTP:
+						protocol_dir = HTTP_COLLECTING_DIR;
+						break;
+					case IRC:
+						protocol_dir = IRC_COLLECTING_DIR;
+						break;
+					default:
+						fprintf(stderr, "didnt set protocol_dir\n");
+						break;
+				}
+	
+				print_timestamp(&connection, protocol_dir);
+	
+				printf("payload is:\n%s\n", payload);
+	
+				r = strlen(payload);
+	
+				if (r) {
+					ptr = payload;
+					if (connection.app_proto < FTP_data) {
+						d = read(targetservicefd, to_drop, MAXLINE-1);
+						printf("the following %d characters are dropped:\n%s\n", d, to_drop);
+	
+						content_substitution_and_logging_stc(&connection, payload, &r);
+	
+						while(r > 0 && (w = write(inconnfd, ptr, r)) > 0) {
+							ptr += w;
+							r -= w;
+						}
+					}
+					else {
+						if (mode < 3) {
+							content_substitution_and_logging_cts(&connection, payload, &r);
+							build_tree(&connection, payload);
+						}
+	
+						while(r > 0 && (w = write(targetservicefd, ptr, r)) > 0) {
+							ptr += w;
+							r -= w;
+						}
+						printf("and has been sent to server...\n");
+					}
+				}
+	
+				memset(payload, 0, sizeof(payload));
+	
+				FD_ZERO(&rset);
+				FD_SET(inconnfd, &rset);
+				FD_SET(targetservicefd, &rset);
+			
+				tv.tv_sec = 300;
+				tv.tv_usec = 0;
+	
+				maxfdp = max(inconnfd, targetservicefd) + 1;
+	
+				while (select(maxfdp, &rset, NULL, NULL, &tv)) {
+					if (FD_ISSET(inconnfd, &rset)) {
+						// forwarding from the client to the server
+						printf("inconnfd is ready\n");
+						if ((r = read(inconnfd, payload, MAXLINE-1)) == 0) {
+							printf("client has closed the connection\n");
+							Close_conn(targetservicefd, "connection to targetservice, because the client has closed the connection");
+							Close_conn(inconnfd, "incomming connection, because the client has closed the connection");
+							Exit(0);
+						} 
+						else if (r > 0) {
+				
+//							printf("(pid: %d) payload from client:\n%s\n", getpid(), payload);  // for debugging
+							if (mode < 3) {
+								content_substitution_and_logging_cts(&connection, payload, &r);
+								build_tree(&connection, payload);
+							}
+							if (mode == 3) // FIXME is this really stable???
+								delete_row_starting_with_pattern(payload, "Accept-Encoding:");
+
+//							printf("(pid: %d) changed payload from client:\n%s\n", getpid(), payload);  // for debugging
+	
+							ptr = payload;
+							while (r > 0 && (w = write(targetservicefd, ptr, r)) > 0) {
+								ptr += w;
+								r -= w;
+							}
+
+//							printf("...has been sent to server\n");
+						}
+						else {
+							fprintf(stderr, "read error: reading from inconnfd\n");
+							Exit(1);
+						}
+					}
+					memset(payload, 0, sizeof(payload));
+	
+					if (FD_ISSET(targetservicefd, &rset)) { 
+						// forwarding from the server to the client
+						printf("targetservicefd is ready\n");
+						if ((r = read(targetservicefd, payload, MAXLINE-1)) == 0) {
+							printf("server has closed the connection\n");
+							Close_conn(inconnfd, "incoming connection, because the server has closed the connection");
+							Close_conn(targetservicefd, "connection to targetservice, because the server has closed the connection");
+							Exit(0);
+						}
+						else if (r > 0) {
+//							printf("(pid: %d) payload from server:\n%s\n", (int)getpid(), payload);
+	
+							content_substitution_and_logging_stc(&connection, payload, &r);
+	
+//							printf("(pid: %d) changed payload from server:\n%s\n", getpid(), payload);
+	
+							ptr = payload;
+							while (r > 0 && (w = write(inconnfd, ptr, r)) > 0) {
+								ptr += w;
+								r -= w;
+							}
+//							printf("has been sent to client...\n");
+	
+							memset(payload, 0, sizeof(payload));
+						}
+						else {
+							fprintf(stderr, "(pid: %d)read error: reading from targetservicefd\n", getpid());
+						}
+					}
+					FD_ZERO(&rset);
+					FD_SET(inconnfd, &rset);
+					FD_SET(targetservicefd, &rset);
+				}
+				Close_conn(inconnfd, "incomming connection, because we are done with this connection");
+				Close_conn(targetservicefd, "connection to targetservice, because we are done with this connection");
+	
+				Exit(0);
+			}
+		}
+		else if (connection.net_proto == UDP) {
+			if ( (childpid = Fork()) == 0) {	/* child process */
+
+				FD_ZERO(&rset);
+				FD_SET(udpfd, &rset);
+			
+				tv.tv_sec = 300;
+				tv.tv_usec = 0;
+	
+				maxfdp = udpfd + 1;
+				clilen = sizeof(cliaddr);
+
+				while (select(maxfdp, &rset, NULL, NULL, &tv)) {
+					if (FD_ISSET(udpfd, &rset)) {
+						r = Recvfrom(udpfd, payload, MAXLINE, 0, (SA *)  &cliaddr, &clilen);
+						Sendto(udpfd, payload, r, 0, (SA *) &cliaddr, clilen);
+						memset(payload, 0, sizeof(payload));
+					}
+					FD_ZERO(&rset);
+					FD_SET(udpfd, &rset);
+				}
+			}
+		}
+		else {
+			printf("we got some network protocol which is neither tcp nor udp\n");
+		}
+		memset(&connection, 0, sizeof(connection));
+	}
+}
+
+

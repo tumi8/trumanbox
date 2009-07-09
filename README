@@ -1,0 +1,111 @@
+The Truman-Box
+
+The Truman-Box is a system which is meant to be induced into an exiting 
+network infrastructure as a transparent bridge. 
+Its main purpose is to redirect bypassing traffic to itself and then 
+serving the supported protocols with responses as close to the original
+as possible. We do not want to trick any human users but rather provide
+some interaction to malicious programs in order to improve dynamic
+analyses. The following protocols are currently supportet
+
+	HTTP
+	FTP (passive)
+	IRC
+	SMTP
+
+Those services have to be locally installed and listen on their standard
+ports. Which versions of those services are running does not matter, since
+our simulation efforst happen mainly by altering payload or create 
+filesystem structures as requested.
+
+To meet different policies of restricting outgoing traffic the Truman-Box
+supports the following 4 different modes:
+
+1.) Full simulation:
+In this mode we redirect a new connection attempt to our corresponding
+local service. This mode is quite static but does not need an Internet
+connection.
+
+2.) Half proxy:
+We do the same as in the full simulation mode plus some functions
+gathering certain information about the original service by contacting
+it. Hence we cannot avoid outgoing traffic in this mode, but improve our
+simulation by replaying original banner or welcome messagees and similar
+login behavior, e.g. providing anonymous login only if the original
+server does.
+
+3.) Full proxy (is mainly what you expect from a proxy)
+
+4.) Transparent (comparable to tcpdump)
+
+The last 2 modes we only implemented since there was not much work left
+to do after implementing the first 2 operation modes. So let us take a
+closer look at mode 1 and 2.
+
+In those all bypassing TCP packets are redirected to userspace, where we 
+extract header information. Next packets are handed back to the kernel where
+they continue their traverse through the bridge. Right after we have
+reenqueued them they are redirected to the machine itself, for example 
+to port 400. During this redirection original header information like
+destination IP address and TCP port are changed. That is why we extract
+those informations already before.
+Regarding the local port the data traffic is redirected to we had to
+configure the truman box to listen on that port for incoming connections.
+Every incomming TCP connection is accepted. Then we start identifying 
+the protocol of the current connection.
+
+The protocol identification is mainly payload based. By that we can also 
+recognise the supported protocols even though they might use non-standard
+ports or standard ports of other protocols, e.g. HTTP on port 21.
+
+After the protocol has been determined we establish a second connection 
+to the corresponding local service. From now on the payloads are forwarded
+these both connections (the incoming from the client side and the one, we 
+have just established to the local service). As we are now man-in-the-middle
+we can not only log header and payload information, but rather even change
+payloads. By modifying and logging payload we achive or improve the following
+features:
+
+ - stealthyness
+ - on-the-fly filesystem structure creation
+ - successful login with arbitrary credentials
+
+
+So far we described what the simulation and the half proxy mode have in common.
+Now we want to point the difference. In the half proxy mode we accept certain 
+outgoing traffic to the Internet, caused by our selfwritten functions to 
+gather information that help us to improve the simulation. Doing so we are 
+able to replay original banner, we can check if the ftp server the connection
+tried to contact allows anonymous ftp or not, and lots of other characteristics
+can be collected and hence help us to bring our simulation closer to reality.
+You might wonder why then implementing a static simulation mode, if we can have
+half-proxying. This is quite simple answered. In certain cases we might be 
+restricted to avoid any outgoing traffic. For example if we have no Internet
+connection. So by running the Truman-Box in the simulation mode, we can do
+malware analyses in a total offline environment and still provide for example
+a malware with some interaction. For that we have to set the NO_OUTGOING_DNS in 
+etc/trumanbox/bridge_config.sh and also be running a bind server with customized
+configuration as you can find an example in etc/bind/.
+
+Even though the Truman-Box might do a good job "in front of" a dynamic 
+malware analysing tool, it is kept to work independently as well. All the
+logging it does is seperated by protocols stored in plain textfiles named with 
+the IP address and TCP port of the destination, which a connection was meant to 
+access. The place where those logfiles are stored can be set in the definions.h
+file in the src directory.
+
+It makes sence to create one extra ftp user who is used by the Truman-Box only. 
+Also this username/password combination you have to set in the definitions.h file
+In our setup we use the proFTPD where we have changed the configuration file by
+adding:
+
+	defaultroot /some/directory	# this sets default chroot directory
+	AllowForeignAddress on
+	UseReverseDNS off
+
+These might differ depending on which FTP server you are going to use.
+
+
+So far for that. Enjoy the program!
+
+

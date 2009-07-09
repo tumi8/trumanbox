@@ -1,0 +1,5 @@
+The configuration files in this directory, are just meant to provide
+a very basic example on how to configure a local running nameserver, 
+resolving all names to its own IP address. Please change the IP 
+address in the last line of db.root accordingly. We propose to set it
+to an arbitrary IP, which is from client side behind the TrumanBox.
