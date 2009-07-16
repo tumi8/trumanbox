@@ -31,8 +31,12 @@ int try_anonymous_login(int conn_fd) {
 	}
 	
 	while (readable_timeout(conn_fd, TIMEOUT_READ_FROM_CONN)) {
-		if ((r = read(conn_fd, response, MAXLINE-1)) <= 0) {
-			printf("no characters have been read\n");
+		r = read(conn_fd, response, MAXLINE-1);
+		if (r == 0) {
+			printf("connection has been closed\n");
+			break;
+		} else if (r == -1) {
+			printf("Error on read: %s\n", strerror(errno));
 			break;
 		}
 		printf("%d characters have been read\n", r);
@@ -50,8 +54,12 @@ int try_anonymous_login(int conn_fd) {
 	}
 
 	while (readable_timeout(conn_fd, TIMEOUT_READ_FROM_CONN)) {
-		if ((r = read(conn_fd, response, MAXLINE-1)) <= 0) {
-			printf("no characters have been read\n");
+		r = read(conn_fd, response, MAXLINE-1);
+		if (r == 0) {
+			printf("connection has been closed\n");
+			break;
+		} else if (r == -1) {
+			printf("Error on read: %s\n", strerror(errno));
 			break;
 		}
 		printf("%d characters have been read\n", r);
@@ -74,11 +82,11 @@ void fetch_response(const connection_t *conn, char *filename, int mode) {
 	printf("check if we already know the answer from the remote side.\n");
 
 	if ( (file_fd = open(filename, O_WRONLY | O_CREAT | O_EXCL | O_SYNC, S_IRUSR | S_IWUSR)) == -1) {
-		fprintf(stderr, "cant create file %s, ", filename);
+		fprintf(stderr, "cant create file %s: %s, ", filename, strerror(errno));
 		if (errno == EEXIST) 
 			fprintf(stderr, "but the file exists already\n");
 		else {
-			fprintf(stderr, "so we cant fetch the response\n");
+			fprintf(stderr, ": %s. We cant fetch the response\n", strerror(errno));
 			exit(1);
 		}
 	}
@@ -109,6 +117,8 @@ void fetch_response(const connection_t *conn, char *filename, int mode) {
 	
 			fsync(file_fd);
 			Close_conn(conn_fd, "connection for fetching response");
+		} else {
+			fprintf(stderr, "Error on Conect: %s\n", strerror(errno));
 		}
 		Close(file_fd);
 
@@ -133,6 +143,7 @@ void connect_to_orig_target(int *orig_targetservicefd, const connection_t *conn,
 	//ptr_val = &val;
 
 	if (Connect(*orig_targetservicefd, (SA *) &servaddr, sizeof(servaddr)) < 0) {
+		fprintf(stderr, "connenction to orig_targetservice could not be established: %s\n", strerror(errno));
 		Close_conn(*orig_targetservicefd, "connenction to orig_targetservice could not be established");
 		*irc_connected_flag = 0;
 		return;
@@ -150,7 +161,7 @@ void set_so_linger(int sd) {
 	l.l_linger = 0;
 	
 	if (setsockopt(sd, SOL_SOCKET, SO_LINGER, &l, sizeof(l)) < 0) {
-		fprintf(stderr, "could not set SO_LINGER, errno: %d\n", errno);
+		fprintf(stderr, "could not set SO_LINGER: %s\n", strerror(errno));
 		exit(1);
 	}
 }
@@ -162,7 +173,7 @@ void unset_so_linger(int sd) {
 	l.l_linger = 0;
 	
 	if (setsockopt(sd, SOL_SOCKET, SO_LINGER, &l, sizeof(l)) < 0) {
-		fprintf(stderr, "could not unset SO_LINGER, errno: %d\n", errno);
+		fprintf(stderr, "could not unset SO_LINGER: %s\n", strerror(errno));
 		exit(1);
 	}
 }
@@ -180,9 +191,9 @@ void fetch_banner(int mode, const connection_t *connection, char *payload, int *
 	sprintf(full_path_ano, "%s/%s:%d_ano", RESPONSE_COLLECTING_DIR, connection->dest, connection->dport);
 
 	if ( (fd = open(full_path, O_RDONLY)) == -1) {
-		printf("could not open %s for readonly\n", full_path);
+		printf("could not open %s readonly: %s\n", full_path, strerror(errno));
 		if ( (fd = open(full_path_ano, O_RDONLY)) == -1) {
-			printf("could not open %s for readonly\n", full_path_ano);
+			printf("could not open %s readonly: %s\n", full_path_ano, strerror(errno));
 			if (mode == 2) {
 				printf("no stored response available\nso we connect to the original server...\n");
 		
@@ -194,12 +205,12 @@ void fetch_banner(int mode, const connection_t *connection, char *payload, int *
 				Inet_pton(AF_INET, connection->dest, &targetservaddr.sin_addr);
 		
 				if (Connect(targetservicefd, (SA *) &targetservaddr, sizeof(targetservaddr)) < 0)
-					fprintf(stderr, "cant connect to targetservice\n");
+					fprintf(stderr, "cant connect to targetservice: %s\n", strerror(errno));
 				else {
 					printf("now we are connected to the original destination\n");
 					while (readable_timeout(targetservicefd, 2)) {
 						if ((read(targetservicefd, payload, MAXLINE-1)) <= 0) {
-							printf("no characters have been read from client");
+							printf("no characters have been read from client: %s", strerror(errno));
 							break;
 						}
 						else {
