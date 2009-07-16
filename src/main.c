@@ -43,20 +43,67 @@
 
 #include "main.h"
 
+typedef enum {
+	invalid,
+	full_emulation,
+	half_proxy,
+	full_proxy,
+	quit
+} operation_mode_t;
+
+static operation_mode_t interactive_menu();
+static void usage(const char* progname);
 
 int main(int argc, char **argv) {
-	int		choice;
-	char		config_dir[256], config_cmd[256];
+	char		config_dir[256]; //, config_cmd[256];
+	int		c;
+	operation_mode_t mode = invalid;
+
+	if (argc == 1) {
+		// no parameters given, go into interactive mode
+		do {
+			mode = interactive_menu();
+		} while (mode == invalid);
+		if (mode == quit) {
+			printf("TrumanBox is quitting ...\n");
+			return 0;
+		}
+	} else {
+		while (-1 != (c=getopt(argc, argv, "hm:"))) {
+			switch (c) {
+			case 'm':
+				mode = atoi(optarg);
+				if (mode < full_emulation || mode > full_proxy) {
+					usage(argv[0]);
+					exit(-1);
+				}
+				break;
+			case 'h':
+			default:
+				usage(argv[0]);
+				exit(1);
+			}
+		}
+	}
 
 	create_tmp_folders();
-
 	strncpy(config_dir, TRUMAN_CONFIG_DIR, 255);
-
 	change_to_tmp_folder();
 
 	semaph_init();
 
-print_menu:
+	dispatching(mode);
+
+	exit(0);
+}
+
+/** Displays an interactive menu that allows to choose the operation mode.
+ * @return Chosen operation
+ */
+static operation_mode_t  interactive_menu()
+{
+	int choice;
+
 	printf("\n\n\n\t\t\t\t=- welcome to the TrumanBox -=\n \
 		\n \
 		please be aware of the fact that this program will delete\n \
@@ -78,38 +125,22 @@ print_menu:
 	choice = getchar();
 
 	if (choice  == 'q')
-		exit(0);
+		return quit;
 
 	choice -= '0';
 
-	if (choice < 1 || choice > 3)
-		goto print_menu;
-
-	printf("you decided to run the TrumanBox in mode: %d\n", choice);
-/*	
-	sprintf(config_cmd, "%s/clean_iptables.sh", TRUMAN_CONFIG_DIR);
-	printf("deleting existing iptable rules...\n");
-	system(config_cmd);
-	printf("...successfull!\n");
-*/	
-/*
-	if (choice == 4) {
-		sprintf(config_cmd, "%s/netfilter_setup_transparent.sh", TRUMAN_CONFIG_DIR);
-		printf("setting up iptable rules for transparent mode...\n");
-		system(config_cmd);
-		printf("...successfull!\n");
-		interception_transparent();
+	if (choice < 1 || choice > 3) {
+		return invalid;
 	}
-	else {
-		sprintf(config_cmd, "%s/netfilter_setup.sh", TRUMAN_CONFIG_DIR);
-		printf("setting up iptable rules for mode %d ...\n", choice);
-		system(config_cmd);
-		printf("...successfull!\n");
-*/
-		dispatching(choice);
-//	}
-	exit(0);
+
+	return choice;
 }
 
-
-
+void usage(const char* progname)
+{
+	printf("Usage: %s [-h] [-m <mode>]\n"
+	       "\tAvailable modes:\n"
+	       "\t\t1 - full emulation\n"
+	       "\t\t2 - half proxy\n"
+	       "\t\t3 - full proxy\n", progname);
+}
