@@ -12,7 +12,7 @@ void create_tmp_folders() {
 		if (errno == EEXIST)
 			preexisting_folders = 1;
 		else {
-			printf("%s could not be created!\n", TMP_TRUMANBOX);
+			printf("%s could not be created: %s\n", TMP_TRUMANBOX, strerror(errno));
 			exit(1);
 		}
 	}
@@ -21,7 +21,7 @@ void create_tmp_folders() {
 		if (errno == EEXIST)
 			preexisting_folders = 1;
 		else {
-			printf("%s could not be created!\n", RESPONSE_COLLECTING_DIR);
+			printf("%s could not be created: %s\n", RESPONSE_COLLECTING_DIR, strerror(errno));
 			exit(1);
 		}
 	}	
@@ -30,7 +30,7 @@ void create_tmp_folders() {
 		if (errno == EEXIST)
 			preexisting_folders = 1;
 		else {
-			printf("%s could not be created!\n", FTP_COLLECTING_DIR);
+			printf("%s could not be created: %s\n", FTP_COLLECTING_DIR, strerror(errno));
 			exit(1);
 		}
 	}
@@ -39,7 +39,7 @@ void create_tmp_folders() {
 		if (errno == EEXIST)
 			preexisting_folders = 1;
 		else {
-			printf("%s could not be created!\n", IRC_COLLECTING_DIR);
+			printf("%s could not be created: %s\n", IRC_COLLECTING_DIR, strerror(errno));
 			exit(1);
 		}
 	}
@@ -48,7 +48,7 @@ void create_tmp_folders() {
 		if (errno == EEXIST)
 			preexisting_folders = 1;
 		else {
-			printf("%s could not be created!\n", SMTP_COLLECTING_DIR);
+			printf("%s could not be created: %s\n", SMTP_COLLECTING_DIR, strerror(errno));
 			exit(1);
 		}
 	}
@@ -57,7 +57,7 @@ void create_tmp_folders() {
 		if (errno == EEXIST)
 			preexisting_folders = 1;
 		else {
-			printf("%s could not be created!\n", HTTP_COLLECTING_DIR);
+			printf("%s could not be created: %s\n", HTTP_COLLECTING_DIR, strerror(errno));
 			exit(1);
 		}
 	}
@@ -66,7 +66,7 @@ void create_tmp_folders() {
 		if (errno == EEXIST)
 			preexisting_folders = 1;
 		else {
-			printf("%s could not be created!\n", DUMP_FOLDER);
+			printf("%s could not be created: %s\n", DUMP_FOLDER, strerror(errno));
 			exit(1);
 		}
 	}
@@ -81,7 +81,7 @@ void create_tmp_folders() {
 
 void change_to_tmp_folder() {
 	if (chdir(RESPONSE_COLLECTING_DIR) < 0) {
-		printf("cannot change working dir to: %s :-(\n", RESPONSE_COLLECTING_DIR);
+		printf("cannot change working dir to %s: %s\n", RESPONSE_COLLECTING_DIR, strerror(errno));
 		exit(1);
 	}
 }
@@ -96,7 +96,7 @@ int create_index_file() {
 		return -1;
 	}
 	else {
-		printf("could not create the index.html\n");
+		perror("could not create the index.html");
 		return -1;
 	}
 	
@@ -119,15 +119,15 @@ int create_path_tree(char *path, int user_id, int group_id) {
 			if (chdir(new_dir_name) != 0) {
 				printf("create folder: %s\n", new_dir_name);
 				if (mkdir(new_dir_name, 0755) == -1) {
-					fprintf(stderr, "could not create directory with name: %s\n", new_dir_name);
+					fprintf(stderr, "could not create directory with name %s: %s\n", new_dir_name, strerror(errno));
 					return -1;
 				}
 				if (chown(new_dir_name, user_id, group_id) == -1) {
-					fprintf(stderr, "could not change ownership of %s\n", new_dir_name);
+					fprintf(stderr, "could not change ownership of %s: %s\n", new_dir_name, strerror(errno));
 					return -1;
 				}
 				if (chdir(new_dir_name) == -1) {
-					fprintf(stderr, "could not change into directory with name: %s\n", new_dir_name);
+					fprintf(stderr, "could not change into directory with name %s: %s\n", new_dir_name, strerror(errno));
 					return -1;
 				}
 			} 
@@ -195,17 +195,17 @@ void build_tree(const connection_t *conn, char *cmd_str) {
 	*tmp1 = 0;
 
 	if (getcwd(saved_cwd, sizeof(saved_cwd)) == NULL) {
-		fprintf(stderr, "getcwd failed\n");
+		perror("getcwd failed");
 		return;
 	}
 
 	if (chdir(base_dir) == -1) {
-		fprintf(stderr, "could not change to %s\n", base_dir);
+		fprintf(stderr, "could not change to %s: %s\n", base_dir, strerror(errno));
 		return;
 	}
 
 	if (create_path_tree(path, user_id, group_id) == -1) {
-		fprintf(stderr, "error during tree creation\n");
+		perror("error during tree creation\n");
 		return;
 	}
 
@@ -213,7 +213,7 @@ void build_tree(const connection_t *conn, char *cmd_str) {
 		create_index_file();
 
 	if (chdir(saved_cwd) == -1) {
-		fprintf(stderr, "could not change back to %s\n", saved_cwd);
+		fprintf(stderr, "could not change back to %s: %s\n", saved_cwd, strerror(errno));
 		return;
 	}
 	return;
@@ -229,7 +229,7 @@ void append_to_file(char *str, const connection_t *connection, char *base_dir) {
 
 	semaph_alloc();
 	if ( (fd = open(full_path, O_WRONLY | O_APPEND | O_CREAT, S_IRUSR | S_IWUSR)) == -1) {
-		fprintf(stderr, "cant open file %s for appending data, ", full_path);
+		fprintf(stderr, "cant open file %s for appending data: %s ", full_path, strerror(errno));
 		return;
 	}
 
@@ -263,7 +263,7 @@ int write_to_nonexisting_file(char *str, const connection_t *connection, char *b
 			return 0;
 		}
 		else {
-			fprintf(stderr, "so we cant fetch the response\n");
+			fprintf(stderr, "so we cant fetch the response: %s\n", strerror(errno));
 			return -1;
 		}
 	}
@@ -291,7 +291,7 @@ int write_to_file(char *str, char *filename, char *base_dir) {
 
 
 	if ( (fd = creat(full_path, S_IRUSR | S_IWUSR)) == -1) {
-		fprintf(stderr, "can not create file %s, ", full_path);
+		fprintf(stderr, "can not create file %s: %s, ", full_path, strerror(errno));
 		return -1;
 	}
 
@@ -317,7 +317,7 @@ void creat_file(const connection_t *connection, char *base_dir) {
 	printf("now we create the file: %s:%d\n", connection->dest, connection->dport);
 
 	if ( (fd = creat(full_path, S_IRUSR | S_IWUSR)) == -1) {
-		fprintf(stderr, "cant create file %s, ", full_path);
+		fprintf(stderr, "cant create file %s: %s\n", full_path, strerror(errno));
 		return;
 	}
 	else

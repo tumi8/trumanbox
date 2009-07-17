@@ -102,10 +102,14 @@ void fetch_response(const connection_t *conn, char *filename, int mode) {
 		if (Connect(conn_fd, (SA *) &sa, sizeof(sa)) == 0) {
 			printf("now we start reading the welcome message\n");
 			while (readable_timeout(conn_fd, TIMEOUT_READ_FROM_CONN)) {
-				if ((r = read(conn_fd, response, MAXLINE-1)) <= 0) {
-					printf("no characters have been read\n");
+				r = read(conn_fd, response, MAXLINE-1);
+				if (r == 0) {
+					printf("connection has been closed\n");
 					break;
-				} 
+				} else {
+					printf("Error on read: %s\n", strerror(errno));
+					break;
+				}
 				printf("%d characters have been read\n", r);
 				if ((w = write(file_fd, response, r))) {
 					printf("and %d characters have been written to the file\n", w);
@@ -266,10 +270,10 @@ int get_irc_banner(const connection_t *conn, char *payload) {
 	Inet_pton(AF_INET, conn->dest, &servaddr.sin_addr);
 
 	if (Connect(irc_server_fd, (SA *) &servaddr, sizeof(servaddr)) < 0) {
+		fprintf(stderr, "connenction to real irc server could not be established: %s\n", strerror(errno));
 		Close_conn(irc_server_fd, "connenction to real irc server could not be established");
 		return 0;
 	}
-	else
 	
 	printf("now we are connected to the real irc server\ndest_ip: %s\ndest_port: %d\npayload: %s", conn->dest, conn->dport, payload);
 	
@@ -316,7 +320,7 @@ int parse_conntrack(connection_t *conn) {
 	memset(line, 0, MAX_LINE_LENGTH);
 
 	if ((fd = fopen("/proc/net/ip_conntrack", "r")) == NULL) {
-		printf("Can't open ip_conntrack for reading!\n");
+		printf("Can't open ip_conntrack for reading: %s\n", strerror(errno));
 		return -1;
 	}
 
