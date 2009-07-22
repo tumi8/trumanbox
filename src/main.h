@@ -21,5 +21,5 @@
 #include "definitions.h"
 #include "dispatching.h"
 #include "semaphore.h"
-
+#include "dns_resolver.h"
 

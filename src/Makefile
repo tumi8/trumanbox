@@ -2,12 +2,13 @@ CC = gcc
 CFLAGS = -Wall
 #CFLAGS = -I/usr/include/libipq -Wall
 #LDFLAGS = -lipq
+LDFLAGS = -lpthread
 
 SOURCES = $(wildcard *.c)
 OBJS := $(patsubst %.c, %.o, $(SOURCES))
 
 truman: $(OBJS)
-	${CC} ${CFLAGS} -o trumanbox main.c signals.o wrapper.o helper_net.o helper_file.o dispatching.o payload_ident.o payload_alter_log.o semaphore.o $(LDFLAGS)
+	${CC} ${CFLAGS} -o trumanbox main.c signals.o wrapper.o helper_net.o helper_file.o dispatching.o payload_ident.o payload_alter_log.o semaphore.o dns_resolver.o $(LDFLAGS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $<

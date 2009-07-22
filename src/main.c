@@ -43,14 +43,6 @@
 
 #include "main.h"
 
-typedef enum {
-	invalid,
-	full_emulation,
-	half_proxy,
-	full_proxy,
-	quit
-} operation_mode_t;
-
 static operation_mode_t interactive_menu();
 static void usage(const char* progname);
 
@@ -58,6 +50,7 @@ int main(int argc, char **argv) {
 	char		config_dir[256]; //, config_cmd[256];
 	int		c;
 	operation_mode_t mode = invalid;
+	struct dns_resolver_t* dns_resolver;
 
 	if (argc == 1) {
 		// no parameters given, go into interactive mode
@@ -92,7 +85,11 @@ int main(int argc, char **argv) {
 
 	semaph_init();
 
+	dns_resolver = dns_create_resolver(DNS_LISTEN_ADDRESS, DNS_LISTEN_PORT, DNS_RESOLVE_ADDRESS,  mode);
+	dns_start_resolver(dns_resolver);
 	dispatching(mode);
+	dns_stop_resolver(dns_resolver);
+	dns_destroy_resolver(dns_resolver);
 
 	exit(0);
 }

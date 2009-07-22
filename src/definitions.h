@@ -1,3 +1,5 @@
+#include <sys/types.h>
+
 #define VALID_FTP_USER		"ftpin\r\n"
 #define VALID_FTP_PASS		"123\r\n"
 #define LOCAL_EMAIL_ADDRESS	" christiangorecki@localhost\r\n"   // email address with a leading blank
@@ -28,6 +30,9 @@
 #define	MAXSOCKADDR  		128	/* max socket address structure size */
 #define IPLENGTH	25
 #define MAX_LINE_LENGTH 1024
+#define DNS_LISTEN_PORT 53
+#define DNS_LISTEN_ADDRESS  "127.0.0.1"
+#define DNS_RESOLVE_ADDRESS "127.0.0.1" // default resoponse for dns requests
 
 #define	SA	struct sockaddr
 
@@ -60,4 +65,14 @@ struct s_connection {
 typedef struct s_connection connection_t;
 #endif
 
+#ifndef OPERATION_MODE_H_
+#define OPERATION_MODE_H_
+typedef enum {
+	invalid,
+	full_emulation,
+	half_proxy,
+	full_proxy,
+	quit
+} operation_mode_t;
+#endif
 
