@@ -117,7 +117,8 @@ static operation_mode_t  interactive_menu()
 		\t(2) half proxy\n \
 		\t(3) full proxy\n \
 		\t(q) quit\n \
-		\n");
+		\n \
+		Your choice: ");
 
 	choice = getchar();
 
