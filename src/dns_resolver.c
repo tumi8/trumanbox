@@ -9,6 +9,7 @@
 #include <sys/socket.h>
 #include <sys/select.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 
 // XXX: check with RFC
 #define MAX_REQUEST_LEN 1000
@@ -50,6 +51,8 @@ static void* dns_resolver_thread(void* data)
 	char opcode;
 	int len, i, tmp;
 	char domainname[MAX_DOMAIN_LEN];
+	struct hostent* hent;
+	uint32_t real_addr;
 
 	resolver = (struct dns_resolver_t*)data;
 
@@ -91,7 +94,14 @@ static void* dns_resolver_thread(void* data)
 							len = request[i];
 						} while (len != 0);
 						*(domainname + tmp -1) = 0;
+						hent = gethostbyname(domainname);
+						if (hent == NULL) {
+							real_addr = 0;
+						} else {
+							real_addr = *(uint32_t*)hent->h_addr;
+						}
 						printf("dns_resolver: received request for domain %s\n", domainname);
+
 
 						// build response
 						memcpy(response, request, 2); tmp = 2;   // transaction id
@@ -102,7 +112,11 @@ static void* dns_resolver_thread(void* data)
 						memcpy(response + tmp, request + 12, r - 12); tmp += r - 12;                    // original request
 						memcpy(response + tmp, "\xc0\x0c", 2); tmp += 2;                                  // pointer to domain name
 						memcpy(response + tmp, "\x00\x01\x00\x01\x00\x00\x00\x3c\x00\x04", 10); tmp += 10; //Response type, ttl and resource data length
-						memcpy(response + tmp, &resolver->response_addr, 4); tmp += 4;                  // ip address
+						if (real_addr) {
+							memcpy(response + tmp, &real_addr, 4); tmp += 4;
+						} else {
+							memcpy(response + tmp, &resolver->response_addr, 4); tmp += 4;                  // ip address
+						}
 						Sendto(socket, response, tmp, 0, (struct sockaddr *)&cliaddr, clilen);
 					}
 				} else {
