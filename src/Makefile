@@ -8,7 +8,7 @@ SOURCES = $(wildcard *.c)
 OBJS := $(patsubst %.c, %.o, $(SOURCES))
 
 truman: $(OBJS)
-	${CC} ${CFLAGS} -o trumanbox main.c signals.o wrapper.o helper_net.o helper_file.o dispatching.o payload_ident.o payload_alter_log.o semaphore.o dns_resolver.o iniparser.o $(LDFLAGS)
+	${CC} ${CFLAGS} -o trumanbox main.c signals.o wrapper.o helper_net.o helper_file.o dispatching.o payload_ident.o payload_alter_log.o semaphore.o dns_resolver.o iniparser.o msg.o $(LDFLAGS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $<
