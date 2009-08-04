@@ -77,6 +77,10 @@ int main(int argc, char **argv) {
 				exit(1);
 			}
 		}
+		if (mode == invalid) {
+			usage(argv[0]);
+			exit(2);
+		}
 	}
 
 	create_tmp_folders();
