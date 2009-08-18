@@ -10,5 +10,6 @@
 #define MSG_DEFAULT MSG_ERROR
 
 void msg(int, char *, ...);
+void msg_setlevel(int l);
 
 #endif

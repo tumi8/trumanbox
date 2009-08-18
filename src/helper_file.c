@@ -4,6 +4,7 @@
 #include "helper_net.h"
 #include "payload_ident.h"
 #include "payload_alter_log.h"
+#include "msg.h"
 
 void create_tmp_folders() {
 	int preexisting_folders = 0;
@@ -12,7 +13,7 @@ void create_tmp_folders() {
 		if (errno == EEXIST)
 			preexisting_folders = 1;
 		else {
-			printf("%s could not be created: %s\n", TMP_TRUMANBOX, strerror(errno));
+			msg(MSG_FATAL, "%s could not be created: %s", TMP_TRUMANBOX, strerror(errno));
 			exit(1);
 		}
 	}
@@ -21,7 +22,7 @@ void create_tmp_folders() {
 		if (errno == EEXIST)
 			preexisting_folders = 1;
 		else {
-			printf("%s could not be created: %s\n", RESPONSE_COLLECTING_DIR, strerror(errno));
+			msg(MSG_FATAL, "%s could not be created: %s", RESPONSE_COLLECTING_DIR, strerror(errno));
 			exit(1);
 		}
 	}	
@@ -30,7 +31,7 @@ void create_tmp_folders() {
 		if (errno == EEXIST)
 			preexisting_folders = 1;
 		else {
-			printf("%s could not be created: %s\n", FTP_COLLECTING_DIR, strerror(errno));
+			msg(MSG_FATAL, "%s could not be created: %s", FTP_COLLECTING_DIR, strerror(errno));
 			exit(1);
 		}
 	}
@@ -39,7 +40,7 @@ void create_tmp_folders() {
 		if (errno == EEXIST)
 			preexisting_folders = 1;
 		else {
-			printf("%s could not be created: %s\n", IRC_COLLECTING_DIR, strerror(errno));
+			msg(MSG_FATAL, "%s could not be created: %s", IRC_COLLECTING_DIR, strerror(errno));
 			exit(1);
 		}
 	}
@@ -48,7 +49,7 @@ void create_tmp_folders() {
 		if (errno == EEXIST)
 			preexisting_folders = 1;
 		else {
-			printf("%s could not be created: %s\n", SMTP_COLLECTING_DIR, strerror(errno));
+			msg(MSG_FATAL, "%s could not be created: %s", SMTP_COLLECTING_DIR, strerror(errno));
 			exit(1);
 		}
 	}
@@ -57,7 +58,7 @@ void create_tmp_folders() {
 		if (errno == EEXIST)
 			preexisting_folders = 1;
 		else {
-			printf("%s could not be created: %s\n", HTTP_COLLECTING_DIR, strerror(errno));
+			msg(MSG_FATAL, "%s could not be created: %s", HTTP_COLLECTING_DIR, strerror(errno));
 			exit(1);
 		}
 	}
@@ -66,22 +67,22 @@ void create_tmp_folders() {
 		if (errno == EEXIST)
 			preexisting_folders = 1;
 		else {
-			printf("%s could not be created: %s\n", DUMP_FOLDER, strerror(errno));
+			msg(MSG_FATAL, "%s could not be created: %s", DUMP_FOLDER, strerror(errno));
 			exit(1);
 		}
 	}
 
 	if (preexisting_folders)
-		printf("\t\t\tProbably there are preexisting logfiles. Those do not\n \
+		msg(MSG_INFO, "Probably there are preexisting logfiles. Those do not\n \
 			affect the TrumanBox, but migh disturb during later\n \
-			analyses.\n\n\n");
+			analyses.");
 	
 	return;
 }
 
 void change_to_tmp_folder() {
 	if (chdir(RESPONSE_COLLECTING_DIR) < 0) {
-		printf("cannot change working dir to %s: %s\n", RESPONSE_COLLECTING_DIR, strerror(errno));
+		msg(MSG_FATAL, "cannot change working dir to %s: %s", RESPONSE_COLLECTING_DIR, strerror(errno));
 		exit(1);
 	}
 }
@@ -92,11 +93,11 @@ int create_index_file() {
 	if ((fd = fopen("index.html", "wx")) != NULL)
 		fprintf(fd, "<html><body><h1>ur file has been removed. so get out of here!</h1></body></html>\n");
 	else if (errno == EEXIST) {
-		printf("index.html already exists\n");
+		msg(MSG_ERROR, "index.html already exists\n");
 		return -1;
 	}
 	else {
-		perror("could not create the index.html");
+		msg(MSG_ERROR, "could not create the index.html: %s", strerror(errno));
 		return -1;
 	}
 	
@@ -115,24 +116,24 @@ int create_path_tree(char *path, int user_id, int group_id) {
 	if ((new_dir_name = strsep(&path, "/")) != NULL) {
 		do {
 		//while((new_dir_name = strsep(&path, "/")) != NULL) {
-			printf("new_dir_name is: %s\nand path is: %s\n", new_dir_name, path);
+			msg(MSG_DEBUG, "new_dir_name is: %s and path is: %s", new_dir_name, path);
 			if (chdir(new_dir_name) != 0) {
-				printf("create folder: %s\n", new_dir_name);
+				msg(MSG_DEBUG, "create folder: %s", new_dir_name);
 				if (mkdir(new_dir_name, 0755) == -1) {
-					fprintf(stderr, "could not create directory with name %s: %s\n", new_dir_name, strerror(errno));
+					msg(MSG_ERROR, "could not create directory with name %s: %s", new_dir_name, strerror(errno));
 					return -1;
 				}
 				if (chown(new_dir_name, user_id, group_id) == -1) {
-					fprintf(stderr, "could not change ownership of %s: %s\n", new_dir_name, strerror(errno));
+					msg(MSG_ERROR, "could not change ownership of %s: %s", new_dir_name, strerror(errno));
 					return -1;
 				}
 				if (chdir(new_dir_name) == -1) {
-					fprintf(stderr, "could not change into directory with name %s: %s\n", new_dir_name, strerror(errno));
+					msg(MSG_ERROR, "could not change into directory with name %s: %s", new_dir_name, strerror(errno));
 					return -1;
 				}
 			} 
 			else {
-				printf("we changed into %s\n", new_dir_name);
+				msg(MSG_DEBUG, "we changed into %s", new_dir_name);
 			}
 			new_dir_name = strsep(&path, "/");
 		} while (path != NULL);
@@ -167,7 +168,7 @@ void build_tree(const connection_t *conn, char *cmd_str) {
 		group_id = 65534;
 	}
 	else {
-		fprintf(stderr, "no filesystem structure creation for this protocol\n");
+		msg(MSG_ERROR, "no filesystem structure creation for this protocol\n");
 		return;
 	}
 
@@ -195,17 +196,17 @@ void build_tree(const connection_t *conn, char *cmd_str) {
 	*tmp1 = 0;
 
 	if (getcwd(saved_cwd, sizeof(saved_cwd)) == NULL) {
-		perror("getcwd failed");
+		msg(MSG_ERROR, "getcwd failed: %s", strerror(errno));
 		return;
 	}
 
 	if (chdir(base_dir) == -1) {
-		fprintf(stderr, "could not change to %s: %s\n", base_dir, strerror(errno));
+		msg(MSG_ERROR, "could not change to %s: %s", base_dir, strerror(errno));
 		return;
 	}
 
 	if (create_path_tree(path, user_id, group_id) == -1) {
-		perror("error during tree creation\n");
+		msg(MSG_ERROR, "error during tree creation\n");
 		return;
 	}
 
@@ -213,7 +214,7 @@ void build_tree(const connection_t *conn, char *cmd_str) {
 		create_index_file();
 
 	if (chdir(saved_cwd) == -1) {
-		fprintf(stderr, "could not change back to %s: %s\n", saved_cwd, strerror(errno));
+		msg(MSG_ERROR, "could not change back to %s: %s", saved_cwd, strerror(errno));
 		return;
 	}
 	return;
@@ -225,11 +226,11 @@ void append_to_file(char *str, const connection_t *connection, char *base_dir) {
 
 	sprintf(full_path, "%s/%s:%d", base_dir, connection->dest, connection->dport);
 
-	printf("now we open %s for appending the string: %s\n", full_path, str);
+	msg(MSG_DEBUG, "now we open %s for appending the string: %s", full_path, str);
 
 	semaph_alloc();
 	if ( (fd = open(full_path, O_WRONLY | O_APPEND | O_CREAT, S_IRUSR | S_IWUSR)) == -1) {
-		fprintf(stderr, "cant open file %s for appending data: %s ", full_path, strerror(errno));
+		msg(MSG_ERROR, "cant open file %s for appending data: %s ", full_path, strerror(errno));
 		return;
 	}
 
@@ -253,13 +254,13 @@ int write_to_nonexisting_file(char *str, const connection_t *connection, char *b
 
 	sprintf(full_path, "%s/%s:%d", base_dir, connection->dest, connection->dport);
 
-	printf("now we open %s for appending the string: %s\n", full_path, str);
+	msg(MSG_DEBUG, "now we open %s for appending the string: %s", full_path, str);
 
 
 	if ( (fd = open(full_path, O_WRONLY | O_CREAT | O_EXCL | O_SYNC, S_IRUSR | S_IWUSR)) == -1) {
-		fprintf(stderr, "cant create file %s, ", full_path);
+		msg(MSG_ERROR, "cant create file %s, ", full_path);
 		if (errno == EEXIST) {
-			fprintf(stderr, "but the file exists already\n");
+			msg(MSG_ERROR, "but the file exists already");
 			return 0;
 		}
 		else {
@@ -287,11 +288,11 @@ int write_to_file(char *str, char *filename, char *base_dir) {
 
 	sprintf(full_path, "%s/%s", base_dir, filename);
 
-	printf("now we open %s for appending the string: %s\n", full_path, str);
+	msg(MSG_DEBUG, "now we open %s for appending the string: %s", full_path, str);
 
 
 	if ( (fd = creat(full_path, S_IRUSR | S_IWUSR)) == -1) {
-		fprintf(stderr, "can not create file %s: %s, ", full_path, strerror(errno));
+		msg(MSG_ERROR, "can not create file %s: %s, ", full_path, strerror(errno));
 		return -1;
 	}
 
@@ -314,17 +315,17 @@ void creat_file(const connection_t *connection, char *base_dir) {
 
 	sprintf(full_path, "%s/%s:%d", base_dir, connection->dest, connection->dport);
 
-	printf("now we create the file: %s:%d\n", connection->dest, connection->dport);
+	msg(MSG_DEBUG, "now we create the file: %s:%d", connection->dest, connection->dport);
 
 	if ( (fd = creat(full_path, S_IRUSR | S_IWUSR)) == -1) {
-		fprintf(stderr, "cant create file %s: %s\n", full_path, strerror(errno));
+		msg(MSG_ERROR, "cant create file %s: %s", full_path, strerror(errno));
 		return;
 	}
 	else
 		
 
 	Close(fd);
-	printf("...done\n");
+	msg(MSG_DEBUG, "...done");
 	return;
 }
 

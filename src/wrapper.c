@@ -3,18 +3,19 @@
 #include <stdio.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include "msg.h"
 
 // in the following some wrapper functions
 void Write(int fd, void *ptr, size_t nbytes) {
 	if (write(fd, ptr, nbytes) != nbytes)
-		perror("write error");
+		msg(MSG_ERROR, "write error: %s", strerror(errno));
 }
 
 int Socket(int family, int type, int protocol) {
 	int n;
 	
 	if ( (n = socket(family, type, protocol)) < 0)
-		perror("socket error");
+		msg(MSG_ERROR, "socket error: %s", strerror(errno));
 	return (n);
 }
 
@@ -30,7 +31,7 @@ again:
 #endif
 			goto again;
 		else
-			perror("accept error");
+			msg(MSG_ERROR, "accept error: %s", strerror(errno));
 	}
 	return(n);
 }
@@ -83,31 +84,31 @@ ssize_t Read(int fd, char *read_buf, size_t count) {
 }
 
 void Close(int fd) {
-	printf("(pid: %d) closing file\n", getpid());
+	msg(MSG_DEBUG, "(pid: %d) closing file", getpid());
 	if (close(fd) == -1)
-		perror("close error");
+		msg(MSG_ERROR, "close error: %s", strerror(errno));
 }
 
 void Close_file(FILE *fd) {
-	printf("(pid: %d) closing File\n", getpid());
+	msg(MSG_DEBUG, "(pid: %d) closing File", getpid());
 	if (fclose(fd) == -1)
-		perror("close error");
+		msg(MSG_ERROR, "close error: %s", strerror(errno));
 }
 
 void Close_conn(int fd, const char *mark) {
-	printf("(pid: %d) closing connection: %s\n", getpid(), mark);
+	msg(MSG_DEBUG, "(pid: %d) closing connection: %s", getpid(), mark);
 	//sleep(1);
 	if (shutdown(fd, SHUT_RDWR) == -1)
-		perror("close connection error");
+		msg(MSG_ERROR, "close connection error: %s", strerror(errno));
 }
 // FIXME: error handling
 void Inet_pton(int family, const char *strptr, void *addrptr) {
 	int		n;
 
 	if ( (n = inet_pton(family, strptr, addrptr)) < 0)
-		fprintf(stderr, "inet_pton error for %s: %s\n", strptr, strerror(errno));	/* errno set */
+		msg(MSG_ERROR, "inet_pton error for %s: %s", strptr, strerror(errno));	/* errno set */
 	else if (n == 0)
-		fprintf(stderr, "inet_pton error for %s\n", strptr);	/* errno not set */
+		msg(MSG_ERROR, "inet_pton error for %s", strptr);	/* errno not set */
 
 	/* nothing to return */
 }
@@ -116,7 +117,7 @@ void Inet_pton(int family, const char *strptr, void *addrptr) {
 void Inet_ntop(int af, const void *src, char *dst, socklen_t cnt) {
 	
 	if ( NULL == (inet_ntop(af, src, dst, cnt) ) ) {
-		perror("inet_ntop error");
+		msg(MSG_ERROR, "inet_ntop error: %s", strerror(errno));
 	}
 }
 
@@ -124,16 +125,16 @@ ssize_t Recvfrom(int fd, void *ptr, size_t nbytes, int flags, struct sockaddr *s
         ssize_t         n;
 
         if ( (n = recvfrom(fd, ptr, nbytes, flags, sa, salenptr)) < 0)
-                perror("recvfrom error");
+                msg(MSG_ERROR, "recvfrom error: %s", strerror(errno));
         return(n);
 }
 
 void Sendto(int fd, const void *ptr, size_t nbytes, int flags, const struct sockaddr *sa, socklen_t salen) {
         if (sendto(fd, ptr, nbytes, flags, sa, salen) != nbytes)
-                perror("sendto error");
+                msg(MSG_ERROR, "sendto error: %s", strerror(errno));
 }
 
 void Exit(int status) {
-	printf("process %d will exit now with status %d\n", getpid(), status);
+	msg(MSG_DEBUG, "process %d will exit now with status %d", getpid(), status);
 	exit(status);
 }

@@ -1,6 +1,6 @@
 #include "payload_ident.h"
 #include "helper_net.h"
-
+#include "msg.h"
 
 char *strcasestr(const char *haystack, const char *needle);
 
@@ -34,7 +34,7 @@ void protocol_identified_by_port(int mode, connection_t *conn, char *payload) {
 	if (conn->app_proto == FTP && anonym_ftp)
 		conn->app_proto = FTP_anonym;
 
-	printf("protocol identified by port is: %d\n", conn->app_proto);
+	msg(MSG_DEBUG, "protocol identified by port is: %d", conn->app_proto);
 }
 
 void protocol_identified_by_payload(int mode, connection_t *conn, int inconnfd, char *payload) {
@@ -46,15 +46,15 @@ void protocol_identified_by_payload(int mode, connection_t *conn, int inconnfd, 
 
 	while (readable_timeout(inconnfd, 1)) {
 		if ((r = read(inconnfd, payload, MAXLINE-1)) <= 0) {
-			printf("no characters have been read from client\n");
+			msg(MSG_DEBUG, "no characters have been read from client\n");
 			break;
 		} 
-		printf("%d characters have been read\n", r);
+		msg(MSG_DEBUG, "%d characters have been read", r);
 	}
 
 	if (!strlen(payload)) {
 		fetch_banner(mode, conn, payload, &anonym_ftp);
-		printf("the payload we fetched is:\n%s\n", payload);
+		msg(MSG_DEBUG, "the payload we fetched is:\n%s", payload);
 	}
 
 	if (strlen(payload)) {
@@ -66,9 +66,9 @@ void protocol_identified_by_payload(int mode, connection_t *conn, int inconnfd, 
 			conn->app_proto = FTP_data;
 			sprintf(filename, "%s:%d", conn->dest, conn->dport);
 			if (0 > remove((char *)filename))
-				fprintf(stderr, "could not remove the file: %s\n", (char *) filename);
+				msg(MSG_ERROR, "could not remove the file: %s", (char *) filename);
 			else
-				printf("and now we removed the file: %s\n", (char *) filename);
+				msg(MSG_DEBUG, "and now we removed the file: %s", (char *) filename);
 		}
 		else if (strncmp(payload, "220 ", 4) == 0) {
 			if ( strcasestr(payload, "ftp") != 0 ) {
@@ -88,6 +88,6 @@ void protocol_identified_by_payload(int mode, connection_t *conn, int inconnfd, 
 		}
 	}
 
-	printf("protocol identified by payload is: %d\n", conn->app_proto);
+	msg(MSG_DEBUG, "protocol identified by payload is: %d", conn->app_proto);
 }
 

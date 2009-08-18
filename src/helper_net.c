@@ -1,4 +1,5 @@
 #include "helper_net.h"
+#include "msg.h"
 
 
 int readable_timeout(int fd, int sec) {
@@ -33,13 +34,13 @@ int try_anonymous_login(int conn_fd) {
 	while (readable_timeout(conn_fd, TIMEOUT_READ_FROM_CONN)) {
 		r = read(conn_fd, response, MAXLINE-1);
 		if (r == 0) {
-			printf("connection has been closed\n");
+			msg(MSG_DEBUG, "connection has been closed");
 			break;
 		} else if (r == -1) {
-			printf("Error on read: %s\n", strerror(errno));
+			msg(MSG_ERROR, "Error on read: %s", strerror(errno));
 			break;
 		}
-		printf("%d characters have been read\n", r);
+		msg(MSG_DEBUG, "%d characters have been read\n", r);
 		if (response[0] == '5' || response[0] == '4')  // if negative or temporary neg. response
 			return 0;
 		memset(response, 0, sizeof(response));
@@ -56,13 +57,13 @@ int try_anonymous_login(int conn_fd) {
 	while (readable_timeout(conn_fd, TIMEOUT_READ_FROM_CONN)) {
 		r = read(conn_fd, response, MAXLINE-1);
 		if (r == 0) {
-			printf("connection has been closed\n");
+			msg(MSG_DEBUG, "connection has been closed");
 			break;
 		} else if (r == -1) {
-			printf("Error on read: %s\n", strerror(errno));
+			msg(MSG_ERROR, "Error on read: %s", strerror(errno));
 			break;
 		}
-		printf("%d characters have been read\n", r);
+		msg(MSG_DEBUG, "%d characters have been read", r);
 		if (response[0] == '5' || response[0] == '4')  // if negative or temporary neg. response
 			return 0;
 		memset(response, 0, sizeof(response));
@@ -79,19 +80,19 @@ void fetch_response(const connection_t *conn, char *filename, int mode) {
 	memset(response, 0, sizeof(response));
 	memset(&sa, 0, sizeof(sa));
 
-	printf("check if we already know the answer from the remote side.\n");
+	msg(MSG_DEBUG, "check if we already know the answer from the remote side.");
 
 	if ( (file_fd = open(filename, O_WRONLY | O_CREAT | O_EXCL | O_SYNC, S_IRUSR | S_IWUSR)) == -1) {
-		fprintf(stderr, "cant create file %s: %s, ", filename, strerror(errno));
+		msg(MSG_ERROR, "cant create file %s: %s, ", filename, strerror(errno));
 		if (errno == EEXIST) 
-			fprintf(stderr, "but the file exists already\n");
+			msg(MSG_ERROR, "but the file exists already");
 		else {
-			fprintf(stderr, ": %s. We cant fetch the response\n", strerror(errno));
+			msg(MSG_ERROR, ": %s. We cant fetch the response", strerror(errno));
 			exit(1);
 		}
 	}
 	else {	
-		printf("file %s has been opened for writing\n", filename);
+		msg(MSG_DEBUG, "file %s has been opened for writing", filename);
 
 		conn_fd = Socket(AF_INET, SOCK_STREAM, 0);
 	
@@ -100,19 +101,19 @@ void fetch_response(const connection_t *conn, char *filename, int mode) {
 		Inet_pton(AF_INET, conn->dest, &sa.sin_addr);
 	
 		if (Connect(conn_fd, (SA *) &sa, sizeof(sa)) == 0) {
-			printf("now we start reading the welcome message\n");
+			msg(MSG_DEBUG, "now we start reading the welcome message");
 			while (readable_timeout(conn_fd, TIMEOUT_READ_FROM_CONN)) {
 				r = read(conn_fd, response, MAXLINE-1);
 				if (r == 0) {
-					printf("connection has been closed\n");
+					msg(MSG_DEBUG, "connection has been closed");
 					break;
 				} else {
-					printf("Error on read: %s\n", strerror(errno));
+					msg(MSG_ERROR, "Error on read: %s", strerror(errno));
 					break;
 				}
-				printf("%d characters have been read\n", r);
+				msg(MSG_DEBUG, "%d characters have been read", r);
 				if ((w = write(file_fd, response, r))) {
-					printf("and %d characters have been written to the file\n", w);
+					msg(MSG_DEBUG, "and %d characters have been written to the file", w);
 				}
 				memset(response, 0, sizeof(response));
 			}
@@ -122,16 +123,16 @@ void fetch_response(const connection_t *conn, char *filename, int mode) {
 			fsync(file_fd);
 			Close_conn(conn_fd, "connection for fetching response");
 		} else {
-			fprintf(stderr, "Error on Conect: %s\n", strerror(errno));
+			msg(MSG_ERROR, "Error on Conect: %s", strerror(errno));
 		}
 		Close(file_fd);
 
 		if (anonym_login) {
-			sprintf(new_filename, "%s_ano", filename);
+			msg(MSG_DEBUG, new_filename, "%s_ano", filename);
 			rename(filename, new_filename);
 		}
 			
-		printf("file is closed again\n");
+		msg(MSG_DEBUG, "file is closed again\n");
 	}
 }
 
@@ -147,7 +148,7 @@ void connect_to_orig_target(int *orig_targetservicefd, const connection_t *conn,
 	//ptr_val = &val;
 
 	if (Connect(*orig_targetservicefd, (SA *) &servaddr, sizeof(servaddr)) < 0) {
-		fprintf(stderr, "connenction to orig_targetservice could not be established: %s\n", strerror(errno));
+		msg(MSG_ERROR, "connenction to orig_targetservice could not be established: %s", strerror(errno));
 		Close_conn(*orig_targetservicefd, "connenction to orig_targetservice could not be established");
 		*irc_connected_flag = 0;
 		return;
@@ -165,7 +166,7 @@ void set_so_linger(int sd) {
 	l.l_linger = 0;
 	
 	if (setsockopt(sd, SOL_SOCKET, SO_LINGER, &l, sizeof(l)) < 0) {
-		fprintf(stderr, "could not set SO_LINGER: %s\n", strerror(errno));
+		msg(MSG_ERROR, "could not set SO_LINGER: %s", strerror(errno));
 		exit(1);
 	}
 }
@@ -177,7 +178,7 @@ void unset_so_linger(int sd) {
 	l.l_linger = 0;
 	
 	if (setsockopt(sd, SOL_SOCKET, SO_LINGER, &l, sizeof(l)) < 0) {
-		fprintf(stderr, "could not unset SO_LINGER: %s\n", strerror(errno));
+		msg(MSG_ERROR, "could not unset SO_LINGER: %s", strerror(errno));
 		exit(1);
 	}
 }
@@ -195,11 +196,11 @@ void fetch_banner(int mode, const connection_t *connection, char *payload, int *
 	sprintf(full_path_ano, "%s/%s:%d_ano", RESPONSE_COLLECTING_DIR, connection->dest, connection->dport);
 
 	if ( (fd = open(full_path, O_RDONLY)) == -1) {
-		printf("could not open %s readonly: %s\n", full_path, strerror(errno));
+		msg(MSG_ERROR, "could not open %s readonly: %s", full_path, strerror(errno));
 		if ( (fd = open(full_path_ano, O_RDONLY)) == -1) {
-			printf("could not open %s readonly: %s\n", full_path_ano, strerror(errno));
+			msg(MSG_ERROR, "could not open %s readonly: %s", full_path_ano, strerror(errno));
 			if (mode == 2) {
-				printf("no stored response available\nso we connect to the original server...\n");
+				msg(MSG_DEBUG, "no stored response available\nso we connect to the original server...");
 		
 				targetservicefd = Socket(AF_INET, SOCK_STREAM, 0);
 		
@@ -209,16 +210,16 @@ void fetch_banner(int mode, const connection_t *connection, char *payload, int *
 				Inet_pton(AF_INET, connection->dest, &targetservaddr.sin_addr);
 		
 				if (Connect(targetservicefd, (SA *) &targetservaddr, sizeof(targetservaddr)) < 0)
-					fprintf(stderr, "cant connect to targetservice: %s\n", strerror(errno));
+					msg(MSG_DEBUG, "cant connect to targetservice: %s", strerror(errno));
 				else {
-					printf("now we are connected to the original destination\n");
+					msg(MSG_DEBUG, "now we are connected to the original destination\n");
 					while (readable_timeout(targetservicefd, 2)) {
 						if ((read(targetservicefd, payload, MAXLINE-1)) <= 0) {
-							printf("no characters have been read from client: %s", strerror(errno));
+							msg(MSG_ERROR, "no characters have been read from client: %s", strerror(errno));
 							break;
 						}
 						else {
-							printf("we got our payload from the serverside\n");
+							msg(MSG_DEBUG, "we got our payload from the serverside\n");
 							write_to_nonexisting_file(payload, connection, RESPONSE_COLLECTING_DIR);
 							break;
 						}
@@ -236,19 +237,19 @@ void fetch_banner(int mode, const connection_t *connection, char *payload, int *
 				}
 			}
 			else 
-				printf("cant fetch banner since we are not in half-proxy mode and we have no reponse stored locally\n");
+				msg(MSG_DEBUG, "cant fetch banner since we are not in half-proxy mode and we have no reponse stored locally\n");
 			return;
 		}
 		else {   // if there is an anonym response file
-			printf("successfully opened %s for readonly\n", full_path_ano);
+			msg(MSG_DEBUG, "successfully opened %s for readonly\n", full_path_ano);
 			*anonym_ftp = 1;
 		}
 	}
 	else { // if there is a non-anonym ftp response file
-		printf("successfully opened %s for readonly\n", full_path);
+		msg(MSG_DEBUG, "successfully opened %s for readonly\n", full_path);
 		*anonym_ftp = 0;
 	}
-	printf("now reading from file\n");
+	msg(MSG_DEBUG, "now reading from file\n");
 	read(fd, payload, MAXLINE-1);
 	Close(fd);
 	return;
@@ -270,12 +271,12 @@ int get_irc_banner(const connection_t *conn, char *payload) {
 	Inet_pton(AF_INET, conn->dest, &servaddr.sin_addr);
 
 	if (Connect(irc_server_fd, (SA *) &servaddr, sizeof(servaddr)) < 0) {
-		fprintf(stderr, "connenction to real irc server could not be established: %s\n", strerror(errno));
+		msg(MSG_ERROR, "connenction to real irc server could not be established: %s\n", strerror(errno));
 		Close_conn(irc_server_fd, "connenction to real irc server could not be established");
 		return 0;
 	}
 	
-	printf("now we are connected to the real irc server\ndest_ip: %s\ndest_port: %d\npayload: %s", conn->dest, conn->dport, payload);
+	msg(MSG_DEBUG, "now we are connected to the real irc server\ndest_ip: %s\ndest_port: %d\npayload: %s", conn->dest, conn->dport, payload);
 	
 	ptr = payload;
 	r = strlen(payload);
@@ -285,19 +286,19 @@ int get_irc_banner(const connection_t *conn, char *payload) {
 		r -= w;
 	}
 
-	printf("payload has been sent there\n");	
+	msg(MSG_DEBUG, "payload has been sent there\n");	
 
 	while (readable_timeout(irc_server_fd, 3)) {
 		if ((read(irc_server_fd, response, sizeof(response)-1)) <= 0) {
-			printf("no characters have been read from client");
+			msg(MSG_DEBUG, "no characters have been read from client");
 			Close_conn(irc_server_fd, "connection to real irc server");
 			return 0;
 		}
 		else {
-			printf("we received irc response from the serverside\n");
+			msg(MSG_DEBUG, "we received irc response from the serverside\n");
 			snprintf(filename, MAXLINE-1, "%s:%d", conn->dest, conn->dport);
 			write_to_file(response, filename, RESPONSE_COLLECTING_DIR);
-			printf("and wrote the response to some file\n");
+			msg(MSG_DEBUG, "and wrote the response to some file\n");
 			Close_conn(irc_server_fd, "connection to real irc server");
 			ptr = strchr(response, ' ');
 			*ptr = 0;
@@ -320,7 +321,7 @@ int parse_conntrack(connection_t *conn) {
 	memset(line, 0, MAX_LINE_LENGTH);
 
 	if ((fd = fopen("/proc/net/ip_conntrack", "r")) == NULL) {
-		printf("Can't open ip_conntrack for reading: %s\n", strerror(errno));
+		msg(MSG_ERROR, "Can't open ip_conntrack for reading: %s\n", strerror(errno));
 		return -1;
 	}
 
@@ -336,7 +337,7 @@ int parse_conntrack(connection_t *conn) {
 	while ( (fgets(line, MAX_LINE_LENGTH, fd) != NULL) || (line != NULL) ) {
 		//sleep(2);
 
-		printf("We got:\n%s\n", line);
+		msg(MSG_DEBUG, "We got:\n%s\n", line);
 
 		if (strncmp(line, proto, 3) == 0) {
 
@@ -345,7 +346,7 @@ int parse_conntrack(connection_t *conn) {
 			
 			snprintf(tmp, (end-begin), "%s", begin);
 
-			printf("The source IP: %s\ndoes not match with the corresponding conntrack entry: %s\n\n", conn->source, tmp);
+			msg(MSG_ERROR, "The source IP: %s\ndoes not match with the corresponding conntrack entry: %s\n\n", conn->source, tmp);
 
 			if (strncmp(conn->source, begin, (end - begin)) == 0) {
 				begin = strstr(end, "sport=") + 6;
@@ -353,7 +354,7 @@ int parse_conntrack(connection_t *conn) {
 			
 				snprintf(portnum, end-begin+1, "%s", begin);
 
-				printf("Source port string: %s\nSource port int: %d\n", portnum, atoi(portnum));
+				msg(MSG_DEBUG, "Source port string: %s\nSource port int: %d\n", portnum, atoi(portnum));
 
 				if (conn->sport == atoi(portnum)) {
 					
@@ -373,17 +374,17 @@ int parse_conntrack(connection_t *conn) {
 					return 0;
 				}
 				else {
-					printf("Source Port does not match\n");
+					msg(MSG_ERROR, "Source Port does not match\n");
 					continue;
 				}
 			}
 			else {
-				printf("Source IP does not match\n");
+				msg(MSG_ERROR, "Source IP does not match\n");
 				continue;
 			}
 		}
 		else {
-			printf("Protocol does not match\n");
+			msg(MSG_ERROR, "Protocol does not match\n");
 			continue;
 		}
 	}

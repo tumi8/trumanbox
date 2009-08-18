@@ -1,4 +1,5 @@
 #include "signals.h"
+#include "msg.h"
 
 Sigfunc *signal(int signo, Sigfunc *func) {
         struct sigaction        act, oact;
@@ -26,7 +27,7 @@ Sigfunc *Signal(int signo, Sigfunc *func) {       /* for our signal() function *
         Sigfunc *sigfunc;
 
         if ( (sigfunc = signal(signo, func)) == SIG_ERR)
-                fprintf(stderr, "signal error");
+                msg(MSG_ERROR, "signal error");
         return(sigfunc);
 }
 
@@ -35,7 +36,7 @@ void sig_chld(int signo) {
 	int   stat;
 	
 	while( (pid = waitpid(-1, &stat, WNOHANG)) > 0)
-		printf("child %d terminated\n", pid);
+		msg(MSG_DEBUG, "child %d terminated", pid);
 	return;
 }
 

@@ -42,6 +42,7 @@
  */
 
 #include "main.h"
+#include "msg.h"
 
 static operation_mode_t interactive_menu();
 static void usage(const char* progname);
@@ -51,35 +52,35 @@ int main(int argc, char **argv) {
 	int		c;
 	operation_mode_t mode = invalid;
 	struct dns_resolver_t* dns_resolver;
+	int msg_level = 0;
 
-	if (argc == 1) {
+	while (-1 != (c=getopt(argc, argv, "hdm:"))) {
+		switch (c) {
+		case 'm':
+			mode = atoi(optarg);
+			if (mode < full_emulation || mode > full_proxy) {
+				usage(argv[0]);
+				exit(-1);
+			}
+			break;
+		case 'd':
+			msg_level++;
+			break;
+		case 'h':
+		default:
+		usage(argv[0]);
+			exit(1);
+		}
+	}
+	msg_setlevel(msg_level);
+	if (mode == invalid) {
 		// no parameters given, go into interactive mode
 		do {
 			mode = interactive_menu();
 		} while (mode == invalid);
 		if (mode == quit) {
-			printf("TrumanBox is quitting ...\n");
+			msg(MSG_INFO, "TrumanBox is quitting ...");
 			return 0;
-		}
-	} else {
-		while (-1 != (c=getopt(argc, argv, "hm:"))) {
-			switch (c) {
-			case 'm':
-				mode = atoi(optarg);
-				if (mode < full_emulation || mode > full_proxy) {
-					usage(argv[0]);
-					exit(-1);
-				}
-				break;
-			case 'h':
-			default:
-				usage(argv[0]);
-				exit(1);
-			}
-		}
-		if (mode == invalid) {
-			usage(argv[0]);
-			exit(2);
 		}
 	}
 
@@ -140,7 +141,7 @@ static operation_mode_t  interactive_menu()
 
 void usage(const char* progname)
 {
-	printf("Usage: %s [-h] [-m <mode>]\n"
+	printf("Usage: %s [-h] [-d] [-m <mode>]\n"
 	       "\tAvailable modes:\n"
 	       "\t\t1 - full emulation\n"
 	       "\t\t2 - half proxy\n"

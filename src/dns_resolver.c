@@ -1,5 +1,6 @@
 #include "dns_resolver.h"
 #include "helper_net.h"
+#include "msg.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -80,7 +81,7 @@ static void* dns_resolver_thread(void* data)
 					// only handle A requests
 					opcode = (request[2] >> 3) & 15;
 					if (opcode != 0) { 
-						printf("unknown request %d\n", opcode);
+						msg(MSG_ERROR, "Unknown DNS request %d", opcode);
 					} else {
 						// get domainname from request (only the first...)
 						i = 12; // start position of the query
@@ -100,7 +101,7 @@ static void* dns_resolver_thread(void* data)
 						} else {
 							real_addr = *(uint32_t*)hent->h_addr;
 						}
-						printf("dns_resolver: received request for domain %s\n", domainname);
+						msg(MSG_DEBUG, "dns_resolver: received request for domain %s", domainname);
 
 
 						// build response
@@ -121,7 +122,7 @@ static void* dns_resolver_thread(void* data)
 					}
 				} else {
 					// definately malformed DNS request
-					fprintf(stderr, "dns_resolver: received malformed request");
+					msg(MSG_ERROR, "dns_resolver: received malformed request");
 				}
 			}
 			FD_ZERO(&rset);
@@ -139,7 +140,7 @@ void dns_start_resolver(struct dns_resolver_t* r)
 	int err;
 	r->running = 1;
 	if ((err = pthread_create(&r->thread, NULL, dns_resolver_thread, (void*)r))) {
-		fprintf(stderr, "Could not create resolver thread: %s\n", strerror(errno));
+		msg(MSG_ERROR, "Could not create resolver thread: %s", strerror(errno));
 		exit(-1);
 	}
 }

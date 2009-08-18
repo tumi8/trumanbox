@@ -4,6 +4,7 @@
 #include "helper_net.h"
 #include "payload_ident.h"
 #include "payload_alter_log.h"
+#include "msg.h"
 
 
 void init_dispatch_server(int *tcpfd, int *udpfd) {
@@ -54,7 +55,7 @@ protocols_net wait_for_incomming_connection(int tcpfd, int udpfd) {
 		if (errno == EINTR)
 			return ERROR;
 		else {
-			printf("ERROR during select!\n");
+			msg(MSG_ERROR, "select failed: %s", strerror(errno));
 			return ERROR;
 		}
 	}
@@ -108,7 +109,7 @@ void dispatching(int mode) {
 			tries_pars_ct = 0;
 
 			while ( parse_conntrack(&connection) != 0 ) {
-				printf("could not parse conntrack table, trying again in 2sec...\n");
+				msg(MSG_DEBUG, "could not parse conntrack table, trying again in 2sec...");
 				sleep(2);
 				tries_pars_ct++;
 				if (tries_pars_ct > 5) {
@@ -128,18 +129,18 @@ void dispatching(int mode) {
 				targetservaddr.sin_port = htons((uint16_t)connection.dport);
 				Inet_pton(AF_INET, connection.dest, &targetservaddr.sin_addr);
 	
-				printf("we start doing protocol identification by payload...\n");
+				msg(MSG_DEBUG, "we start doing protocol identification by payload...");
 
 				protocol_identified_by_payload(mode, &connection, inconnfd, payload);
 	
 				if (connection.app_proto == UNKNOWN) {
-					printf("...failed!\nso we try doing (weak) protocol identification by port...\n");
+					msg(MSG_DEBUG, "...failed!\nso we try doing (weak) protocol identification by port...");
 					protocol_identified_by_port(mode, &connection, payload);
 				}
 	
 				if (connection.app_proto == UNKNOWN) {
-					fprintf(stderr, "failed!\nthe protocol could not be identified, so we stop handling this connection.\n \
-							the dumped payload can be found in %s/%s:%d\n\n", DUMP_FOLDER, connection.dest, connection.dport);
+					msg(MSG_ERROR, "failed!\nthe protocol could not be identified, so we stop handling this connection.\n \
+							the dumped payload can be found in %s/%s:%d", DUMP_FOLDER, connection.dest, connection.dport);
 					append_to_file(payload, &connection, DUMP_FOLDER);
 					Close_conn(inconnfd, "incomming connection, because of unknown protocol");
 					Exit(1);
@@ -161,7 +162,7 @@ void dispatching(int mode) {
 							targetservaddr.sin_port = htons((uint16_t)21);
 							break;
 						case FTP_data:
-							printf("so we set port to: %d\n", connection.dport);
+							msg(MSG_DEBUG, "so we set port to: %d", connection.dport);
 							targetservaddr.sin_port = htons((uint16_t)connection.dport);
 							break;
 						case SMTP:
@@ -183,7 +184,7 @@ void dispatching(int mode) {
 					Exit(1);
 				}
 				else
-					printf("the connection to the targetservice is established and we can now start forwarding\n");
+					msg(MSG_DEBUG, "the connection to the targetservice is established and we can now start forwarding\n");
 	
 				// now we are definitely connected to the targetservice ...
 	
@@ -207,13 +208,13 @@ void dispatching(int mode) {
 						protocol_dir = IRC_COLLECTING_DIR;
 						break;
 					default:
-						fprintf(stderr, "didnt set protocol_dir\n");
+						msg(MSG_ERROR, "didnt set protocol_dir");
 						break;
 				}
 	
 				print_timestamp(&connection, protocol_dir);
 	
-				printf("payload is:\n%s\n", payload);
+				msg(MSG_DEBUG, "payload is:\n%s", payload);
 	
 				r = strlen(payload);
 	
@@ -221,7 +222,7 @@ void dispatching(int mode) {
 					ptr = payload;
 					if (connection.app_proto < FTP_data) {
 						d = read(targetservicefd, to_drop, MAXLINE-1);
-						printf("the following %d characters are dropped:\n%s\n", d, to_drop);
+						msg(MSG_DEBUG, "the following %d characters are dropped:\n%s", d, to_drop);
 	
 						content_substitution_and_logging_stc(&connection, payload, &r);
 	
@@ -240,7 +241,7 @@ void dispatching(int mode) {
 							ptr += w;
 							r -= w;
 						}
-						printf("and has been sent to server...\n");
+						msg(MSG_DEBUG, "and has been sent to server...\n");
 					}
 				}
 	
@@ -258,16 +259,16 @@ void dispatching(int mode) {
 				while (select(maxfdp, &rset, NULL, NULL, &tv)) {
 					if (FD_ISSET(inconnfd, &rset)) {
 						// forwarding from the client to the server
-						printf("inconnfd is ready\n");
+						msg(MSG_DEBUG, "inconnfd is ready\n");
 						if ((r = read(inconnfd, payload, MAXLINE-1)) == 0) {
-							printf("client has closed the connection\n");
+							msg(MSG_DEBUG, "client has closed the connection\n");
 							Close_conn(targetservicefd, "connection to targetservice, because the client has closed the connection");
 							Close_conn(inconnfd, "incomming connection, because the client has closed the connection");
 							Exit(0);
 						} 
 						else if (r > 0) {
 				
-//							printf("(pid: %d) payload from client:\n%s\n", getpid(), payload);  // for debugging
+							msg(MSG_DEBUG, "(pid: %d) payload from client:\n%s", getpid(), payload);  // for debugging
 							if (mode < 3) {
 								content_substitution_and_logging_cts(&connection, payload, &r);
 								build_tree(&connection, payload);
@@ -275,7 +276,7 @@ void dispatching(int mode) {
 							if (mode == 3) // FIXME is this really stable???
 								delete_row_starting_with_pattern(payload, "Accept-Encoding:");
 
-//							printf("(pid: %d) changed payload from client:\n%s\n", getpid(), payload);  // for debugging
+							msg(MSG_DEBUG, "(pid: %d) changed payload from client:\n%s", getpid(), payload);  // for debugging
 	
 							ptr = payload;
 							while (r > 0 && (w = write(targetservicefd, ptr, r)) > 0) {
@@ -283,10 +284,10 @@ void dispatching(int mode) {
 								r -= w;
 							}
 
-//							printf("...has been sent to server\n");
+							msg(MSG_DEBUG, "...has been sent to server");
 						}
 						else {
-							fprintf(stderr, "read error: reading from inconnfd\n");
+							msg(MSG_DEBUG, "read error: reading from inconnfd");
 							Exit(1);
 						}
 					}
@@ -294,31 +295,31 @@ void dispatching(int mode) {
 	
 					if (FD_ISSET(targetservicefd, &rset)) { 
 						// forwarding from the server to the client
-						printf("targetservicefd is ready\n");
+						msg(MSG_DEBUG, "targetservicefd is ready");
 						if ((r = read(targetservicefd, payload, MAXLINE-1)) == 0) {
-							printf("server has closed the connection\n");
+							msg(MSG_DEBUG, "server has closed the connection\n");
 							Close_conn(inconnfd, "incoming connection, because the server has closed the connection");
 							Close_conn(targetservicefd, "connection to targetservice, because the server has closed the connection");
 							Exit(0);
 						}
 						else if (r > 0) {
-//							printf("(pid: %d) payload from server:\n%s\n", (int)getpid(), payload);
+							msg(MSG_DEBUG, "(pid: %d) payload from server:\n%s", (int)getpid(), payload);
 	
 							content_substitution_and_logging_stc(&connection, payload, &r);
 	
-//							printf("(pid: %d) changed payload from server:\n%s\n", getpid(), payload);
+							msg(MSG_DEBUG, "(pid: %d) changed payload from server:\n%s", getpid(), payload);
 	
 							ptr = payload;
 							while (r > 0 && (w = write(inconnfd, ptr, r)) > 0) {
 								ptr += w;
 								r -= w;
 							}
-//							printf("has been sent to client...\n");
+							msg(MSG_DEBUG, "has been sent to client...");
 	
 							memset(payload, 0, sizeof(payload));
 						}
 						else {
-							fprintf(stderr, "(pid: %d)read error: reading from targetservicefd\n", getpid());
+							msg(MSG_ERROR, "(pid: %d)read error: reading from targetservicefd", getpid());
 						}
 					}
 					FD_ZERO(&rset);
@@ -355,7 +356,7 @@ void dispatching(int mode) {
 			}
 		}
 		else {
-			printf("we got some network protocol which is neither tcp nor udp\n");
+			msg(MSG_DEBUG, "we got some network protocol which is neither tcp nor udp");
 		}
 		memset(&connection, 0, sizeof(connection));
 	}

@@ -13,6 +13,11 @@
 static int msg_level=MSG_DEFAULT;
 static char *MSG_TAB[]={ "FATAL  ", "TRUMANBOX", "ERROR  ", "DEBUG  ", "INFO   ", 0};
 
+void msg_setlevel(int l)
+{
+	msg_level = l;
+}
+
 /*
  the main logging routine
 

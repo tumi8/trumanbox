@@ -1,4 +1,5 @@
 #include "semaphore.h"
+#include "msg.h"
 
 void semaph_init() {
    int id;
@@ -15,13 +16,13 @@ void semaph_init() {
 
    if(id < 0)
    {
-      fprintf(stderr, "Unable to obtain semaphore.\n");
+      msg(MSG_FATAL, "Unable to obtain semaphore: %s", strerror(errno));
       exit(0);
    }
 
    if( semctl(id, 0, SETVAL, argument) < 0)
    {
-      fprintf( stderr, "Cannot set semaphore value.\n");
+      msg(MSG_FATAL, "Cannot set semaphore value: %s", strerror(errno));
       exit(0);
    }
 }
@@ -35,7 +36,7 @@ void semaph_free() {
    id = semget(KEY, 1, 0666);
    if(id < 0)
    {
-      fprintf(stderr, "Program sema cannot find semaphore, exiting.\n");
+      msg(MSG_FATAL, "Program sema cannot find semaphore, exiting: %s", strerror(errno));
       exit(0);
    }
 
@@ -48,7 +49,7 @@ void semaph_free() {
 
     if(retval != 0)
     {
-	printf("sema: V-operation did not succeed.\n");
+	msg(MSG_FATAL, "sema: V-operation did not succeed: %s", strerror(errno));
 	exit(1);
     }
 }
@@ -63,7 +64,7 @@ void semaph_alloc() {
    id = semget(KEY, 1, 0666);
    if(id < 0)
    {
-      fprintf(stderr, "Program semb cannot find semaphore, exiting.\n");
+      msg(MSG_FATAL, "Program semb cannot find semaphore, exiting: %s", strerror(errno));
       exit(1);
    }
 
@@ -76,7 +77,7 @@ void semaph_alloc() {
 
     if(retval != 0)
     {
-	printf("semb: P-operation did not succeed.\n");
+	msg(MSG_FATAL, "semb: P-operation did not succeed: %s", strerror(errno));
 	exit(1);
     }
 }
