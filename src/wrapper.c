@@ -38,14 +38,14 @@ again:
 
 void Bind(int fd, const struct sockaddr *sa, socklen_t salen) {
 	if (bind(fd, sa, salen) < 0)
-		perror("bind error");
+		msg(MSG_ERROR, "bind error: %s", strerror(errno));
 }
 
 int Connect(int fd, const struct sockaddr *sa, socklen_t salen) {
 	int status;
 
 	if ((status = connect(fd, sa, salen)) < 0)
-		perror("connect error");
+		msg(MSG_ERROR, "connect error: %s", strerror(errno));
 
 	return status;
 }
@@ -58,27 +58,27 @@ void Listen(int fd, int backlog) {
 		backlog = atoi(ptr);
 
 	if (listen(fd, backlog) < 0)
-		perror("listen error");
+		msg(MSG_ERROR, "listen error: %s", strerror(errno));
 }
 
 pid_t Fork(void) {
 	pid_t	pid;
 
 	if ( (pid = fork()) == -1)
-		perror("fork error");
+		msg(MSG_ERROR, "fork error: %s", strerror(errno));
 	return(pid);
 }
 
 void Pipe(int *ptr_pipe) {
 	if ( pipe(ptr_pipe) < 0)
-		perror("could not create pipe");
+		msg(MSG_ERROR, "could not create pipe: %s", strerror(errno));
 }
 
 ssize_t Read(int fd, char *read_buf, size_t count) {
 	int	read_cnt = 0;
 
 	if ( (read_cnt = read(fd, read_buf, count)) < 0)
-		perror("read error");
+		msg(MSG_ERROR, "read error: %s", strerror(errno));
 	
 	return(read_cnt);
 }
