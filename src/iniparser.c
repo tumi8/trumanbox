@@ -645,7 +645,7 @@ const char * iniparser_getvalue(dictionary *d, const char *section, const char *
 	snprintf(tmp, ASCIILINESZ, "%s:%s", section, key);
 
         if(!(ret=iniparser_getstring(d, tmp, NULL))) {
-                fprintf(stderr, "iniparser: value is NULL, maybe looking for wrong key? Section: %s, key: %s", section, key);
+                fprintf(stderr, "iniparser: value is NULL, maybe looking for wrong key? Section: %s, key: %s\n", section, key);
         }
 
         return ret;

@@ -88,10 +88,14 @@ int main(int argc, char **argv) {
 	}
 
 	struct configuration_t* config = configuration_create(config_file);
+	if (!config) {
+		msg(MSG_FATAL, "No valid configuration given. Exiting!");
+		exit(-3);
+	}
 
 	if (mode == invalid) {
 		// no mode given, check if config file specifies a mode
-		mode = atoi(configuration_getvalue(config, "main", "mode"));
+		mode = get_mode(configuration_getvalue(config, "main", "mode"));
 		if (mode == invalid) {
 			msg(MSG_DEBUG, "No valid operation mode in config file %s. Starting interactive mode...");
 			do {
@@ -171,6 +175,10 @@ void usage(const char* progname)
 
 static operation_mode_t get_mode(const char* mode_string)
 {
+	if (!mode_string) {
+		msg(MSG_ERROR, "No mode string given!");
+		return invalid;
+	}
 	operation_mode_t mode =	atoi(mode_string);
 	if (mode < full_emulation || mode > full_proxy) {
 		mode = invalid;
