@@ -52,13 +52,15 @@ int main(int argc, char **argv) {
 	int		c;
 	operation_mode_t mode = invalid;
 	struct dns_resolver_t* dns_resolver;
-	int msg_level = 0;
+	int msg_level = MSG_ERROR;
+	char* config_file = NULL;
 
-	while (-1 != (c=getopt(argc, argv, "hdm:"))) {
+	while (-1 != (c=getopt(argc, argv, "hdm:f:"))) {
 		switch (c) {
 		case 'm':
 			mode = atoi(optarg);
 			if (mode < full_emulation || mode > full_proxy) {
+				msg(MSG_FATAL, "No valid mode given!");
 				usage(argv[0]);
 				exit(-1);
 			}
@@ -66,13 +68,25 @@ int main(int argc, char **argv) {
 		case 'd':
 			msg_level++;
 			break;
+		case 'f':
+			config_file=optarg;
+			break;
 		case 'h':
 		default:
-		usage(argv[0]);
+			msg(MSG_FATAL, "asdfdsaf");
+			usage(argv[0]);
 			exit(1);
 		}
 	}
+
 	msg_setlevel(msg_level);
+
+	if (!config_file) {
+		msg(MSG_FATAL, "No config file given!");
+		usage(argv[0]);
+		exit(2);
+	}
+
 	if (mode == invalid) {
 		// no parameters given, go into interactive mode
 		do {
@@ -141,7 +155,7 @@ static operation_mode_t  interactive_menu()
 
 void usage(const char* progname)
 {
-	printf("Usage: %s [-h] [-d] [-m <mode>]\n"
+	printf("Usage: %s [-h] [-d] [-m <mode>] -f configfile\n"
 	       "\tAvailable modes:\n"
 	       "\t\t1 - full emulation\n"
 	       "\t\t2 - half proxy\n"
