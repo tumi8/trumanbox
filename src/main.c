@@ -43,9 +43,11 @@
 
 #include "main.h"
 #include "msg.h"
+#include "configuration.h"
 
 static operation_mode_t interactive_menu();
 static void usage(const char* progname);
+static operation_mode_t get_mode(const char* mode_string);
 
 int main(int argc, char **argv) {
 	char		config_dir[256]; //, config_cmd[256];
@@ -58,9 +60,8 @@ int main(int argc, char **argv) {
 	while (-1 != (c=getopt(argc, argv, "hdm:f:"))) {
 		switch (c) {
 		case 'm':
-			mode = atoi(optarg);
-			if (mode < full_emulation || mode > full_proxy) {
-				msg(MSG_FATAL, "No valid mode given!");
+			mode = get_mode(optarg);
+			if (mode == invalid) {
 				usage(argv[0]);
 				exit(-1);
 			}
@@ -73,7 +74,6 @@ int main(int argc, char **argv) {
 			break;
 		case 'h':
 		default:
-			msg(MSG_FATAL, "asdfdsaf");
 			usage(argv[0]);
 			exit(1);
 		}
@@ -87,11 +87,17 @@ int main(int argc, char **argv) {
 		exit(2);
 	}
 
+	struct configuration_t* config = configuration_create(config_file);
+
 	if (mode == invalid) {
-		// no parameters given, go into interactive mode
-		do {
-			mode = interactive_menu();
-		} while (mode == invalid);
+		// no mode given, check if config file specifies a mode
+		mode = atoi(configuration_getvalue(config, "main", "mode"));
+		if (mode == invalid) {
+			msg(MSG_DEBUG, "No valid operation mode in config file %s. Starting interactive mode...");
+			do {
+				mode = interactive_menu();
+			} while (mode == invalid);
+		}
 		if (mode == quit) {
 			msg(MSG_INFO, "TrumanBox is quitting ...");
 			return 0;
@@ -109,6 +115,7 @@ int main(int argc, char **argv) {
 	dispatching(mode);
 	dns_stop_resolver(dns_resolver);
 	dns_destroy_resolver(dns_resolver);
+	configuration_destroy(config);
 
 	exit(0);
 }
@@ -160,4 +167,13 @@ void usage(const char* progname)
 	       "\t\t1 - full emulation\n"
 	       "\t\t2 - half proxy\n"
 	       "\t\t3 - full proxy\n", progname);
+}
+
+static operation_mode_t get_mode(const char* mode_string)
+{
+	operation_mode_t mode =	atoi(mode_string);
+	if (mode < full_emulation || mode > full_proxy) {
+		mode = invalid;
+	}
+	return mode;
 }
