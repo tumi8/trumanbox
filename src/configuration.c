@@ -20,3 +20,8 @@ void configuration_destroy(struct configuration_t* c)
 	iniparser_free(c->dict);
 	free(c);
 }
+
+const char* configuration_getvalue(struct configuration_t* c, const char* module, const char* key)
+{
+	return iniparser_getvalue(c->dict, module, key);
+}
