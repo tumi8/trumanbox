@@ -1,3 +1,22 @@
+#include <stdio.h>
+#include <netinet/ip.h>
+#include <netinet/tcp.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <string.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <time.h>
+
+#include "definitions.h"
+#include "signals.h"
+#include "configuration.h"
+
 #include "dispatching.h"
 #include "wrapper.h"
 #include "helper_file.h"
@@ -6,35 +25,54 @@
 #include "payload_alter_log.h"
 #include "msg.h"
 
+struct dispatcher_t {
+	const char* dump_dir;
+	int tcpfd;
+	int udpfd;
+	operation_mode_t mode;
+	int running;
+};
 
-void init_dispatch_server(int *tcpfd, int *udpfd) {
-	int val=1;
+struct dispatcher_t* disp_create(struct configuration_t* c, operation_mode_t mode)
+{
+	struct dispatcher_t* ret = (struct dispatcher_t*)malloc(sizeof(struct dispatcher_t));
+	ret->dump_dir = conf_get(c, "main", "dump_dir");	
+	ret->mode = mode;
+	
+
+	int val=1; // will enable SO_REUSEADDR
 
 	struct sockaddr_in saddr;
 
 	// create tcp socket...
-	*tcpfd = Socket(AF_INET, SOCK_STREAM, 0);
-	
+	ret->tcpfd = Socket(AF_INET, SOCK_STREAM, 0);
+
 	bzero(&saddr, sizeof(saddr));
 	saddr.sin_family      = AF_INET;
 	saddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	saddr.sin_port        = htons(TB_LISTEN_PORT);
 
-	setsockopt(*tcpfd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val));
-
-	Bind(*tcpfd, (SA *) &saddr, sizeof(saddr));
-
-	Listen(*tcpfd, LISTENQ);	
+	setsockopt(ret->tcpfd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val));
+	Bind(ret->tcpfd, (SA *) &saddr, sizeof(saddr));
+	Listen(ret->tcpfd, LISTENQ);	
 
 	// create udp socket...
-	*udpfd = Socket(AF_INET, SOCK_DGRAM, 0);
+	ret->udpfd = Socket(AF_INET, SOCK_DGRAM, 0);
 
 	bzero(&saddr, sizeof(saddr));
 	saddr.sin_family      = AF_INET;
 	saddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	saddr.sin_port        = htons(TB_LISTEN_PORT);
 
-	Bind(*udpfd, (SA *) &saddr, sizeof(saddr));
+	Bind(ret->udpfd, (SA *) &saddr, sizeof(saddr));
+
+	return ret;
+}
+
+int disp_destroy(struct dispatcher_t* d)
+{
+	free(d);
+	return 0;
 }
 
 /*
@@ -68,10 +106,10 @@ protocols_net wait_for_incomming_connection(int tcpfd, int udpfd) {
 		return UNKNOWN;
 }
 
-void dispatching(int mode) {
-	int			tcpfd,
-				udpfd,
-				inconnfd,
+//void dispatching(int mode) {
+void disp_run(struct dispatcher_t* disp)
+{
+	int			inconnfd,
 				targetservicefd,
 				maxfdp,
 				tries_pars_ct;
@@ -89,20 +127,18 @@ void dispatching(int mode) {
 	connection_t 		connection;
 
 
-	init_dispatch_server(&tcpfd, &udpfd);
-
 	Signal(SIGCHLD, sig_chld);
 
 	for ( ; ; ) {
 	start:
-		connection.net_proto = wait_for_incomming_connection(tcpfd, udpfd);
+		connection.net_proto = wait_for_incomming_connection(disp->tcpfd, disp->udpfd);
 
 		if (connection.net_proto == ERROR)
 			continue;
 
 		if (connection.net_proto == TCP) {
 			clilen = sizeof(cliaddr);
-			inconnfd = Accept(tcpfd, (SA *) &cliaddr, &clilen);
+			inconnfd = Accept(disp->tcpfd, (SA *) &cliaddr, &clilen);
 			
 			Inet_ntop(AF_INET, &cliaddr.sin_addr, connection.source, 15);
 			connection.sport = ntohs(cliaddr.sin_port);
@@ -120,7 +156,7 @@ void dispatching(int mode) {
 				
 			// on connect create a child that handles the connection
 			if ( (childpid = Fork()) == 0) {	/* child process */
-				Close(tcpfd);	/* close listening socket within child process */
+				Close(disp->tcpfd);	/* close listening socket within child process */
 	
 				targetservicefd = Socket(AF_INET, SOCK_STREAM, 0);
 				
@@ -131,16 +167,16 @@ void dispatching(int mode) {
 	
 				msg(MSG_DEBUG, "we start doing protocol identification by payload...");
 
-				protocol_identified_by_payload(mode, &connection, inconnfd, payload);
+				protocol_identified_by_payload(disp->mode, &connection, inconnfd, payload);
 	
 				if (connection.app_proto == UNKNOWN) {
 					msg(MSG_DEBUG, "...failed!\nso we try doing (weak) protocol identification by port...");
-					protocol_identified_by_port(mode, &connection, payload);
+					protocol_identified_by_port(disp->mode, &connection, payload);
 				}
 	
 				if (connection.app_proto == UNKNOWN) {
-					msg(MSG_ERROR, "failed!\nthe protocol could not be identified, so we stop handling this connection.\n \
-							the dumped payload can be found in %s/%s:%d", DUMP_FOLDER, connection.dest, connection.dport);
+					msg(MSG_ERROR, "failed!\nthe protocol could not be identified, so we stop handling this connection.\n "
+							"the dumped payload can be found in %s/%s:%d", DUMP_FOLDER, connection.dest, connection.dport);
 					append_to_file(payload, &connection, DUMP_FOLDER);
 					Close_conn(inconnfd, "incomming connection, because of unknown protocol");
 					Exit(1);
@@ -148,7 +184,7 @@ void dispatching(int mode) {
 	
 				// now we know the protocol
 	
-				if (mode < 3) {
+				if (disp->mode < 3) {
 	
 					bzero(&targetservaddr, sizeof(targetservaddr));
 					targetservaddr.sin_family = AF_INET;
@@ -232,7 +268,7 @@ void dispatching(int mode) {
 						}
 					}
 					else {
-						if (mode < 3) {
+						if (disp->mode < 3) {
 							content_substitution_and_logging_cts(&connection, payload, &r);
 							build_tree(&connection, payload);
 						}
@@ -261,7 +297,7 @@ void dispatching(int mode) {
 						// forwarding from the client to the server
 						msg(MSG_DEBUG, "inconnfd is ready\n");
 						if ((r = read(inconnfd, payload, MAXLINE-1)) == 0) {
-							msg(MSG_DEBUG, "client has closed the connection\n");
+							msg(MSG_DEBUG, "client has closed the connection");
 							Close_conn(targetservicefd, "connection to targetservice, because the client has closed the connection");
 							Close_conn(inconnfd, "incomming connection, because the client has closed the connection");
 							Exit(0);
@@ -269,11 +305,11 @@ void dispatching(int mode) {
 						else if (r > 0) {
 				
 							msg(MSG_DEBUG, "(pid: %d) payload from client:\n%s", getpid(), payload);  // for debugging
-							if (mode < 3) {
+							if (disp->mode < 3) {
 								content_substitution_and_logging_cts(&connection, payload, &r);
 								build_tree(&connection, payload);
 							}
-							if (mode == 3) // FIXME is this really stable???
+							if (disp->mode == 3) // FIXME is this really stable???
 								delete_row_starting_with_pattern(payload, "Accept-Encoding:");
 
 							msg(MSG_DEBUG, "(pid: %d) changed payload from client:\n%s", getpid(), payload);  // for debugging
@@ -336,22 +372,22 @@ void dispatching(int mode) {
 			if ( (childpid = Fork()) == 0) {	/* child process */
 
 				FD_ZERO(&rset);
-				FD_SET(udpfd, &rset);
+				FD_SET(disp->udpfd, &rset);
 			
 				tv.tv_sec = 300;
 				tv.tv_usec = 0;
 	
-				maxfdp = udpfd + 1;
+				maxfdp = disp->udpfd + 1;
 				clilen = sizeof(cliaddr);
 
 				while (select(maxfdp, &rset, NULL, NULL, &tv)) {
-					if (FD_ISSET(udpfd, &rset)) {
-						r = Recvfrom(udpfd, payload, MAXLINE, 0, (SA *)  &cliaddr, &clilen);
-						Sendto(udpfd, payload, r, 0, (SA *) &cliaddr, clilen);
+					if (FD_ISSET(disp->udpfd, &rset)) {
+						r = Recvfrom(disp->udpfd, payload, MAXLINE, 0, (SA *)  &cliaddr, &clilen);
+						Sendto(disp->udpfd, payload, r, 0, (SA *) &cliaddr, clilen);
 						memset(payload, 0, sizeof(payload));
 					}
 					FD_ZERO(&rset);
-					FD_SET(udpfd, &rset);
+					FD_SET(disp->udpfd, &rset);
 				}
 			}
 		}

@@ -1,22 +1,14 @@
-#include <stdio.h>
-#include <netinet/ip.h>
-#include <netinet/tcp.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <stdlib.h>
-#include <pthread.h>
-#include <errno.h>
-#include <string.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <time.h>
+#ifndef _DISPATCHER_H_
+#define _DISPATCHER_H_
 
 #include "definitions.h"
-#include "signals.h"
 
-void init_dispatching_server(int *listenfd);
-void dispatching(int mode);
+struct dispatcher_t;
+struct configuration_t;
 
+struct dispatcher_t* disp_create(struct configuration_t* c, operation_mode_t mode);
+int disp_destroy(struct dispatcher_t* d);
+
+void disp_run(struct dispatcher_t* d);
+
+#endif
