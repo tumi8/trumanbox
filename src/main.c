@@ -54,6 +54,7 @@ int main(int argc, char **argv) {
 	int		c;
 	operation_mode_t mode = invalid;
 	struct dns_resolver_t* dns_resolver;
+	struct dispatcher_t* dispatcher;
 	int msg_level = MSG_ERROR;
 	char* config_file = NULL;
 
@@ -120,10 +121,13 @@ int main(int argc, char **argv) {
 					   conf_getint(config, "dns", "port", 53),
 					   conf_get(config, "dns", "fake_address"), 
 					   conf_getint(config, "dns", "return_original", 1));
+	dispatcher = disp_create(config, mode);
+
 	dns_start_resolver(dns_resolver);
-	dispatching(mode);
+	disp_run(dispatcher);
 	dns_stop_resolver(dns_resolver);
 	dns_destroy_resolver(dns_resolver);
+	disp_destroy(dispatcher);
 	conf_destroy(config);
 
 	exit(0);
