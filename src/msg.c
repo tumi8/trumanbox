@@ -26,14 +26,14 @@ void msg_setlevel(int l)
  if you, however, change this function to a custom backend, you WILL have to lock
  because msg() can and will be called by concurrent threads!
  */
-void msg(int level, char *fmt, ...)
+void msg_work(const int line, const char* file, const char* pv, const char* func, const int level, const char *fmt, ...)
 {
         /* nummerically higher value means lower priority */
         if (level > msg_level) {
                 return;
         } else {
                 va_list args;
-                printf("%s: ", MSG_TAB[level]);
+                printf("%s in %s:%d: ", MSG_TAB[level], file, line);
                 va_start(args, fmt);
                 vprintf(fmt, args);
                 va_end(args);

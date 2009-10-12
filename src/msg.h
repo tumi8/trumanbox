@@ -9,7 +9,9 @@
 #define MSG_FATAL 0
 #define MSG_DEFAULT MSG_ERROR
 
-void msg(int, char *, ...);
+#define msg(lvl, fmt, args...) msg_work(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, lvl, fmt, ##args)
+
 void msg_setlevel(int l);
+void msg_work(const int, const char*, const char*, const char*, const int, const char *, ...);
 
 #endif
