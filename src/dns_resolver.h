@@ -6,7 +6,7 @@
 
 struct dns_resolver_t;
 
-struct dns_resolver_t* dns_create_resolver(const char* ip, uint16_t port, const char* answer_address, operation_mode_t mode);
+struct dns_resolver_t* dns_create_resolver(const char* ip, uint16_t port, const char* answer_address, uint8_t return_orig);
 
 void dns_start_resolver(struct dns_resolver_t* r);
 void dns_stop_resolver(struct dns_resolver_t* r);

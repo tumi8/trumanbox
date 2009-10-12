@@ -19,18 +19,18 @@
 struct dns_resolver_t {
 	char listen_ip[13];
 	uint16_t port;
-	operation_mode_t mode;
+	uint8_t return_orig;
 	pthread_t thread;
 	int running;
 	uint32_t response_addr;
 };
 
-struct dns_resolver_t* dns_create_resolver(const char* listen_address, uint16_t listen_port, const char* answer_address, operation_mode_t mode)
+struct dns_resolver_t* dns_create_resolver(const char* listen_address, uint16_t listen_port, const char* answer_address, uint8_t return_orig)
 {
 	struct dns_resolver_t* ret = (struct dns_resolver_t*)malloc(sizeof(struct dns_resolver_t));
 	strncpy(ret->listen_ip, listen_address, 13);
 	ret->port = listen_port;
-	ret->mode = mode;
+	ret->return_orig = return_orig;
 	ret->running = 0;
 	inet_pton(AF_INET, answer_address, &ret->response_addr);
 

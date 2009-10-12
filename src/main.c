@@ -87,7 +87,7 @@ int main(int argc, char **argv) {
 		exit(2);
 	}
 
-	struct configuration_t* config = configuration_create(config_file);
+	struct configuration_t* config = conf_create(config_file);
 	if (!config) {
 		msg(MSG_FATAL, "No valid configuration given. Exiting!");
 		exit(-3);
@@ -95,7 +95,7 @@ int main(int argc, char **argv) {
 
 	if (mode == invalid) {
 		// no mode given, check if config file specifies a mode
-		mode = get_mode(configuration_getvalue(config, "main", "mode"));
+		mode = get_mode(conf_get(config, "main", "mode"));
 		if (mode == invalid) {
 			msg(MSG_DEBUG, "No valid operation mode in config file %s. Starting interactive mode...");
 			do {
@@ -111,17 +111,20 @@ int main(int argc, char **argv) {
 	msg(MSG_DEBUG, "Trumanbox is running in mode %d", mode);
 
 	create_tmp_folders();
-	config_dir = configuration_getvalue(config, "main", "config_dir");
+	config_dir = conf_get(config, "main", "config_dir");
 	change_to_tmp_folder();
 
 	semaph_init();
 
-	dns_resolver = dns_create_resolver(DNS_LISTEN_ADDRESS, DNS_LISTEN_PORT, DNS_RESOLVE_ADDRESS,  mode);
+	dns_resolver = dns_create_resolver(conf_get(config, "dns", "listen_address"),
+					   conf_getint(config, "dns", "port", 53),
+					   conf_get(config, "dns", "fake_address"), 
+					   conf_getint(config, "dns", "return_original", 1));
 	dns_start_resolver(dns_resolver);
 	dispatching(mode);
 	dns_stop_resolver(dns_resolver);
 	dns_destroy_resolver(dns_resolver);
-	configuration_destroy(config);
+	conf_destroy(config);
 
 	exit(0);
 }
