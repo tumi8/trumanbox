@@ -7,7 +7,7 @@
 #define MAX_PATH_LENGTH 	4096
 #define HTTP_BASE_DIR 		"/var/www"
 #define FTP_BASE_DIR 		"/home/ftp"
-#define TRUMAN_CONFIG_DIR 	"/etc/trumanbox"
+//#define TRUMAN_CONFIG_DIR 	"/etc/trumanbox"
 #define TMP_TRUMANBOX 		"/var/local/truman-box"
 #define RESPONSE_COLLECTING_DIR "/var/local/truman-box/server-responses"
 #define FTP_COLLECTING_DIR 	"/var/local/truman-box/ftp"

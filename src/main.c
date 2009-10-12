@@ -50,7 +50,7 @@ static void usage(const char* progname);
 static operation_mode_t get_mode(const char* mode_string);
 
 int main(int argc, char **argv) {
-	char		config_dir[256]; //, config_cmd[256];
+	const char*	config_dir; //, config_cmd[256];
 	int		c;
 	operation_mode_t mode = invalid;
 	struct dns_resolver_t* dns_resolver;
@@ -108,8 +108,10 @@ int main(int argc, char **argv) {
 		}
 	}
 
+	msg(MSG_DEBUG, "Trumanbox is running in mode %d", mode);
+
 	create_tmp_folders();
-	strncpy(config_dir, TRUMAN_CONFIG_DIR, 255);
+	config_dir = configuration_getvalue(config, "main", "config_dir");
 	change_to_tmp_folder();
 
 	semaph_init();
