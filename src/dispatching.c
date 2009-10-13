@@ -24,6 +24,8 @@
 #include "payload_ident.h"
 #include "payload_alter_log.h"
 #include "msg.h"
+#include "udp_handler.h"
+#include "tcp_handler.h"
 
 struct dispatcher_t {
 	const char* dump_dir;
@@ -370,25 +372,9 @@ void disp_run(struct dispatcher_t* disp)
 		}
 		else if (connection.net_proto == UDP) {
 			if ( (childpid = Fork()) == 0) {	/* child process */
-
-				FD_ZERO(&rset);
-				FD_SET(disp->udpfd, &rset);
-			
-				tv.tv_sec = 300;
-				tv.tv_usec = 0;
-	
-				maxfdp = disp->udpfd + 1;
-				clilen = sizeof(cliaddr);
-
-				while (select(maxfdp, &rset, NULL, NULL, &tv)) {
-					if (FD_ISSET(disp->udpfd, &rset)) {
-						r = Recvfrom(disp->udpfd, payload, MAXLINE, 0, (SA *)  &cliaddr, &clilen);
-						Sendto(disp->udpfd, payload, r, 0, (SA *) &cliaddr, clilen);
-						memset(payload, 0, sizeof(payload));
-					}
-					FD_ZERO(&rset);
-					FD_SET(disp->udpfd, &rset);
-				}
+				struct udp_handler_t* u = udphandler_create(disp->udpfd);
+				udphandler_run(u);
+				udphandler_destroy(u);
 			}
 		}
 		else {
