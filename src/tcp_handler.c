@@ -1,16 +1,23 @@
 #include "tcp_handler.h"
 #include "definitions.h"
 #include "helper_net.h"
+#include "msg.h"
 
 #include <stdlib.h>
 
 struct tcp_handler_t {
+	operation_mode_t mode;
 	int sock;
+	connection_t* connection;
+	int inconnfd;
 };
 
-struct tcp_handler_t* tcphandler_create()
+struct tcp_handler_t* tcphandler_create(operation_mode_t mode, connection_t* c, int inconn)
 {
 	struct tcp_handler_t* ret = (struct tcp_handler_t*)malloc(sizeof(struct tcp_handler_t*));
+	ret->mode = mode;
+	ret->connection = c;
+	ret->inconnfd = inconn;
 
 	return ret;
 }
@@ -21,12 +28,11 @@ void tcphandler_destroy(struct tcp_handler_t* t)
 	free(t);
 }
 
-void tcphandler_run(connection_t* connection, int innconnfd)
+void tcphandler_run(struct tcp_handler_t* tcph)
 {
-	int			inconnfd,
-				targetservicefd,
-				maxfdp,
-	struct sockaddr_in	targetservaddr,
+	int			targetservicefd,
+				maxfdp;
+	struct sockaddr_in	targetservaddr;
 	char			payload[MAXLINE],
 				to_drop[MAXLINE],
 				*ptr,
@@ -35,45 +41,40 @@ void tcphandler_run(connection_t* connection, int innconnfd)
 	fd_set 			rset;
 	struct timeval 		tv;
 	
-	
-				
-			// on connect create a child that handles the connection
-			if ( (childpid = Fork()) == 0) {	/* child process */
-				Close(disp->tcpfd);	/* close listening socket within child process */
-	
-				targetservicefd = Socket(AF_INET, SOCK_STREAM, 0);
+	targetservicefd = Socket(AF_INET, SOCK_STREAM, 0);
 				
 				bzero(&targetservaddr, sizeof(targetservaddr));
 				targetservaddr.sin_family = AF_INET;
-				targetservaddr.sin_port = htons((uint16_t)connection.dport);
-				Inet_pton(AF_INET, connection.dest, &targetservaddr.sin_addr);
+				targetservaddr.sin_port = htons((uint16_t)tcph->connection->dport);
+				Inet_pton(AF_INET, tcph->connection->dest, &targetservaddr.sin_addr);
 	
 				msg(MSG_DEBUG, "we start doing protocol identification by payload...");
 
-				protocol_identified_by_payload(disp->mode, &connection, inconnfd, payload);
+				protocol_identified_by_payload(tcph->mode, tcph->connection, tcph->inconnfd, payload);
 	
-				if (connection.app_proto == UNKNOWN) {
+				if (tcph->connection->app_proto == UNKNOWN) {
 					msg(MSG_DEBUG, "...failed!\nso we try doing (weak) protocol identification by port...");
-					protocol_identified_by_port(disp->mode, &connection, payload);
+					protocol_identified_by_port(tcph->mode, tcph->connection, payload);
 				}
 	
-				if (connection.app_proto == UNKNOWN) {
+				if (tcph->connection->app_proto == UNKNOWN) {
 					msg(MSG_ERROR, "failed!\nthe protocol could not be identified, so we stop handling this connection.\n "
-							"the dumped payload can be found in %s/%s:%d", DUMP_FOLDER, connection.dest, connection.dport);
-					append_to_file(payload, &connection, DUMP_FOLDER);
-					Close_conn(inconnfd, "incomming connection, because of unknown protocol");
+							"the dumped payload can be found in %s/%s:%d", DUMP_FOLDER, tcph->connection->dest, tcph->connection->dport);
+					append_to_file(payload, tcph->connection, DUMP_FOLDER);
+					Close_conn(tcph->inconnfd, "incomming connection, because of unknown protocol");
 					Exit(1);
 				}
 	
 				// now we know the protocol
 	
-				if (disp->mode < 3) {
+				if (tcph->mode < 3) {
 	
 					bzero(&targetservaddr, sizeof(targetservaddr));
 					targetservaddr.sin_family = AF_INET;
 	
+					// TODO: fix this
 					Inet_pton(AF_INET, "127.0.0.1", &targetservaddr.sin_addr);
-					switch(connection.app_proto) {
+					switch(tcph->connection->app_proto) {
 						case FTP:
 							targetservaddr.sin_port = htons((uint16_t)21);
 							break;
@@ -81,8 +82,8 @@ void tcphandler_run(connection_t* connection, int innconnfd)
 							targetservaddr.sin_port = htons((uint16_t)21);
 							break;
 						case FTP_data:
-							msg(MSG_DEBUG, "so we set port to: %d", connection.dport);
-							targetservaddr.sin_port = htons((uint16_t)connection.dport);
+							msg(MSG_DEBUG, "so we set port to: %d", tcph->connection->dport);
+							targetservaddr.sin_port = htons((uint16_t)tcph->connection->dport);
 							break;
 						case SMTP:
 							targetservaddr.sin_port = htons((uint16_t)25);
@@ -99,7 +100,7 @@ void tcphandler_run(connection_t* connection, int innconnfd)
 				}
 	
 				if (Connect(targetservicefd, (SA *) &targetservaddr, sizeof(targetservaddr)) < 0) {
-					Close_conn(inconnfd, "connection to targetservice could not be established");
+					Close_conn(tcph->inconnfd, "connection to targetservice could not be established");
 					Exit(1);
 				}
 				else
@@ -107,7 +108,7 @@ void tcphandler_run(connection_t* connection, int innconnfd)
 	
 				// now we are definitely connected to the targetservice ...
 	
-				switch(connection.app_proto) {
+				switch(tcph->connection->app_proto) {
 					case FTP:
 						protocol_dir = FTP_COLLECTING_DIR;
 						break;
@@ -131,7 +132,7 @@ void tcphandler_run(connection_t* connection, int innconnfd)
 						break;
 				}
 	
-				print_timestamp(&connection, protocol_dir);
+				print_timestamp(tcph->connection, protocol_dir);
 	
 				msg(MSG_DEBUG, "payload is:\n%s", payload);
 	
@@ -139,21 +140,21 @@ void tcphandler_run(connection_t* connection, int innconnfd)
 	
 				if (r) {
 					ptr = payload;
-					if (connection.app_proto < FTP_data) {
+					if (tcph->connection->app_proto < FTP_data) {
 						d = read(targetservicefd, to_drop, MAXLINE-1);
 						msg(MSG_DEBUG, "the following %d characters are dropped:\n%s", d, to_drop);
 	
-						content_substitution_and_logging_stc(&connection, payload, &r);
+						content_substitution_and_logging_stc(tcph->connection, payload, &r);
 	
-						while(r > 0 && (w = write(inconnfd, ptr, r)) > 0) {
+						while(r > 0 && (w = write(tcph->inconnfd, ptr, r)) > 0) {
 							ptr += w;
 							r -= w;
 						}
 					}
 					else {
-						if (disp->mode < 3) {
-							content_substitution_and_logging_cts(&connection, payload, &r);
-							build_tree(&connection, payload);
+						if (tcph->mode < 3) {
+							content_substitution_and_logging_cts(tcph->connection, payload, &r);
+							build_tree(tcph->connection, payload);
 						}
 	
 						while(r > 0 && (w = write(targetservicefd, ptr, r)) > 0) {
@@ -167,32 +168,32 @@ void tcphandler_run(connection_t* connection, int innconnfd)
 				memset(payload, 0, sizeof(payload));
 	
 				FD_ZERO(&rset);
-				FD_SET(inconnfd, &rset);
+				FD_SET(tcph->inconnfd, &rset);
 				FD_SET(targetservicefd, &rset);
 			
 				tv.tv_sec = 300;
 				tv.tv_usec = 0;
 	
-				maxfdp = max(inconnfd, targetservicefd) + 1;
+				maxfdp = max(tcph->inconnfd, targetservicefd) + 1;
 	
 				while (select(maxfdp, &rset, NULL, NULL, &tv)) {
-					if (FD_ISSET(inconnfd, &rset)) {
+					if (FD_ISSET(tcph->inconnfd, &rset)) {
 						// forwarding from the client to the server
 						msg(MSG_DEBUG, "inconnfd is ready\n");
-						if ((r = read(inconnfd, payload, MAXLINE-1)) == 0) {
+						if ((r = read(tcph->inconnfd, payload, MAXLINE-1)) == 0) {
 							msg(MSG_DEBUG, "client has closed the connection");
 							Close_conn(targetservicefd, "connection to targetservice, because the client has closed the connection");
-							Close_conn(inconnfd, "incomming connection, because the client has closed the connection");
+							Close_conn(tcph->inconnfd, "incomming connection, because the client has closed the connection");
 							Exit(0);
 						} 
 						else if (r > 0) {
 				
 							msg(MSG_DEBUG, "(pid: %d) payload from client:\n%s", getpid(), payload);  // for debugging
-							if (disp->mode < 3) {
-								content_substitution_and_logging_cts(&connection, payload, &r);
-								build_tree(&connection, payload);
+							if (tcph->mode < 3) {
+								content_substitution_and_logging_cts(tcph->connection, payload, &r);
+								build_tree(tcph->connection, payload);
 							}
-							if (disp->mode == 3) // FIXME is this really stable???
+							if (tcph->mode == 3) // FIXME is this really stable???
 								delete_row_starting_with_pattern(payload, "Accept-Encoding:");
 
 							msg(MSG_DEBUG, "(pid: %d) changed payload from client:\n%s", getpid(), payload);  // for debugging
@@ -217,19 +218,19 @@ void tcphandler_run(connection_t* connection, int innconnfd)
 						msg(MSG_DEBUG, "targetservicefd is ready");
 						if ((r = read(targetservicefd, payload, MAXLINE-1)) == 0) {
 							msg(MSG_DEBUG, "server has closed the connection\n");
-							Close_conn(inconnfd, "incoming connection, because the server has closed the connection");
+							Close_conn(tcph->inconnfd, "incoming connection, because the server has closed the connection");
 							Close_conn(targetservicefd, "connection to targetservice, because the server has closed the connection");
 							Exit(0);
 						}
 						else if (r > 0) {
 							msg(MSG_DEBUG, "(pid: %d) payload from server:\n%s", (int)getpid(), payload);
 	
-							content_substitution_and_logging_stc(&connection, payload, &r);
+							content_substitution_and_logging_stc(tcph->connection, payload, &r);
 	
 							msg(MSG_DEBUG, "(pid: %d) changed payload from server:\n%s", getpid(), payload);
 	
 							ptr = payload;
-							while (r > 0 && (w = write(inconnfd, ptr, r)) > 0) {
+							while (r > 0 && (w = write(tcph->inconnfd, ptr, r)) > 0) {
 								ptr += w;
 								r -= w;
 							}
@@ -242,14 +243,10 @@ void tcphandler_run(connection_t* connection, int innconnfd)
 						}
 					}
 					FD_ZERO(&rset);
-					FD_SET(inconnfd, &rset);
+					FD_SET(tcph->inconnfd, &rset);
 					FD_SET(targetservicefd, &rset);
 				}
-				Close_conn(inconnfd, "incomming connection, because we are done with this connection");
+				Close_conn(tcph->inconnfd, "incomming connection, because we are done with this connection");
 				Close_conn(targetservicefd, "connection to targetservice, because we are done with this connection");
-	
-				Exit(0);
-			}
-
 }
 
