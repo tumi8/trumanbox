@@ -6,6 +6,6 @@ struct tcp_handler_t;
 struct tcp_handler_t* tcphandler_create();
 void tcphandler_destroy(struct tcp_handler_t* t);
 
-void tcphandlere_run();
+void tcphandler_run();
 
 #endif
