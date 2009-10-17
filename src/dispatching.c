@@ -142,12 +142,21 @@ void disp_run(struct dispatcher_t* disp)
 					goto start;
 				}
 			}
+			if ( (childpid = Fork()) == 0) {        /* child process */
+				Close(disp->tcpfd);     /* close listening socket within child process */
+				struct tcp_handler_t* t = tcphandler_create(disp->mode, &connection, inconnfd);
+				tcphandler_run(t);
+				tcphandler_destroy(t);
+				Exit(0);
+			}
+
 		}
 		else if (connection.net_proto == UDP) {
 			if ( (childpid = Fork()) == 0) {	/* child process */
 				struct udp_handler_t* u = udphandler_create(disp->udpfd);
 				udphandler_run(u);
 				udphandler_destroy(u);
+				Exit(0);
 			}
 		}
 		else {
