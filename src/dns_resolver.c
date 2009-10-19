@@ -39,11 +39,14 @@ void dns_start_resolver(struct dns_resolver_t* r)
 	if (0 == (r->pid = Fork())) {
 		Signal(SIGINT, sig_int);
 		dns_worker(r);
+		msg(MSG_FATAL, "DNS-Worker has finished! This should never happen!");
+		Exit(1);
 	}
 }
 
 void dns_stop_resolver(struct dns_resolver_t* r)
 {
+	msg(MSG_DEBUG, "Stopping dns resolver");
 	if (-1 == kill(r->pid, SIGINT))
 		msg(MSG_FATAL, "Could not send signal to dns_resolver: %s", strerror(errno));
 }
@@ -86,7 +89,7 @@ static void dns_worker(struct dns_resolver_t* resolver)
 	maxfd = socket + 1; 
 	clilen = sizeof(cliaddr);
 	
-	while (select(maxfd, &rset, NULL, NULL, &tv)) {
+	while (-1 != select(maxfd, &rset, NULL, NULL, &tv)) {
 		if (!FD_ISSET(socket, &rset)) {
 			FD_ZERO(&rset);
 			FD_SET(socket, &rset);
@@ -146,6 +149,6 @@ static void dns_worker(struct dns_resolver_t* resolver)
 
 static void sig_int(int signo)
 {
-	exit(0);
+	Exit(0);
 }
 
