@@ -123,12 +123,16 @@ int main(int argc, char **argv) {
 					   conf_getint(config, "dns", "return_original", 1));
 	dispatcher = disp_create(config, mode);
 
+	msg(MSG_DEBUG, "Running dns resolver");
 	dns_start_resolver(dns_resolver);
+	msg(MSG_DEBUG, "Running dispatcher");
 	disp_run(dispatcher);
+	msg(MSG_DEBUG, "Stopping dns resolver");
 	dns_stop_resolver(dns_resolver);
 	dns_destroy_resolver(dns_resolver);
 	disp_destroy(dispatcher);
 	conf_destroy(config);
+	msg(MSG_DEBUG, "Trumanbox is quitting...");
 
 	exit(0);
 }
