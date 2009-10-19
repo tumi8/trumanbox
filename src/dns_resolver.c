@@ -1,6 +1,7 @@
 #include "dns_resolver.h"
 #include "helper_net.h"
 #include "msg.h"
+#include "signals.h"
 
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -14,10 +15,12 @@ struct dns_resolver_t {
 	char listen_ip[13];
 	uint16_t port;
 	uint8_t return_orig;
-	int running;
 	uint32_t response_addr;
 	pid_t pid;
 };
+
+static void dns_worker(struct dns_resolver_t* resolver);
+static void sig_int(int signo);
 
 struct dns_resolver_t* dns_create_resolver(const char* listen_address, uint16_t listen_port, const char* answer_address, uint8_t return_orig)
 {
@@ -25,17 +28,34 @@ struct dns_resolver_t* dns_create_resolver(const char* listen_address, uint16_t 
 	strncpy(ret->listen_ip, listen_address, 13);
 	ret->port = listen_port;
 	ret->return_orig = return_orig;
-	ret->running = 0;
+	ret->pid = 0;
 	inet_pton(AF_INET, answer_address, &ret->response_addr);
 
 	return ret;
 }
 
-static void* dns_resolver_thread(void* data)
+void dns_start_resolver(struct dns_resolver_t* r)
+{
+	if (0 == (r->pid = Fork())) {
+		Signal(SIGINT, sig_int);
+		dns_worker(r);
+	}
+}
+
+void dns_stop_resolver(struct dns_resolver_t* r)
+{
+	kill(r->pid, SIGINT);
+}
+
+void dns_destroy_resolver(struct dns_resolver_t* r)
+{
+	free(r);
+}
+
+static void dns_worker(struct dns_resolver_t* resolver)
 {
 	int socket;
 	struct sockaddr_in saddr, cliaddr;
-	struct dns_resolver_t* resolver;
 	fd_set 			rset;
 	int maxfd;
 	int	r;
@@ -49,8 +69,6 @@ static void* dns_resolver_thread(void* data)
 	struct hostent* hent;
 	uint32_t real_addr;
 
-	resolver = (struct dns_resolver_t*)data;
-
 	socket = Socket(AF_INET, SOCK_DGRAM, 0);
 	bzero(&saddr, sizeof(saddr));
 	saddr.sin_family      = AF_INET;
@@ -59,93 +77,74 @@ static void* dns_resolver_thread(void* data)
 
 	Bind(socket, (SA *) &saddr, sizeof(saddr));
 
-	while (resolver->running) {
-		FD_ZERO(&rset);
-		FD_SET(socket, &rset);
-		tv.tv_sec = 1; 
-		tv.tv_usec = 0;
-
-		maxfd = socket + 1; 
-		clilen = sizeof(cliaddr);
-
-		while (select(maxfd, &rset, NULL, NULL, &tv)) {
-			if (FD_ISSET(socket, &rset)) {
-				r = Recvfrom(socket, request, MAX_REQUEST_LEN, 0, (SA *)&cliaddr, &clilen);
-				if (r > 17) {
-					// only handle A requests
-					opcode = (request[2] >> 3) & 15;
-					if (opcode != 0) { 
-						msg(MSG_ERROR, "Unknown DNS request %d", opcode);
-					} else {
-						// get domainname from request (only the first...)
-						i = 12; // start position of the query
-						len = request[i];
-						tmp = 0;
-						do { 
-							memcpy(domainname + tmp, request + i+1, len);
-							tmp += len;
-							*(domainname + tmp) = '.'; ++tmp;
-							i += len + 1;
-							len = request[i];
-						} while (len != 0);
-						*(domainname + tmp -1) = 0;
-						hent = gethostbyname(domainname);
-						if (hent == NULL) {
-							real_addr = 0;
-						} else {
-							real_addr = *(uint32_t*)hent->h_addr;
-						}
-						msg(MSG_DEBUG, "dns_resolver: received request for domain %s", domainname);
-
-
-						// build response
-						memcpy(response, request, 2); tmp = 2;   // transaction id
-						memcpy(response + tmp, "\x81\x80",2); tmp += 2;                                  // message type (response)
-						memcpy(response + tmp, request + 4, 2); tmp += 2;                               // number of querys
-						memcpy(response + tmp, request + 4, 2); tmp += 2;                               // number of answers
-						memcpy(response + tmp, "\x00\x00\x00\x00", 4); tmp += 4;                          // Authority RRs, Additional RRs
-						memcpy(response + tmp, request + 12, r - 12); tmp += r - 12;                    // original request
-						memcpy(response + tmp, "\xc0\x0c", 2); tmp += 2;                                  // pointer to domain name
-						memcpy(response + tmp, "\x00\x01\x00\x01\x00\x00\x00\x3c\x00\x04", 10); tmp += 10; //Response type, ttl and resource data length
-						if (real_addr) {
-							memcpy(response + tmp, &real_addr, 4); tmp += 4;
-						} else {
-							memcpy(response + tmp, &resolver->response_addr, 4); tmp += 4;                  // ip address
-						}
-						Sendto(socket, response, tmp, 0, (struct sockaddr *)&cliaddr, clilen);
-					}
-				} else {
-					// definately malformed DNS request
-					msg(MSG_ERROR, "dns_resolver: received malformed request");
-				}
-			}
+	FD_ZERO(&rset);
+	FD_SET(socket, &rset);
+	tv.tv_sec = 1; 
+	tv.tv_usec = 0;
+	
+	maxfd = socket + 1; 
+	clilen = sizeof(cliaddr);
+	
+	while (select(maxfd, &rset, NULL, NULL, &tv)) {
+		if (!FD_ISSET(socket, &rset)) {
 			FD_ZERO(&rset);
 			FD_SET(socket, &rset);
 			tv.tv_sec = 1; 
 			tv.tv_usec = 0;
-
+			continue;
 		}
+		r = Recvfrom(socket, request, MAX_REQUEST_LEN, 0, (SA *)&cliaddr, &clilen);
+		if (r <= 17) {
+			// definately malformed DNS request
+			msg(MSG_ERROR, "dns_resolver: received malformed request");
+		}
+
+		// only handle A requests
+		opcode = (request[2] >> 3) & 15;
+		if (opcode != 0) { 
+			msg(MSG_ERROR, "Unknown DNS request %d", opcode);
+			continue;
+		} 
+		// get domainname from request (only the first...)
+		i = 12; // start position of the query
+		len = request[i];
+		tmp = 0;
+		do { 
+			memcpy(domainname + tmp, request + i+1, len);
+			tmp += len;
+			*(domainname + tmp) = '.'; ++tmp;
+			i += len + 1;
+			len = request[i];
+		} while (len != 0);
+		*(domainname + tmp -1) = 0;
+		hent = gethostbyname(domainname);
+		if (hent == NULL) {
+			real_addr = 0;
+		} else {
+			real_addr = *(uint32_t*)hent->h_addr;
+		}
+		msg(MSG_DEBUG, "dns_resolver: received request for domain %s", domainname);
+		
+		// build response
+		memcpy(response, request, 2); tmp = 2;   // transaction id
+		memcpy(response + tmp, "\x81\x80",2); tmp += 2;                                  // message type (response)
+		memcpy(response + tmp, request + 4, 2); tmp += 2;                               // number of querys
+		memcpy(response + tmp, request + 4, 2); tmp += 2;                               // number of answers
+		memcpy(response + tmp, "\x00\x00\x00\x00", 4); tmp += 4;                          // Authority RRs, Additional RRs
+		memcpy(response + tmp, request + 12, r - 12); tmp += r - 12;                    // original request
+		memcpy(response + tmp, "\xc0\x0c", 2); tmp += 2;                                  // pointer to domain name
+		memcpy(response + tmp, "\x00\x01\x00\x01\x00\x00\x00\x3c\x00\x04", 10); tmp += 10; //Response type, ttl and resource data length
+		if (real_addr) {
+			memcpy(response + tmp, &real_addr, 4); tmp += 4;
+		} else {
+			memcpy(response + tmp, &resolver->response_addr, 4); tmp += 4;                  // ip address
+		}
+		Sendto(socket, response, tmp, 0, (struct sockaddr *)&cliaddr, clilen);
 	}
-	return NULL;
 }
 
-void dns_start_resolver(struct dns_resolver_t* r)
+static void sig_int(int signo)
 {
-	int err;
-	r->running = 1;
-	if ((err = pthread_create(&r->thread, NULL, dns_resolver_thread, (void*)r))) {
-		msg(MSG_ERROR, "Could not create resolver thread: %s", strerror(errno));
-		exit(-1);
-	}
+	exit(0);
 }
 
-void dns_stop_resolver(struct dns_resolver_t* r)
-{
-	r->running = 0;
-	//pthread_join(r->thread, NULL);
-}
-
-void dns_destroy_resolver(struct dns_resolver_t* r)
-{
-	free(r);
-}
