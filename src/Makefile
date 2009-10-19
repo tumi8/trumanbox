@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wall -Werror
 #CFLAGS = -I/usr/include/libipq -Wall
 #LDFLAGS = -lipq
-LDFLAGS = -lpthread
+#LDFLAGS = -lpthread
 
 SOURCES = $(wildcard *.c)
 OBJS := $(patsubst %.c, %.o, $(SOURCES))
