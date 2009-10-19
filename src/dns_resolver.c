@@ -44,7 +44,8 @@ void dns_start_resolver(struct dns_resolver_t* r)
 
 void dns_stop_resolver(struct dns_resolver_t* r)
 {
-	kill(r->pid, SIGINT);
+	if (-1 == kill(r->pid, SIGINT))
+		msg(MSG_FATAL, "Could not send signal to dns_resolver: %s", strerror(errno));
 }
 
 void dns_destroy_resolver(struct dns_resolver_t* r)
