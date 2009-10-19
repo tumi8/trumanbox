@@ -20,7 +20,7 @@
 #define MAXLINE 		10000
 #define NUM_BUF_PACKETS 	3
 #define IPQ_READ_TIMEOUT 	0
-#define PERMS 			0600
+#define PERMS 			0700
 #define TIMEOUT_READ_FROM_CONN 	2
 #define DISP_SERV_PORT 		400
 #define TB_LISTEN_PORT		400  /* this is going to replace DISP_SERV_PORT*/
