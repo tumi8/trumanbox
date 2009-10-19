@@ -2,13 +2,7 @@
 #include "helper_net.h"
 #include "msg.h"
 
-#include <string.h>
-#include <stdlib.h>
-#include <string.h>
-#include <pthread.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/select.h>
+#include <unistd.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 
@@ -20,9 +14,9 @@ struct dns_resolver_t {
 	char listen_ip[13];
 	uint16_t port;
 	uint8_t return_orig;
-	pthread_t thread;
 	int running;
 	uint32_t response_addr;
+	pid_t pid;
 };
 
 struct dns_resolver_t* dns_create_resolver(const char* listen_address, uint16_t listen_port, const char* answer_address, uint8_t return_orig)
@@ -148,7 +142,7 @@ void dns_start_resolver(struct dns_resolver_t* r)
 void dns_stop_resolver(struct dns_resolver_t* r)
 {
 	r->running = 0;
-	pthread_join(r->thread, NULL);
+	//pthread_join(r->thread, NULL);
 }
 
 void dns_destroy_resolver(struct dns_resolver_t* r)
