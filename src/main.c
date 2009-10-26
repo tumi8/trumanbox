@@ -1,5 +1,4 @@
 /*
- * test
  * here comes the first version of the truman-box working in 4 different modes:
  *	- simulation
  *	- half-proxy
