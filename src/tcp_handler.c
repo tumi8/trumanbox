@@ -115,7 +115,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 			break;
 		case FTP_data:
 			protocol_dir = FTP_COLLECTING_DIR;
-				break;
+			break;
 		case SMTP:
 			protocol_dir = SMTP_COLLECTING_DIR;
 			break;
