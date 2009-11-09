@@ -117,7 +117,7 @@ void fetch_response(const connection_t *conn, char *filename, int mode) {
 				}
 				memset(response, 0, sizeof(response));
 			}
-			if (mode == 2)
+			if (mode == half_proxy)
 				anonym_login = try_anonymous_login(conn_fd);
 	
 			fsync(file_fd);
@@ -199,7 +199,7 @@ void fetch_banner(int mode, const connection_t *connection, char *payload, int *
 		msg(MSG_ERROR, "could not open %s readonly: %s", full_path, strerror(errno));
 		if ( (fd = open(full_path_ano, O_RDONLY)) == -1) {
 			msg(MSG_ERROR, "could not open %s readonly: %s", full_path_ano, strerror(errno));
-			if (mode == 2) {
+			if (mode == half_proxy) {
 				msg(MSG_DEBUG, "no stored response available\nso we connect to the original server...");
 		
 				targetservicefd = Socket(AF_INET, SOCK_STREAM, 0);

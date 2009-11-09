@@ -67,7 +67,8 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 	
 	// now we know the protocol
 	
-	if (tcph->mode < 3) {
+	// redirect traffic if we are in emulation mode
+	if (tcph->mode < full_proxy) {
 		bzero(&targetservaddr, sizeof(targetservaddr));
 		targetservaddr.sin_family = AF_INET;
 			
@@ -125,7 +126,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 			protocol_dir = IRC_COLLECTING_DIR;
 			break;
 		default:
-			msg(MSG_ERROR, "didnt set protocol_dir");
+			msg(MSG_ERROR, "Could not set protocol_dir");
 			break;
 	}
 	
@@ -148,7 +149,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 				r -= w;
 			}
 		} else {
-			if (tcph->mode < 3) {
+			if (tcph->mode < full_proxy) {
 				content_substitution_and_logging_cts(tcph->connection, payload, &r);
 				build_tree(tcph->connection, payload);
 			}
@@ -183,11 +184,11 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 				return;
 			} else if (r > 0) {
 				msg(MSG_DEBUG, "(pid: %d) payload from client:\n%s", getpid(), payload);  // for debugging
-				if (tcph->mode < 3) {
+				if (tcph->mode < full_proxy) {
 					content_substitution_and_logging_cts(tcph->connection, payload, &r);
 					build_tree(tcph->connection, payload);
 				}
-				if (tcph->mode == 3) // FIXME is this really stable???
+				if (tcph->mode == full_proxy) // FIXME is this really stable???
 					delete_row_starting_with_pattern(payload, "Accept-Encoding:");
 					
 				msg(MSG_DEBUG, "(pid: %d) changed payload from client:\n%s", getpid(), payload);  // for debugging
