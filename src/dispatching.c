@@ -28,11 +28,12 @@ struct dispatcher_t* disp_create(struct configuration_t* c, operation_mode_t mod
 	struct dispatcher_t* ret = (struct dispatcher_t*)malloc(sizeof(struct dispatcher_t));
 	ret->dump_dir = conf_get(c, "main", "dump_dir");	
 	ret->mode = mode;
-	
 
 	int val=1; // will enable SO_REUSEADDR
 
 	struct sockaddr_in saddr;
+
+	pm_init();
 
 	// create tcp socket...
 	ret->tcpfd = Socket(AF_INET, SOCK_STREAM, 0);
@@ -70,6 +71,7 @@ struct dispatcher_t* disp_create(struct configuration_t* c, operation_mode_t mod
 
 int disp_destroy(struct dispatcher_t* d)
 {
+	pm_destroy();
 	free(d);
 	return 0;
 }
