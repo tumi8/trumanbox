@@ -60,6 +60,7 @@ void pm_add(struct process_manager_t* pm, pid_t child_pid, int restart)
 		ple->pid = child_pid;		
 		ple->restart_flag = restart;
 		pm->processes = ple;
+		return;
 	}
 
 	while (i->next)
