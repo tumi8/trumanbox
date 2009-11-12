@@ -9,4 +9,6 @@ void pm_destroy(void);
 pid_t pm_fork_permanent(void);
 pid_t pm_fork_temporary(void);
 
+void pm_kill_temporary(void);
+
 #endif

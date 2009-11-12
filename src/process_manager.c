@@ -96,7 +96,10 @@ int pm_del(struct process_manager_t* pm, pid_t child_pid)
 	}
 
 	struct pl_element* j = i->prev;
-	j->next = i->next;
+	if (i->prev)
+		i->prev->next = i->next;
+	if (i->next)
+		i->next->prev = i->prev;
 	free(i);
 }
 
@@ -127,4 +130,15 @@ pid_t pm_fork_temporary(void)
 	return Fork(1);
 }
 
+
+void pm_kill_temporary(void)
+{
+	struct pl_element* ple = pm->processes;
+	while (ple) {
+		if (ple->restart_flag) {
+			kill(ple->pid);
+			pm_del(pm, ple->pid); // TODO: this is stupid. optimize!
+		}
+	}
+}
 

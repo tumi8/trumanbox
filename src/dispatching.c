@@ -160,7 +160,10 @@ void disp_run(struct dispatcher_t* disp)
 			}
 		}
 		else if (connection.net_proto == CONTROL) {
-			read_command(disp->controlfd);
+			enum e_command res = read_command(disp->controlfd);
+			if (res == restart_analysis) {
+				pm_kill_temporary();
+			}
 		} else {
 			msg(MSG_DEBUG, "we got some network protocol which is neither tcp nor udp");
 		}
