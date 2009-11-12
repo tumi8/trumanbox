@@ -20,7 +20,6 @@ int Accept(int fd, struct sockaddr *sa, socklen_t *salenptr);
 void Bind(int fd, const struct sockaddr *sa, socklen_t salen);
 int Connect(int fd, const struct sockaddr *sa, socklen_t salen);
 void Listen(int fd, int backlog);
-pid_t Fork(void);
 void Pipe(int *ptr_pipe);
 ssize_t Read(int fd, char *read_buf, size_t count);
 void Close(int fd);

@@ -61,14 +61,6 @@ void Listen(int fd, int backlog) {
 		msg(MSG_ERROR, "listen error: %s", strerror(errno));
 }
 
-pid_t Fork(void) {
-	pid_t	pid;
-
-	if ( (pid = fork()) == -1)
-		msg(MSG_ERROR, "fork error: %s", strerror(errno));
-	return(pid);
-}
-
 void Pipe(int *ptr_pipe) {
 	if ( pipe(ptr_pipe) < 0)
 		msg(MSG_ERROR, "could not create pipe: %s", strerror(errno));
