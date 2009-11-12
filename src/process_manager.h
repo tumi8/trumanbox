@@ -6,6 +6,7 @@
 void pm_init(void);
 void pm_destroy(void);
 
-pid_t Fork(void);
+pid_t pm_fork_permanent(void);
+pid_t pm_fork_temporary(void);
 
 #endif

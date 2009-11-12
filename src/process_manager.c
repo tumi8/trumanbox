@@ -9,13 +9,14 @@
 
 
 // Process list elements
-static struct pl_element {
+struct pl_element {
 	pid_t pid;
 	struct pl_element* prev;
 	struct pl_element* next;
+	int restart_flag; // stores whether a process needs to be killed on pm_kill_temporary
 };
 
-static struct process_manager_t {
+struct process_manager_t {
 	struct pl_element* processes;
 };
 
@@ -48,7 +49,7 @@ void pm_destroy(void)
 	}
 }
 
-void pm_add(struct process_manager_t* pm, pid_t child_pid)
+void pm_add(struct process_manager_t* pm, pid_t child_pid, int restart)
 {
 	struct pl_element* i = pm->processes;
 	if (!i) {
@@ -57,6 +58,7 @@ void pm_add(struct process_manager_t* pm, pid_t child_pid)
 		ple->prev = NULL;
 		ple->next = NULL;
 		ple->pid = child_pid;		
+		ple->restart_flag = restart;
 		pm->processes = ple;
 	}
 
@@ -67,6 +69,7 @@ void pm_add(struct process_manager_t* pm, pid_t child_pid)
 	ple->pid = child_pid;
 	ple->prev = i;
 	ple->next = NULL;
+	ple->restart_flag = restart;
 	i->next = ple;
 }
 
@@ -97,7 +100,7 @@ int pm_del(struct process_manager_t* pm, pid_t child_pid)
 	free(i);
 }
 
-pid_t Fork(void) {
+static pid_t Fork(int restart) {
 	pid_t	pid;
 
 	if (!pm_initialized) {
@@ -108,9 +111,20 @@ pid_t Fork(void) {
 	if ( (pid = fork()) == -1) {
 		msg(MSG_ERROR, "fork error: %s", strerror(errno));
 	} else if (pid != 0) {
-		pm_add(pm, pid);
+		pm_add(pm, pid, restart);
 	}
 
 	return(pid);
 }
+
+pid_t pm_fork_permanent(void)
+{
+	return Fork(0);
+}
+
+pid_t pm_fork_temporary(void)
+{
+	return Fork(1);
+}
+
 

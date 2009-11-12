@@ -2,6 +2,7 @@
 #include "helper_net.h"
 #include "msg.h"
 #include "signals.h"
+#include "process_manager.h"
 
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -36,7 +37,7 @@ struct dns_resolver_t* dns_create_resolver(const char* listen_address, uint16_t 
 
 void dns_start_resolver(struct dns_resolver_t* r)
 {
-	if (0 == (r->pid = Fork())) {
+	if (0 == (r->pid = pm_fork_permanent())) {
 		Signal(SIGINT, sig_int);
 		dns_worker(r);
 		msg(MSG_FATAL, "DNS-Worker has finished! This should never happen!");

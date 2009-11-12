@@ -1,7 +1,6 @@
 #include "dispatching.h"
 #include "signals.h"
 #include "configuration.h"
-#include "wrapper.h"
 #include "helper_file.h"
 #include "helper_net.h"
 #include "payload_ident.h"
@@ -9,6 +8,7 @@
 #include "msg.h"
 #include "udp_handler.h"
 #include "tcp_handler.h"
+#include "process_manager.h"
 
 struct dispatcher_t {
 	const char* dump_dir;
@@ -142,7 +142,7 @@ void disp_run(struct dispatcher_t* disp)
 					goto start;
 				}
 			}
-			if ( (childpid = Fork()) == 0) {        /* child process */
+			if ( (childpid = pm_fork_temporary()) == 0) {        /* child process */
 				Close(disp->tcpfd);     /* close listening socket within child process */
 				struct tcp_handler_t* t = tcphandler_create(disp->mode, &connection, inconnfd);
 				tcphandler_run(t);
@@ -152,7 +152,7 @@ void disp_run(struct dispatcher_t* disp)
 
 		}
 		else if (connection.net_proto == UDP) {
-			if ( (childpid = Fork()) == 0) {	/* child process */
+			if ( (childpid = pm_fork_temporary()) == 0) {	/* child process */
 				struct udp_handler_t* u = udphandler_create(disp->udpfd);
 				udphandler_run(u);
 				udphandler_destroy(u);
