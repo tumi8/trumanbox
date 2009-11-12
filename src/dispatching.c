@@ -12,11 +12,16 @@
 
 struct dispatcher_t {
 	const char* dump_dir;
+	int controlfd;
 	int tcpfd;
 	int udpfd;
 	operation_mode_t mode;
 	int running;
 };
+
+enum e_command { restart_analysis };
+
+enum e_command read_command(int fd);
 
 struct dispatcher_t* disp_create(struct configuration_t* c, operation_mode_t mode)
 {
@@ -51,6 +56,15 @@ struct dispatcher_t* disp_create(struct configuration_t* c, operation_mode_t mod
 
 	Bind(ret->udpfd, (SA *) &saddr, sizeof(saddr));
 
+	// create signaling socket
+	ret->controlfd = Socket(AF_INET, SOCK_DGRAM, 0);
+	bzero(&saddr, sizeof(saddr));
+	saddr.sin_family = AF_INET;
+	saddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	saddr.sin_port = htons(TB_CONTROL_PORT);
+
+	Bind(ret->controlfd, (SA*)&saddr, sizeof(saddr));
+
 	return ret;
 }
 
@@ -63,7 +77,7 @@ int disp_destroy(struct dispatcher_t* d)
 /*
 wait for incomming connection and return the protocol (tcp, udp, unknown)
 */
-protocols_net wait_for_incomming_connection(int tcpfd, int udpfd) {
+protocols_net wait_for_incomming_connection(int tcpfd, int udpfd, int controlfd) {
 	fd_set	read_set;
 	int	maxfdp1, notready;
 
@@ -72,6 +86,7 @@ protocols_net wait_for_incomming_connection(int tcpfd, int udpfd) {
 
 	FD_SET(tcpfd, &read_set);
 	FD_SET(udpfd, &read_set);
+	FD_SET(controlfd, &read_set);
 
 	// FIXME: is it possible to retrieve tcp and udp connection simultanously???
 	if ( (notready = select(maxfdp1, &read_set, NULL, NULL, NULL)) < 0) {
@@ -87,7 +102,9 @@ protocols_net wait_for_incomming_connection(int tcpfd, int udpfd) {
 		return TCP;		
 	else if (FD_ISSET(udpfd, &read_set))
 		return UDP;
-	else
+	else if (FD_ISSET(controlfd, &read_set))
+		return CONTROL;
+	else 
 		return UNKNOWN;
 }
 
@@ -105,7 +122,7 @@ void disp_run(struct dispatcher_t* disp)
 
 	for ( ; ; ) {
 	start:
-		connection.net_proto = wait_for_incomming_connection(disp->tcpfd, disp->udpfd);
+		connection.net_proto = wait_for_incomming_connection(disp->tcpfd, disp->udpfd, disp->controlfd);
 
 		if (connection.net_proto == ERROR)
 			continue;
@@ -142,11 +159,24 @@ void disp_run(struct dispatcher_t* disp)
 				Exit(0);
 			}
 		}
-		else {
+		else if (connection.net_proto == CONTROL) {
+			read_command(disp->controlfd);
+		} else {
 			msg(MSG_DEBUG, "we got some network protocol which is neither tcp nor udp");
 		}
 		memset(&connection, 0, sizeof(connection));
 	}
 }
 
+enum e_command read_command(int fd)
+{
+	// TODO: extend dummy interface
+	char payload[MAXLINE];
+	ssize_t r;
+	socklen_t clilen;
+	struct sockaddr_in cliaddr;
+	r = Recvfrom(fd, payload, MAXLINE, 0, (SA *)  &cliaddr, &clilen);
+	Sendto(fd, payload, r, 0, (SA *) &cliaddr, clilen);
+	return restart_analysis;
+}
 

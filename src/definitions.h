@@ -24,6 +24,7 @@
 #define TIMEOUT_READ_FROM_CONN 	2
 #define DISP_SERV_PORT 		400
 #define TB_LISTEN_PORT		400  /* this is going to replace DISP_SERV_PORT*/
+#define TB_CONTROL_PORT		401
 /* Following could be derived from SOMAXCONN in <sys/socket.h>, but many
    kernels still #define it as 5, while actually supporting many more */
 #define	LISTENQ		1024	/* 2nd argument to listen() */
@@ -48,7 +49,7 @@ typedef enum e_protocols_app protocols_app;
 
 #ifndef PROTOCOLS_NET_H
 #define PROTOCOLS_NET_H
-enum e_protocols_net {TCP, UDP, ICMP, UNSUPPORTED, ERROR};
+enum e_protocols_net {TCP, UDP, ICMP, CONTROL, UNSUPPORTED, ERROR};
 typedef enum e_protocols_net protocols_net;
 #endif
 
