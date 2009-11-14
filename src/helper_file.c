@@ -146,7 +146,7 @@ void build_tree(const connection_t *conn, char *cmd_str) {
 	char full_path[MAX_PATH_LENGTH];
 	//char tmp2[MAX_PATH_LENGTH];
 	char *path;
-	char *tmp1;
+	char *tmp1 = NULL;
 	char saved_cwd[MAX_PATH_LENGTH];
 	int user_id, group_id;
 

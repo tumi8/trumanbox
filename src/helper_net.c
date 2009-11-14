@@ -75,7 +75,7 @@ void fetch_response(const connection_t *conn, char *filename, int mode) {
 	struct sockaddr_in sa;
 	char response[MAXLINE];
 	char new_filename[25];
-	int file_fd, conn_fd, r, w, anonym_login;
+	int file_fd, conn_fd, r, w, anonym_login = 0;
 
 	memset(response, 0, sizeof(response));
 	memset(&sa, 0, sizeof(sa));
@@ -187,6 +187,7 @@ void fetch_banner(int mode, const connection_t *connection, char *payload, int *
 	struct sockaddr_in	targetservaddr;
 	int			targetservicefd,
 				fd;
+	int			r;
 	char			full_path[256],
 				full_path_ano[256];
 
@@ -250,7 +251,7 @@ void fetch_banner(int mode, const connection_t *connection, char *payload, int *
 		*anonym_ftp = 0;
 	}
 	msg(MSG_DEBUG, "now reading from file\n");
-	read(fd, payload, MAXLINE-1);
+	r = read(fd, payload, MAXLINE-1);
 	Close(fd);
 	return;
 }
@@ -317,6 +318,7 @@ int parse_conntrack(connection_t *conn) {
 	char proto[5];
 	char *begin, *end, portnum[10];
 	char tmp[100];
+	char *r;
 
 	memset(line, 0, MAX_LINE_LENGTH);
 
@@ -334,7 +336,7 @@ int parse_conntrack(connection_t *conn) {
 	else
 		proto[0] = 0;
 
-	while ( (fgets(line, MAX_LINE_LENGTH, fd) != NULL) || (line != NULL) ) {
+	while ( (NULL != (r = fgets(line, MAX_LINE_LENGTH, fd))) || (line != NULL) ) {
 		//sleep(2);
 
 		msg(MSG_DEBUG, "We got:\n%s\n", line);

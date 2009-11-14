@@ -4,6 +4,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <signal.h>
 
 #define MAX_PROCESS 100
 
@@ -96,12 +98,12 @@ int pm_del(struct process_manager_t* pm, pid_t child_pid)
 		pm->processes = NULL;
 	}
 
-	struct pl_element* j = i->prev;
 	if (i->prev)
 		i->prev->next = i->next;
 	if (i->next)
 		i->next->prev = i->prev;
 	free(i);
+	return 0;
 }
 
 static pid_t Fork(int restart) {
@@ -137,7 +139,7 @@ void pm_kill_temporary(void)
 	struct pl_element* ple = pm->processes;
 	while (ple) {
 		if (ple->restart_flag) {
-			kill(ple->pid);
+			kill(ple->pid, SIGINT);
 			pm_del(pm, ple->pid); // TODO: this is stupid. optimize!
 		}
 	}

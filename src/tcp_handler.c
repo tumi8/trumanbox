@@ -36,7 +36,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 	char			payload[MAXLINE],
 				to_drop[MAXLINE],
 				*ptr,
-				*protocol_dir;
+				*protocol_dir = NULL;
 	ssize_t			r, w, d;
 	fd_set 			rset;
 	struct timeval 		tv;
