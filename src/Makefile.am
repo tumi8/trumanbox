@@ -7,3 +7,5 @@ trumanbox_SOURCES=config.h definitions.h dns_resolver.c helper_file.h iniparser.
 	configuration.h dispatching.h helper_file.c helper_net.h main.c msg.h payload_ident.c \
 	semaphore.h tcp_handler.c udp_handler.h process_manager.h process_manager.c
 
+AM_CFLAGS=`xml2-config --cflags` $(MYSQL_CFLAGS) -Wall -Werror
+AM_LDFLAGS=`xml2-config --libs`
