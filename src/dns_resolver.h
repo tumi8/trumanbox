@@ -5,8 +5,9 @@
 #include "definitions.h"
 
 struct dns_resolver_t;
+struct configuration_t;
 
-struct dns_resolver_t* dns_create_resolver(const char* ip, uint16_t port, const char* answer_address, uint8_t return_orig);
+struct dns_resolver_t* dns_create_resolver(struct configuration_t* c);
 
 void dns_start_resolver(struct dns_resolver_t* r);
 void dns_stop_resolver(struct dns_resolver_t* r);

@@ -117,10 +117,9 @@ int main(int argc, char **argv) {
 
 	semaph_init();
 
-	dns_resolver = dns_create_resolver(conf_get(config, "dns", "listen_address"),
-					   conf_getint(config, "dns", "port", 53),
-					   conf_get(config, "dns", "fake_address"), 
-					   conf_getint(config, "dns", "return_original", 1));
+	dns_resolver = dns_create_resolver(config);
+/*
+*/
 	dispatcher = disp_create(config, mode);
 
 	msg(MSG_DEBUG, "Running dns resolver");

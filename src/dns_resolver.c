@@ -3,6 +3,7 @@
 #include "msg.h"
 #include "signals.h"
 #include "process_manager.h"
+#include "configuration.h"
 
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -23,14 +24,14 @@ struct dns_resolver_t {
 static void dns_worker(struct dns_resolver_t* resolver);
 static void sig_int(int signo);
 
-struct dns_resolver_t* dns_create_resolver(const char* listen_address, uint16_t listen_port, const char* answer_address, uint8_t return_orig)
+struct dns_resolver_t* dns_create_resolver(struct configuration_t* c)
 {
 	struct dns_resolver_t* ret = (struct dns_resolver_t*)malloc(sizeof(struct dns_resolver_t));
-	strncpy(ret->listen_ip, listen_address, 13);
-	ret->port = listen_port;
-	ret->return_orig = return_orig;
+	strncpy(ret->listen_ip, conf_get(c, "dns", "listen_address"), 13);
+	ret->port = conf_getint(c, "dns", "port", 53);
+	ret->return_orig = conf_getint(c, "dns", "return_original", 1);
 	ret->pid = 0;
-	inet_pton(AF_INET, answer_address, &ret->response_addr);
+	inet_pton(AF_INET, conf_get(c, "dns", "fake_address"), &ret->response_addr);
 
 	return ret;
 }
