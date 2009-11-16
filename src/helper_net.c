@@ -1,7 +1,6 @@
 #include "helper_net.h"
 #include "msg.h"
 
-
 int readable_timeout(int fd, int sec) {
 	fd_set rset;
 	struct timeval tv;
@@ -187,7 +186,6 @@ void fetch_banner(int mode, const connection_t *connection, char *payload, int *
 	struct sockaddr_in	targetservaddr;
 	int			targetservicefd,
 				fd;
-	int			r;
 	char			full_path[256],
 				full_path_ano[256];
 
@@ -251,7 +249,9 @@ void fetch_banner(int mode, const connection_t *connection, char *payload, int *
 		*anonym_ftp = 0;
 	}
 	msg(MSG_DEBUG, "now reading from file\n");
-	r = read(fd, payload, MAXLINE-1);
+	if (-1 == read(fd, payload, MAXLINE-1)) {
+		msg(MSG_ERROR, "Error on file read!");
+	}
 	Close(fd);
 	return;
 }
@@ -348,7 +348,7 @@ int parse_conntrack(connection_t *conn) {
 			
 			snprintf(tmp, (end-begin), "%s", begin);
 
-			msg(MSG_ERROR, "The source IP: %s\ndoes not match with the corresponding conntrack entry: %s\n\n", conn->source, tmp);
+			msg(MSG_DEBUG, "The source IP: %s\ndoes not match with the corresponding conntrack entry: %s\n\n", conn->source, tmp);
 
 			if (strncmp(conn->source, begin, (end - begin)) == 0) {
 				begin = strstr(end, "sport=") + 6;

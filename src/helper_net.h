@@ -20,7 +20,7 @@
 
 #include "dispatching.h"
 #include "wrapper.h"
-#include "payload_ident.h"
+#include "proto_ident.h"
 #include "payload_alter_log.h"
 #include "helper_file.h"
 

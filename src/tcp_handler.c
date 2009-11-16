@@ -10,14 +10,16 @@ struct tcp_handler_t {
 	int sock;
 	connection_t* connection;
 	int inconnfd;
+	struct proto_identifier_t* pi;
 };
 
-struct tcp_handler_t* tcphandler_create(operation_mode_t mode, connection_t* c, int inconn)
+struct tcp_handler_t* tcphandler_create(operation_mode_t mode, connection_t* c, int inconn, struct proto_identifier_t* pi)
 {
 	struct tcp_handler_t* ret = (struct tcp_handler_t*)malloc(sizeof(struct tcp_handler_t*));
 	ret->mode = mode;
 	ret->connection = c;
 	ret->inconnfd = inconn;
+	ret->pi = pi;
 
 	return ret;
 }
@@ -50,11 +52,11 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 	
 	msg(MSG_DEBUG, "we start doing protocol identification by payload...");
 	
-	protocol_identified_by_payload(tcph->mode, tcph->connection, tcph->inconnfd, payload);
+	tcph->pi->bypayload(tcph->pi, tcph->connection, tcph->inconnfd, payload);
 	
 	if (tcph->connection->app_proto == UNKNOWN) {
 		msg(MSG_DEBUG, "...failed!\nso we try doing (weak) protocol identification by port...");
-		protocol_identified_by_port(tcph->mode, tcph->connection, payload);
+		tcph->pi->byport(tcph->pi, tcph->connection, payload);
 	}
 	
 	if (tcph->connection->app_proto == UNKNOWN) {
