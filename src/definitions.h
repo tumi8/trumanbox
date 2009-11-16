@@ -43,6 +43,8 @@
 
 #ifndef PROTOCOLS_APP_H
 #define PROTOCOLS_APP_H
+
+// IMPORTANT: UNKNOWN NEEDS TO BE THE LAST ELEMENT OF THIS ENUM!!!!!! (check proto_handler.c for more information)
 enum e_protocols_app {SMTP, FTP, FTP_anonym, FTP_data, HTTP, IRC, UNKNOWN};  // so if protocol is <= 3 we start from server side
 typedef enum e_protocols_app protocols_app;
 #endif
