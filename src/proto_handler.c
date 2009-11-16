@@ -4,7 +4,7 @@
 
 #include <stdlib.h>
 
-static struct protohandler_t* create_handler(protocols_app app)
+static struct protohandler_t* create_handler(protocols_app app, struct configuration_t* c)
 {
 	struct protohandler_t* ret = NULL;
 	switch (app) {
@@ -21,7 +21,7 @@ struct protohandler_t** ph_create(struct configuration_t* c)
 	struct protohandler_t** result = (struct protohandler_t**)malloc(sizeof(struct protohandler_t*)*UNKNOWN);
 	int i = 0;
 	for (i = 0; i != UNKNOWN; i++) {
-		result[i] = create_handler(i);
+		result[i] = create_handler(i, c);
 	}
 
 	return result;
