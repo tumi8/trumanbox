@@ -1,6 +1,7 @@
 #include "proto_ident.h"
 #include "proto_ident_truman.h"
 #include "proto_ident_opendpi.h"
+#include "msg.h"
 
 #include <stdlib.h>
 
@@ -17,10 +18,17 @@ struct proto_identifier_t* pi_create(operation_mode_t mode, pi_type type)
 		result->bypayload = pi_buildin_payload;
 		break;
 	case opendpi:
+#ifdef WITH_OPENDPI
 		result->init = pi_opendpi_init;
 		result->deinit = pi_opendpi_deinit;
 		result->byport = pi_opendpi_port;
 		result->bypayload = pi_opendpi_payload;
+
+#else
+		msg(MSG_FATAL, "TrumanBox was compiled without OpenDPI support."
+				"Please recompile TrumanBox with OpenDPI support or disable opendpi in the config file!");
+		exit(-1);
+#endif
 	}
 	return result;
 }

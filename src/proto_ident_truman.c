@@ -1,11 +1,12 @@
 #include "proto_ident_truman.h"
 #include "helper_net.h"
 #include "msg.h"
+#include "string.h"
 
-int pi_buildin_init(struct proto_identifier_t* p) {}
-int pi_buildin_deinit(struct proto_identifier_t* p) {}
+int pi_buildin_init(struct proto_identifier_t* p) { return 0; }
+int pi_buildin_deinit(struct proto_identifier_t* p) { return 0; }
 
-//char *strcasestr(const char *haystack, const char *needle);
+char *strcasestr(const char *haystack, const char *needle);
 
 protocols_app pi_buildin_port(struct proto_identifier_t* pi, connection_t *conn, char *payload) {
 	// here we will still implement the check, if we already know the answer by checking if we have a reponse file with corresponding ip:port name and feed payload with it
