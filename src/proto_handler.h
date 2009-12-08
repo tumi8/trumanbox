@@ -11,7 +11,8 @@ typedef int (ph_handle_packet)(void* handler, const char* packet);
 struct protohandler_t {
 	ph_init* init;
 	ph_deinit* deinit;
-	ph_handle_payload* handle_payload;
+	ph_handle_payload* handle_payload_stc;
+	ph_handle_payload* handle_payload_cts;
 	ph_handle_packet* handle_packet;
 };
 
