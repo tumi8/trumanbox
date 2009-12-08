@@ -14,7 +14,7 @@ struct tcp_handler_t {
 	connection_t* connection;
 	int inconnfd;
 	struct proto_identifier_t* pi;
-	struct protohandler_t* ph;
+	struct protohandler_t** ph;
 };
 
 struct tcp_handler_t* tcphandler_create(struct configuration_t* config, connection_t* c, int inconn, struct proto_identifier_t* pi, struct protohandler_t** ph)
@@ -25,6 +25,7 @@ struct tcp_handler_t* tcphandler_create(struct configuration_t* config, connecti
 	ret->connection = c;
 	ret->inconnfd = inconn;
 	ret->pi = pi;
+	ret->ph = ph_create(config);
 
 	return ret;
 }
@@ -32,6 +33,8 @@ struct tcp_handler_t* tcphandler_create(struct configuration_t* config, connecti
 
 void tcphandler_destroy(struct tcp_handler_t* t)
 {
+	ph_destroy(t->ph);
+	pi_destroy(t->pi);
 	free(t);
 }
 
@@ -58,13 +61,12 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 	msg(MSG_DEBUG, "we start doing protocol identification by payload...");
 	
 	tcph->pi->identify(tcph->pi, tcph->connection, tcph->inconnfd, payload);
-	// now we know the protocol
-	
+
 	// redirect traffic if we are in emulation mode
 	if (tcph->mode < full_proxy) {
 		bzero(&targetservaddr, sizeof(targetservaddr));
 		targetservaddr.sin_family = AF_INET;
-			
+		
 		Inet_pton(AF_INET, conf_get(tcph->config, "main", "global_redirect"), &targetservaddr.sin_addr);
 		switch(tcph->connection->app_proto) {
 			case FTP:
