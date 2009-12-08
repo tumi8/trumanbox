@@ -4,6 +4,7 @@
 #include "helper_file.h"
 #include "helper_net.h"
 #include "msg.h"
+#include "configuration.h"
 
 #include <stdlib.h>
 
@@ -27,10 +28,11 @@ protocols_app pi_identify(struct proto_identifier_t* pi, connection_t* conn, int
 	return conn->app_proto;
 }
 
-struct proto_identifier_t* pi_create(operation_mode_t mode, pi_type type)
+struct proto_identifier_t* pi_create(struct configuration_t* config, pi_type type)
 {
 	struct proto_identifier_t* result = (struct proto_identifier_t*)malloc(sizeof(struct proto_identifier_t));
-	result->mode = mode;
+	result->config = config;
+	result->mode = conf_get_mode(config);
 	result->type = type;
 	result->identify = pi_identify;
 	switch (type) {

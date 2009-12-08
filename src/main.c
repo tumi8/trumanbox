@@ -119,8 +119,6 @@ int main(int argc, char **argv) {
 	semaph_init();
 
 	dns_resolver = dns_create_resolver(config);
-/*
-*/
 	dispatcher = disp_create(config);
 
 	msg(MSG_DEBUG, "Running dns resolver");

@@ -4,6 +4,7 @@
 #include "definitions.h"
 
 struct proto_identifier_t;
+struct configuration_t;
 
 /* This function receives a descriptor from an established connection and an
  * connection object and tries to read as many bytes from the connection as are
@@ -23,6 +24,7 @@ typedef enum epi_type pi_type;
 
 struct proto_identifier_t {
 	void* identifier;
+	struct configuration_t* config;
 	operation_mode_t mode;
 	pi_type type;
 	pi_identify_from_conn* identify;
@@ -32,7 +34,7 @@ struct proto_identifier_t {
 	pi_bypayload* bypayload;
 };
 
-struct proto_identifier_t* pi_create(operation_mode_t mode, pi_type type);
+struct proto_identifier_t* pi_create(struct configuration_t* c, pi_type type);
 void pi_destroy(struct proto_identifier_t* p);
 
 #endif

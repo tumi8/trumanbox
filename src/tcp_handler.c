@@ -3,11 +3,13 @@
 #include "helper_net.h"
 #include "msg.h"
 #include "proto_handler.h"
+#include "configuration.h"
 
 #include <stdlib.h>
 
 struct tcp_handler_t {
-	operation_mode_t mode;
+	operation_mode_t mode; // get from config
+	struct configuration_t* config;
 	int sock;
 	connection_t* connection;
 	int inconnfd;
@@ -15,10 +17,11 @@ struct tcp_handler_t {
 	struct protohandler_t* ph;
 };
 
-struct tcp_handler_t* tcphandler_create(operation_mode_t mode, connection_t* c, int inconn, struct proto_identifier_t* pi, struct protohandler_t** ph)
+struct tcp_handler_t* tcphandler_create(struct configuration_t* config, connection_t* c, int inconn, struct proto_identifier_t* pi, struct protohandler_t** ph)
 {
 	struct tcp_handler_t* ret = (struct tcp_handler_t*)malloc(sizeof(struct tcp_handler_t*));
-	ret->mode = mode;
+	ret->config = config;
+	ret->mode = conf_get_mode(config);
 	ret->connection = c;
 	ret->inconnfd = inconn;
 	ret->pi = pi;

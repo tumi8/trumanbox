@@ -30,7 +30,7 @@ struct dispatcher_t* disp_create(struct configuration_t* c)
 {
 	struct dispatcher_t* ret = (struct dispatcher_t*)malloc(sizeof(struct dispatcher_t));
 	ret->dump_dir = conf_get(c, "main", "dump_dir");	
-	ret->pi = pi_create(conf_get_mode(c), conf_getint(c, "main", "protcol_identifier", 0));
+	ret->pi = pi_create(c, conf_getint(c, "main", "protcol_identifier", 0));
 	ret->pi->init(ret->pi);
 	ret->ph = ph_create(c);
 	ret->config = c;
@@ -157,7 +157,7 @@ void disp_run(struct dispatcher_t* disp)
 			}
 			if ( (childpid = pm_fork_temporary()) == 0) {        /* child process */
 				Close(disp->tcpfd);     /* close listening socket within child process */
-				struct tcp_handler_t* t = tcphandler_create(conf_get_mode(disp->config), &connection, inconnfd, disp->pi, disp->ph);
+				struct tcp_handler_t* t = tcphandler_create(disp->config, &connection, inconnfd, disp->pi, disp->ph);
 				tcphandler_run(t);
 				tcphandler_destroy(t);
 				Exit(0);
