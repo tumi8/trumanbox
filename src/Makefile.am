@@ -7,7 +7,9 @@ trumanbox_SOURCES=config.h definitions.h dns_resolver.c helper_file.h iniparser.
 	configuration.h dispatching.h helper_file.c helper_net.h main.c msg.h \
 	semaphore.h tcp_handler.c udp_handler.h process_manager.h process_manager.c \
 	proto_handler.h proto_handler.c proto_ident.h proto_ident.c protocols/proto_ident_truman.c \
-	protocols/proto_ident_truman.h protocols/proto_ident_opendpi.h protocols/proto_ident_opendpi.c 
+	protocols/proto_ident_truman.h protocols/proto_ident_opendpi.h protocols/proto_ident_opendpi.c \
+	protocols/ftp.h protocols/ftp.c protocols/http.h protocols/http.c \
+	protocols/smtp.h protocols/smtp.c
 
 
 AM_CFLAGS=`xml2-config --cflags` $(OPENDPI_CFLAGS) -Wall -Werror
