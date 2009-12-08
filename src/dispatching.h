@@ -6,7 +6,7 @@
 struct dispatcher_t;
 struct configuration_t;
 
-struct dispatcher_t* disp_create(struct configuration_t* c, operation_mode_t mode);
+struct dispatcher_t* disp_create(struct configuration_t* c);
 int disp_destroy(struct dispatcher_t* d);
 
 void disp_run(struct dispatcher_t* d);

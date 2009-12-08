@@ -16,24 +16,24 @@ struct dispatcher_t {
 	int controlfd;
 	int tcpfd;
 	int udpfd;
-	operation_mode_t mode;
 	struct proto_identifier_t* pi;
 	struct protohandler_t** ph;
 	int running;
+	struct configuration_t* config;
 };
 
 enum e_command { restart_analysis };
 
 enum e_command read_command(int fd);
 
-struct dispatcher_t* disp_create(struct configuration_t* c, operation_mode_t mode)
+struct dispatcher_t* disp_create(struct configuration_t* c)
 {
 	struct dispatcher_t* ret = (struct dispatcher_t*)malloc(sizeof(struct dispatcher_t));
 	ret->dump_dir = conf_get(c, "main", "dump_dir");	
-	ret->mode = mode;
-	ret->pi = pi_create(mode, conf_getint(c, "main", "protcol_identifier", 0));
+	ret->pi = pi_create(conf_get_mode(c), conf_getint(c, "main", "protcol_identifier", 0));
 	ret->pi->init(ret->pi);
 	ret->ph = ph_create(c);
+	ret->config = c;
 
 	int val=1; // will enable SO_REUSEADDR
 
@@ -157,7 +157,7 @@ void disp_run(struct dispatcher_t* disp)
 			}
 			if ( (childpid = pm_fork_temporary()) == 0) {        /* child process */
 				Close(disp->tcpfd);     /* close listening socket within child process */
-				struct tcp_handler_t* t = tcphandler_create(disp->mode, &connection, inconnfd, disp->pi, disp->ph);
+				struct tcp_handler_t* t = tcphandler_create(conf_get_mode(disp->config), &connection, inconnfd, disp->pi, disp->ph);
 				tcphandler_run(t);
 				tcphandler_destroy(t);
 				Exit(0);

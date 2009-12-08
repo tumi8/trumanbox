@@ -121,7 +121,7 @@ int main(int argc, char **argv) {
 	dns_resolver = dns_create_resolver(config);
 /*
 */
-	dispatcher = disp_create(config, mode);
+	dispatcher = disp_create(config);
 
 	msg(MSG_DEBUG, "Running dns resolver");
 	dns_start_resolver(dns_resolver);
