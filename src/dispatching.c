@@ -3,12 +3,13 @@
 #include "configuration.h"
 #include "helper_file.h"
 #include "helper_net.h"
-#include "proto_ident.h"
 #include "payload_alter_log.h"
 #include "msg.h"
 #include "udp_handler.h"
 #include "tcp_handler.h"
 #include "process_manager.h"
+#include "proto_ident.h"
+#include "proto_handler.h"
 
 struct dispatcher_t {
 	const char* dump_dir;
@@ -17,6 +18,7 @@ struct dispatcher_t {
 	int udpfd;
 	operation_mode_t mode;
 	struct proto_identifier_t* pi;
+	struct protohandler_t** ph;
 	int running;
 };
 
@@ -31,6 +33,7 @@ struct dispatcher_t* disp_create(struct configuration_t* c, operation_mode_t mod
 	ret->mode = mode;
 	ret->pi = pi_create(mode, conf_getint(c, "main", "protcol_identifier", 0));
 	ret->pi->init(ret->pi);
+	ret->ph = ph_create(c);
 
 	int val=1; // will enable SO_REUSEADDR
 
@@ -78,6 +81,8 @@ int disp_destroy(struct dispatcher_t* d)
 	d->pi->deinit(d->pi);
 	free(d->pi);
 	d->pi = NULL;
+	ph_destroy(d->ph);
+	d->ph = NULL;
 	free(d);
 	return 0;
 }
@@ -152,7 +157,7 @@ void disp_run(struct dispatcher_t* disp)
 			}
 			if ( (childpid = pm_fork_temporary()) == 0) {        /* child process */
 				Close(disp->tcpfd);     /* close listening socket within child process */
-				struct tcp_handler_t* t = tcphandler_create(disp->mode, &connection, inconnfd, disp->pi);
+				struct tcp_handler_t* t = tcphandler_create(disp->mode, &connection, inconnfd, disp->pi, disp->ph);
 				tcphandler_run(t);
 				tcphandler_destroy(t);
 				Exit(0);

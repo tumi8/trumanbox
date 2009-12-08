@@ -15,7 +15,7 @@ struct tcp_handler_t {
 	struct protohandler_t* ph;
 };
 
-struct tcp_handler_t* tcphandler_create(operation_mode_t mode, connection_t* c, int inconn, struct proto_identifier_t* pi)
+struct tcp_handler_t* tcphandler_create(operation_mode_t mode, connection_t* c, int inconn, struct proto_identifier_t* pi, struct protohandler_t** ph)
 {
 	struct tcp_handler_t* ret = (struct tcp_handler_t*)malloc(sizeof(struct tcp_handler_t*));
 	ret->mode = mode;
