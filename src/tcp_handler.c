@@ -2,6 +2,7 @@
 #include "definitions.h"
 #include "helper_net.h"
 #include "msg.h"
+#include "proto_handler.h"
 
 #include <stdlib.h>
 
@@ -11,6 +12,7 @@ struct tcp_handler_t {
 	connection_t* connection;
 	int inconnfd;
 	struct proto_identifier_t* pi;
+	struct protohandler_t* ph;
 };
 
 struct tcp_handler_t* tcphandler_create(operation_mode_t mode, connection_t* c, int inconn, struct proto_identifier_t* pi)
@@ -82,8 +84,8 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 			case IRC:
 				targetservaddr.sin_port = htons((uint16_t)6667);
 				break;
-				default:
-					return;
+			default:
+				return;
 		}
 	}
 	
@@ -126,7 +128,8 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 	
 	if (r) {
 		ptr = payload;
-		if (tcph->connection->app_proto < FTP_data) {
+		if ((tcph->connection->app_proto == SMTP) || (tcph->connection->app_proto == FTP) ||
+		    (tcph->connection->app_proto == FTP_anonym)) {
 			d = read(targetservicefd, to_drop, MAXLINE-1);
 			msg(MSG_DEBUG, "the following %d characters are dropped:\n%s", d, to_drop);
 			
