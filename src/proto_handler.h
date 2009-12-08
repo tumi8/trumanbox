@@ -1,12 +1,15 @@
 #ifndef _PROTO_HANDLER_H_
 #define _PROTO_HANDLER_H_
 
+#include <netinet/in.h>
+
 struct configuration_t;
 
 typedef int (ph_init)(void* handler, struct configuration_t* c);
 typedef int (ph_deinit)(void* handler);
 typedef int (ph_handle_payload)(void* handler, const char* payload);
 typedef int (ph_handle_packet)(void* handler, const char* packet);
+typedef int (ph_determine_target)(void* handler, struct sockaddr_in* addr);
 
 struct protohandler_t {
 	void* handler;
@@ -15,6 +18,7 @@ struct protohandler_t {
 	ph_handle_payload* handle_payload_stc;
 	ph_handle_payload* handle_payload_cts;
 	ph_handle_packet* handle_packet;
+	ph_determine_target* determine_target;
 };
 
 /* Returns an array of protocolhandler. The size of the array is 

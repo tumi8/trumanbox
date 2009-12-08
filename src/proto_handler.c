@@ -22,6 +22,7 @@ static struct protohandler_t* create_handler(protocols_app app)
 		ret->handle_payload_stc = ph_ftp_handle_payload_stc;
 		ret->handle_payload_cts = ph_ftp_handle_payload_cts;
 		ret->handle_packet = ph_ftp_handle_packet;
+		ret->determine_target = ph_ftp_determine_target;
 		break;
 	case SMTP:
 		ret->handler = ph_smtp_create();
@@ -30,6 +31,7 @@ static struct protohandler_t* create_handler(protocols_app app)
 		ret->handle_payload_stc = ph_smtp_handle_payload_stc;
 		ret->handle_payload_cts = ph_smtp_handle_payload_cts;
 		ret->handle_packet = ph_smtp_handle_packet;
+		ret->determine_target = ph_smtp_determine_target;
 		break;
 	case HTTP:
 		ret->handler = ph_http_create();
@@ -38,6 +40,7 @@ static struct protohandler_t* create_handler(protocols_app app)
 		ret->handle_payload_stc = ph_http_handle_payload_stc;
 		ret->handle_payload_cts = ph_http_handle_payload_cts;
 		ret->handle_packet = ph_http_handle_packet;
+		ret->determine_target = ph_http_determine_target;
 		break;
 	case IRC:
 		ret->handler = ph_irc_create();
@@ -46,6 +49,7 @@ static struct protohandler_t* create_handler(protocols_app app)
 		ret->handle_payload_stc = ph_irc_handle_payload_stc;
 		ret->handle_payload_cts = ph_irc_handle_payload_cts;
 		ret->handle_packet = ph_irc_handle_packet;
+		ret->determine_target = ph_irc_determine_target;
 		break;
 	default:
 		msg(MSG_FATAL, "No handler for protocol %d defined! This is a bug (and will result in segmentation faults! Aborting!", app);

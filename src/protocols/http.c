@@ -3,7 +3,7 @@
 #include <stdlib.h>
 
 struct ph_http {
-	int i; // platzhalter
+	struct configuration_t* config;
 };
 
 void* ph_http_create()
@@ -20,6 +20,8 @@ int ph_http_destroy(void* handler)
 
 int ph_http_init(void* handler, struct configuration_t* c)
 {
+	struct ph_http* http = (struct ph_http*)handler;
+	http->config = c;
 	return 0;
 }
 
@@ -39,6 +41,11 @@ int ph_http_handle_payload_cts(void* handler, const char* payload)
 }
 
 int ph_http_handle_packet(void* handler, const char* packet)
+{
+	return 0;
+}
+
+int ph_http_determine_target(void* handler, struct sockaddr_in* addr)
 {
 	return 0;
 }
