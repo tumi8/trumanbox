@@ -52,21 +52,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 	
 	msg(MSG_DEBUG, "we start doing protocol identification by payload...");
 	
-	tcph->pi->bypayload(tcph->pi, tcph->connection, tcph->inconnfd, payload);
-	
-	if (tcph->connection->app_proto == UNKNOWN) {
-		msg(MSG_DEBUG, "...failed!\nso we try doing (weak) protocol identification by port...");
-		tcph->pi->byport(tcph->pi, tcph->connection, payload);
-	}
-	
-	if (tcph->connection->app_proto == UNKNOWN) {
-		msg(MSG_ERROR, "failed!\nthe protocol could not be identified, so we stop handling this connection.\n "
-				"the dumped payload can be found in %s/%s:%d", DUMP_FOLDER, tcph->connection->dest, tcph->connection->dport);
-		append_to_file(payload, tcph->connection, DUMP_FOLDER);
-		Close_conn(tcph->inconnfd, "incomming connection, because of unknown protocol");
-		return;
-	}
-	
+	tcph->pi->identify(tcph->pi, tcph->connection, tcph->inconnfd, payload);
 	// now we know the protocol
 	
 	// redirect traffic if we are in emulation mode
