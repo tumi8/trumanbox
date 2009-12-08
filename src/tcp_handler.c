@@ -50,6 +50,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 	ssize_t			r, w, d;
 	fd_set 			rset;
 	struct timeval 		tv;
+	protocols_app proto;
 	
 	targetservicefd = Socket(AF_INET, SOCK_STREAM, 0);
 	
@@ -60,39 +61,12 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 	
 	msg(MSG_DEBUG, "we start doing protocol identification by payload...");
 	
-	tcph->pi->identify(tcph->pi, tcph->connection, tcph->inconnfd, payload);
+	proto = tcph->pi->identify(tcph->pi, tcph->connection, tcph->inconnfd, payload);
 
 	// redirect traffic if we are in emulation mode
-	if (tcph->mode < full_proxy) {
-		bzero(&targetservaddr, sizeof(targetservaddr));
-		targetservaddr.sin_family = AF_INET;
+
+	tcph->ph[proto]->determine_target(tcph->ph[proto]->handler, &targetservaddr);
 		
-		Inet_pton(AF_INET, conf_get(tcph->config, "main", "global_redirect"), &targetservaddr.sin_addr);
-		switch(tcph->connection->app_proto) {
-			case FTP:
-				targetservaddr.sin_port = htons((uint16_t)21);
-				break;
-			case FTP_anonym:
-				targetservaddr.sin_port = htons((uint16_t)21);
-				break;
-			case FTP_data:
-				msg(MSG_DEBUG, "so we set port to: %d", tcph->connection->dport);
-				targetservaddr.sin_port = htons((uint16_t)tcph->connection->dport);
-				break;
-			case SMTP:
-				targetservaddr.sin_port = htons((uint16_t)25);
-				break;
-			case HTTP:
-				targetservaddr.sin_port = htons((uint16_t)80);
-				break;
-			case IRC:
-				targetservaddr.sin_port = htons((uint16_t)6667);
-				break;
-			default:
-				return;
-		}
-	}
-	
 	if (Connect(targetservicefd, (SA *) &targetservaddr, sizeof(targetservaddr)) < 0) {
 		Close_conn(tcph->inconnfd, "connection to targetservice could not be established");
 		return;
