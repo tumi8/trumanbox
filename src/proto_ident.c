@@ -1,6 +1,6 @@
 #include "proto_ident.h"
-#include "proto_ident_truman.h"
-#include "proto_ident_opendpi.h"
+#include "protocols/proto_ident_truman.h"
+#include "protocols/proto_ident_opendpi.h"
 #include "helper_file.h"
 #include "helper_net.h"
 #include "msg.h"
