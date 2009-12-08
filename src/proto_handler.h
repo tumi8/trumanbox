@@ -9,6 +9,7 @@ typedef int (ph_handle_payload)(void* handler, const char* payload);
 typedef int (ph_handle_packet)(void* handler, const char* packet);
 
 struct protohandler_t {
+	void* handler;
 	ph_init* init;
 	ph_deinit* deinit;
 	ph_handle_payload* handle_payload_stc;
@@ -23,8 +24,8 @@ struct protohandler_t {
 struct protohandler_t** ph_create(struct configuration_t* c);
 
 
-/* Frees all protcol handlers. This function will NOT call protcolhandler_t->deinit. 
- * This is left to the user!
+/* Frees all protcol handlers. This function will call protcolhandler_t->deinit for
+ * all associated protocol handlers. 
  */
 int ph_destroy(struct protohandler_t**);
 
