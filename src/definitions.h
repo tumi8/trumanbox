@@ -58,6 +58,7 @@ typedef enum e_protocols_net protocols_net;
 #ifndef CONNECTION_H
 #define CONNECTION_H
 struct s_connection {
+	char orig_source[IPLENGTH];
 	char source[IPLENGTH];
 	char dest[IPLENGTH];
 	u_int16_t sport;
