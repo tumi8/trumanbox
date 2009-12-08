@@ -1,6 +1,8 @@
 #include "ftp.h"
 
 #include <stdlib.h>
+#include <string.h>
+#include "wrapper.h"
 
 struct ph_ftp {
 	struct configuration_t* config;
@@ -47,6 +49,13 @@ int ph_ftp_handle_packet(void* handler, const char* packet)
 
 int ph_ftp_determine_target(void* handler, struct sockaddr_in* addr)
 {
+	struct ph_ftp* ftp = (struct ph_ftp*)handler;
+	if (conf_get_mode(ftp->config) < full_proxy) {
+                bzero(addr, sizeof(struct sockaddr_in));
+                addr->sin_family = AF_INET;
+                Inet_pton(AF_INET, conf_get(ftp->config, "main", "ftp_redirect"), &addr->sin_addr);
+		addr->sin_port = htons((uint16_t)21);
+	}
 	return 0;
 }
 
