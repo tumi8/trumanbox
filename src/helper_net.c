@@ -182,13 +182,14 @@ void unset_so_linger(int sd) {
 	}
 }
 
-void fetch_banner(int mode, const connection_t *connection, char *payload, int *anonym_ftp) {
+int fetch_banner(int mode, const connection_t *connection, int *anonym_ftp, char *payload) {
 	struct sockaddr_in	targetservaddr;
 	int			targetservicefd,
-				fd;
+				fd, r;
 	char			full_path[256],
 				full_path_ano[256];
 
+	r = 0;
 	memset(full_path_ano, 0, sizeof(full_path_ano));
 	memset(full_path, 0, sizeof(full_path));
 	sprintf(full_path, "%s/%s:%d", RESPONSE_COLLECTING_DIR, connection->dest, connection->dport);
@@ -213,7 +214,7 @@ void fetch_banner(int mode, const connection_t *connection, char *payload, int *
 				else {
 					msg(MSG_DEBUG, "now we are connected to the original destination\n");
 					while (readable_timeout(targetservicefd, 2)) {
-						if ((read(targetservicefd, payload, MAXLINE-1)) <= 0) {
+						if ((r = read(targetservicefd, payload, MAXLINE-1)) <= 0) {
 							msg(MSG_ERROR, "no characters have been read from client: %s", strerror(errno));
 							break;
 						}
@@ -237,7 +238,7 @@ void fetch_banner(int mode, const connection_t *connection, char *payload, int *
 			}
 			else 
 				msg(MSG_DEBUG, "cant fetch banner since we are not in half-proxy mode and we have no reponse stored locally\n");
-			return;
+			return r;
 		}
 		else {   // if there is an anonym response file
 			msg(MSG_DEBUG, "successfully opened %s for readonly\n", full_path_ano);
@@ -251,9 +252,10 @@ void fetch_banner(int mode, const connection_t *connection, char *payload, int *
 	msg(MSG_DEBUG, "now reading from file\n");
 	if (-1 == read(fd, payload, MAXLINE-1)) {
 		msg(MSG_ERROR, "Error on file read!");
+		r = 0;
 	}
 	Close(fd);
-	return;
+	return r;
 }
 
 int get_irc_banner(const connection_t *conn, char *payload) {

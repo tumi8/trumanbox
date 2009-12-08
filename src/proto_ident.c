@@ -8,9 +8,9 @@
 
 #include <stdlib.h>
 
-protocols_app pi_identify(struct proto_identifier_t* pi, connection_t* conn, int connfd, char* payload)
+protocols_app pi_identify(struct proto_identifier_t* pi, connection_t* conn, int connfd, char* payload, ssize_t* payload_len)
 {
-	pi->bypayload(pi, conn, connfd, payload);
+	pi->bypayload(pi, conn, connfd, payload, payload_len);
 	
 	if (conn->app_proto == UNKNOWN) {
 		msg(MSG_DEBUG, "...failed!\nso we try doing (weak) protocol identification by port...");

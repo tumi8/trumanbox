@@ -8,7 +8,7 @@ int pi_buildin_deinit(struct proto_identifier_t* p) { return 0; }
 
 char *strcasestr(const char *haystack, const char *needle);
 
-protocols_app pi_buildin_port(struct proto_identifier_t* pi, connection_t *conn, char *payload) {
+protocols_app pi_buildin_port(struct proto_identifier_t* pi, connection_t *conn, char *payload, ssize_t* payload_len) {
 	// here we will still implement the check, if we already know the answer by checking if we have a reponse file with corresponding ip:port name and feed payload with it
 	
 	// FIXME: unused variables
@@ -33,7 +33,7 @@ protocols_app pi_buildin_port(struct proto_identifier_t* pi, connection_t *conn,
 			break;
 	}
 	if (conn->app_proto == FTP || conn->app_proto == SMTP)
-		fetch_banner(pi->mode, conn, payload, &anonym_ftp);
+		*payload_len = fetch_banner(pi->mode, conn, payload, &anonym_ftp);
 
 	if (conn->app_proto == FTP && anonym_ftp)
 		conn->app_proto = FTP_anonym;
@@ -42,7 +42,7 @@ protocols_app pi_buildin_port(struct proto_identifier_t* pi, connection_t *conn,
 	return conn->app_proto;
 }
 
-protocols_app pi_buildin_payload(struct proto_identifier_t* pi, connection_t *conn, int inconnfd, char *payload) {
+protocols_app pi_buildin_payload(struct proto_identifier_t* pi, connection_t *conn, int inconnfd, char *payload, ssize_t* payload_len) {
 	// here we need to implement logging of responses to file
 	int			r, anonym_ftp;
 	char			filename[30];
@@ -57,12 +57,12 @@ protocols_app pi_buildin_payload(struct proto_identifier_t* pi, connection_t *co
 		msg(MSG_DEBUG, "%d characters have been read", r);
 	}
 
-	if (!strlen(payload)) {
-		fetch_banner(pi->mode, conn, payload, &anonym_ftp);
+	if (!r) {
+		r = fetch_banner(pi->mode, conn, payload, &anonym_ftp);
 		msg(MSG_DEBUG, "the payload we fetched is:\n%s", payload);
 	}
 
-	if (strlen(payload)) {
+	if (r > 0) {
 		if (strncmp(payload, "GET /", 5) == 0)
 			conn->app_proto = HTTP;
 		else if (strncmp(payload, "NICK ", 5) == 0)
@@ -93,6 +93,7 @@ protocols_app pi_buildin_payload(struct proto_identifier_t* pi, connection_t *co
 		}
 	}
 
+	*payload_len = r;
 	msg(MSG_DEBUG, "protocol identified by payload is: %d", conn->app_proto);
 	return conn->app_proto;
 }

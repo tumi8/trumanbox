@@ -12,7 +12,7 @@ struct configuration_t;
  * cannot be classified. The read bytes are stored to payload and the
  * identified protocol is returned.
  */
-typedef protocols_app (pi_identify_from_conn)(struct proto_identifier_t*, connection_t* conn, int connfd, char* payload);
+typedef protocols_app (pi_identify_from_conn)(struct proto_identifier_t*, connection_t* conn, int connfd, char* payload, ssize_t* payload_len);
 typedef int (pi_init)(struct proto_identifier_t* p);
 typedef int (pi_deinit)(struct proto_identifier_t* p);
 typedef protocols_app (pi_byport)(struct proto_identifier_t* p, connection_t *conn, char *payload);
