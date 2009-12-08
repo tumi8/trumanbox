@@ -65,8 +65,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 		bzero(&targetservaddr, sizeof(targetservaddr));
 		targetservaddr.sin_family = AF_INET;
 			
-		// TODO: fix this
-		Inet_pton(AF_INET, "127.0.0.1", &targetservaddr.sin_addr);
+		Inet_pton(AF_INET, conf_get(tcph->config, "main", "global_redirect"), &targetservaddr.sin_addr);
 		switch(tcph->connection->app_proto) {
 			case FTP:
 				targetservaddr.sin_port = htons((uint16_t)21);
