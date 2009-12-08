@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
 
 	if (mode == invalid) {
 		// no mode given, check if config file specifies a mode
-		mode = get_mode(conf_get(config, "main", "mode"));
+		mode = conf_get_mode(config);
 		if (mode == invalid) {
 			msg(MSG_DEBUG, "No valid operation mode in config file %s. Starting interactive mode...");
 			do {
@@ -107,6 +107,7 @@ int main(int argc, char **argv) {
 			msg(MSG_INFO, "TrumanBox is quitting ...");
 			return 0;
 		}
+		conf_set_mode(config, mode);
 	}
 
 	msg(MSG_DEBUG, "Trumanbox is running in mode %d", mode);
