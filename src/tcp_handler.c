@@ -42,7 +42,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 {
 	int targetServiceFd, maxfd;
 	struct sockaddr_in targetServAddr;
-	//int connectedToFinalTarget = 0;
+	int connectedToFinalTarget = 0;
 	int r;
 	fd_set rset;
 	struct timeval tv;
@@ -137,18 +137,29 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 			case full_emulation:
 				app_proto = tcph->pi->byport(tcph->pi, tcph->connection);
 				// if portbased failed:
-				msg(MSG_ERROR, "Cannot identify application protocol in full_emulation mode!");
-				goto out;
+				if (app_proto == UNKNOWN) {
+					msg(MSG_ERROR, "Cannot identify application protocol in full_emulation mode!");
+					goto out;
+				}
+				tcph->ph[app_proto]->determine_target(tcph->ph[app_proto]->handler, &targetServAddr);
 			case  half_proxy:
 				// TODO: fetch banner
 				// try to identify using fetched banner
 				break;
 			case full_proxy:
-				// TODO: try to connect to the original target
+				// do nothing, we know the original target and will connect to it after this switch
+				// target is already intitialized by now
 				break;
 			default:
 				msg(MSG_FATAL, "Unknown mode: This is an internal programming error!!!! Exiting!");
 				exit(-1);
+			}
+			// we have to know the target now!
+			if (!connectedToFinalTarget) {
+				if (-1 == Connect(targetServiceFd, (struct sockaddr*)&targetServAddr, sizeof(targetServAddr))) {
+					Close_conn(tcph->inconnfd, "Connection to targetservice could not be established");
+					return;
+				}
 			}
 				
 		}
