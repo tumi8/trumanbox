@@ -15,7 +15,7 @@ struct configuration_t;
 typedef protocols_app (pi_identify_from_conn)(struct proto_identifier_t*, connection_t* conn, int connfd, char* payload, ssize_t* payload_len);
 typedef int (pi_init)(struct proto_identifier_t* p);
 typedef int (pi_deinit)(struct proto_identifier_t* p);
-typedef protocols_app (pi_byport)(struct proto_identifier_t* p, connection_t *conn, char *payload);
+typedef protocols_app (pi_byport)(struct proto_identifier_t* p, connection_t *conn);
 typedef protocols_app (pi_bypayload)(struct proto_identifier_t* p, connection_t *conn, char *payload, size_t payload_len);
 
 enum epi_type { inbuild, opendpi };

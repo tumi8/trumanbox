@@ -8,7 +8,8 @@ int pi_buildin_deinit(struct proto_identifier_t* p) { return 0; }
 
 char *strcasestr(const char *haystack, const char *needle);
 
-protocols_app pi_buildin_port(struct proto_identifier_t* pi, connection_t *conn, char *payload, ssize_t* payload_len) {
+protocols_app pi_buildin_port(struct proto_identifier_t* pi, connection_t *conn)
+{
 	// here we will still implement the check, if we already know the answer by checking if we have a reponse file with corresponding ip:port name and feed payload with it
 	
 	// FIXME: unused variables
@@ -32,7 +33,7 @@ protocols_app pi_buildin_port(struct proto_identifier_t* pi, connection_t *conn,
 			conn->app_proto = UNKNOWN;
 			break;
 	}
-	if (conn->app_proto == FTP || conn->app_proto == SMTP)
+	//if (conn->app_proto == FTP || conn->app_proto == SMTP)
 		//*payload_len = fetch_banner(pi->mode, conn, payload, &anonym_ftp);
 
 	//if (conn->app_proto == FTP && anonym_ftp)
@@ -42,28 +43,20 @@ protocols_app pi_buildin_port(struct proto_identifier_t* pi, connection_t *conn,
 	return conn->app_proto;
 }
 
-protocols_app pi_buildin_payload(struct proto_identifier_t* pi, connection_t *conn, int inconnfd, char *payload, ssize_t* payload_len) {
+protocols_app pi_buildin_payload(struct proto_identifier_t* pi, connection_t *conn, char *payload, size_t payload_len) {
 	// here we need to implement logging of responses to file
 	//int			r, anonym_ftp;
-	int r = 0;
 	char			filename[30];
 
 	conn->app_proto = UNKNOWN;
 
-	while (readable_timeout(inconnfd, 1)) {
-		if ((r = read(inconnfd, payload, MAXLINE-1)) <= 0) {
-			msg(MSG_DEBUG, "no characters have been read from client\n");
-			break;
-		} 
-		msg(MSG_DEBUG, "%d characters have been read", r);
-	}
+//	if (!r) {
+//		//r = fetch_banner(pi->mode, conn, payload, &anonym_ftp);
+//		msg(MSG_DEBUG, "the payload we fetched is:\n%s", payload);
+//	}
 
-	if (!r) {
-		//r = fetch_banner(pi->mode, conn, payload, &anonym_ftp);
-		msg(MSG_DEBUG, "the payload we fetched is:\n%s", payload);
-	}
 
-	if (r > 0) {
+	if (payload_len > 0) {
 		if (strncmp(payload, "GET /", 5) == 0)
 			conn->app_proto = HTTP;
 		else if (strncmp(payload, "NICK ", 5) == 0)
@@ -94,7 +87,6 @@ protocols_app pi_buildin_payload(struct proto_identifier_t* pi, connection_t *co
 		}
 	}
 
-	*payload_len = r;
 	msg(MSG_DEBUG, "protocol identified by payload is: %d", conn->app_proto);
 	return conn->app_proto;
 }

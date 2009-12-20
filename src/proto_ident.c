@@ -39,15 +39,15 @@ struct proto_identifier_t* pi_create(struct configuration_t* config, pi_type typ
 	case inbuild:
 		result->init = pi_buildin_init;
 		result->deinit = pi_buildin_deinit;
-		//result->byport = pi_buildin_port;
-		//result->bypayload = pi_buildin_payload;
+		result->byport = pi_buildin_port;
+		result->bypayload = pi_buildin_payload;
 		break;
 	case opendpi:
 #ifdef WITH_OPENDPI
 		result->init = pi_opendpi_init;
 		result->deinit = pi_opendpi_deinit;
-		//result->byport = pi_opendpi_port;
-		//result->bypayload = pi_opendpi_payload;
+		result->byport = pi_opendpi_port;
+		result->bypayload = pi_opendpi_payload;
 #else
 		msg(MSG_FATAL, "TrumanBox was compiled without OpenDPI support."
 				"Please recompile TrumanBox with OpenDPI support or disable opendpi in the config file!");

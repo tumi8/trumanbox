@@ -6,7 +6,7 @@
 
 int pi_buildin_init(struct proto_identifier_t* p);
 int pi_buildin_deinit(struct proto_identifier_t* p);
-protocols_app pi_buildin_port(struct proto_identifier_t* pi, connection_t *conn, char *payload, ssize_t* payload_len);
-protocols_app pi_buildin_payload(struct proto_identifier_t* pi, connection_t *conn, int inconnfd, char *payload, ssize_t* payload_len);
+protocols_app pi_buildin_port(struct proto_identifier_t* pi, connection_t *conn);
+protocols_app pi_buildin_payload(struct proto_identifier_t* pi, connection_t *conn, char *payload, size_t payload_len);
 
 #endif

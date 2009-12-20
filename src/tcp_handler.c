@@ -52,7 +52,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 
 	bzero(payload, MAXLINE);
 	targetServiceFd = Socket(AF_INET, SOCK_STREAM, 0);
-	
+
 	// Determine target service address. This address depends on the chosen program mode
 	switch (tcph->mode) {
 	case full_emulation:
@@ -117,8 +117,13 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 				goto out;
 			}
 			if (tcph->connection->app_proto == UNKNOWN) {
-				// TODO: identify protocol
+				app_proto = tcph->pi->bypayload(tcph->pi, tcph->connection, payload, r);
+				if (app_proto == UNKNOWN) {
+					// TODO: handle this one! can we manage this?
+				}
 			}
+			proto_handler = tcph->ph[tcph->connection->app_proto];
+			proto_handler->handle_payload_cts(proto_handler->handler, payload, r);
 		} else {
 			// We received a timeout. There are know to possiblities:
 			// 1.) We already identified the protocol: There is something wrong, as there should not be any timeout
@@ -130,7 +135,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 			// try to save the day
 			switch (tcph->mode) {
 			case full_emulation:
-				// TODO: try port-based identification
+				app_proto = tcph->pi->byport(tcph->pi, tcph->connection);
 				// if portbased failed:
 				msg(MSG_ERROR, "Cannot identify application protocol in full_emulation mode!");
 				goto out;
