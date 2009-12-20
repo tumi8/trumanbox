@@ -109,7 +109,7 @@ int tcphandler_handle_unknown(struct tcp_handler_t* tcph, struct sockaddr_in* ta
 		tcphandler_determine_target(tcph, app_proto, targetServAddr);
 		break;
 	default:
-		msg(MSG_FATAL, "Unknown mode: This is an internal programming error!!!! Exiting!");
+		msg(MSG_FATAL, "Unknown trumanbox mode: This is an internal programming error!!!! Exiting!");
 		exit(-1);
 	}
 	// we have to know the target now!
@@ -169,7 +169,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 				app_proto = tcph->pi->bypayload(tcph->pi, tcph->connection, payload, r);
 				if (app_proto == UNKNOWN) {
 					// TODO: handle this one! can we manage this?
-					msg(MSG_FATAL, "Internal programming error!");
+					msg(MSG_FATAL, "We could not determine protocol after reading from source and taget!");
 					exit(1);
 				}
 			}
@@ -207,20 +207,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 		tv.tv_sec = 300;
 		tv.tv_usec = 0; 
 	}
-//	msg(MSG_DEBUG, "we start doing protocol identification by payload...");
-//	
-//	proto = tcph->pi->identify(tcph->pi, tcph->connection, tcph->inconnfd, payload, &r);
-//
-//	// redirect traffic if we are in emulation mode
-//
-//	tcph->ph[proto]->determine_target(tcph->ph[proto]->handler, &targetservaddr);
-//		
-//	if (Connect(targetservicefd, (SA *) &targetservaddr, sizeof(targetservaddr)) < 0) {
-//		Close_conn(tcph->inconnfd, "connection to targetservice could not be established");
-//		return;
-//	} else
-//		msg(MSG_DEBUG, "the connection to the targetservice is established and we can now start forwarding\n");
-//	
+
 //	// now we are definitely connected to the targetservice ...
 //	switch(tcph->connection->app_proto) {
 //		case FTP:
