@@ -13,7 +13,7 @@ protocols_app pi_buildin_port(struct proto_identifier_t* pi, connection_t *conn,
 	
 	// FIXME: unused variables
 	// int 			fd, n, 
-	int			anonym_ftp;
+	//int			anonym_ftp;
 
 	switch (conn->dport) {
 		case 21:
@@ -33,10 +33,10 @@ protocols_app pi_buildin_port(struct proto_identifier_t* pi, connection_t *conn,
 			break;
 	}
 	if (conn->app_proto == FTP || conn->app_proto == SMTP)
-		*payload_len = fetch_banner(pi->mode, conn, payload, &anonym_ftp);
+		//*payload_len = fetch_banner(pi->mode, conn, payload, &anonym_ftp);
 
-	if (conn->app_proto == FTP && anonym_ftp)
-		conn->app_proto = FTP_anonym;
+	//if (conn->app_proto == FTP && anonym_ftp)
+	//conn->app_proto = FTP_anonym;
 
 	msg(MSG_DEBUG, "protocol identified by port is: %d", conn->app_proto);
 	return conn->app_proto;
@@ -44,7 +44,8 @@ protocols_app pi_buildin_port(struct proto_identifier_t* pi, connection_t *conn,
 
 protocols_app pi_buildin_payload(struct proto_identifier_t* pi, connection_t *conn, int inconnfd, char *payload, ssize_t* payload_len) {
 	// here we need to implement logging of responses to file
-	int			r, anonym_ftp;
+	//int			r, anonym_ftp;
+	int r = 0;
 	char			filename[30];
 
 	conn->app_proto = UNKNOWN;
@@ -58,7 +59,7 @@ protocols_app pi_buildin_payload(struct proto_identifier_t* pi, connection_t *co
 	}
 
 	if (!r) {
-		r = fetch_banner(pi->mode, conn, payload, &anonym_ftp);
+		//r = fetch_banner(pi->mode, conn, payload, &anonym_ftp);
 		msg(MSG_DEBUG, "the payload we fetched is:\n%s", payload);
 	}
 
@@ -78,8 +79,8 @@ protocols_app pi_buildin_payload(struct proto_identifier_t* pi, connection_t *co
 		else if (strncmp(payload, "220 ", 4) == 0) {
 			if ( strcasestr(payload, "ftp") != 0 ) {
 				conn->app_proto = FTP;
-				if (anonym_ftp)
-					conn->app_proto = FTP_anonym;
+				//if (anonym_ftp)
+				//	conn->app_proto = FTP_anonym;
 			}
 			else if ( (strcasestr(payload, "mail") != 0) || (strcasestr(payload, "smtp") != 0) ) {
 				conn->app_proto = SMTP;

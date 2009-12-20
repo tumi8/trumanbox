@@ -16,7 +16,7 @@ typedef protocols_app (pi_identify_from_conn)(struct proto_identifier_t*, connec
 typedef int (pi_init)(struct proto_identifier_t* p);
 typedef int (pi_deinit)(struct proto_identifier_t* p);
 typedef protocols_app (pi_byport)(struct proto_identifier_t* p, connection_t *conn, char *payload);
-typedef protocols_app (pi_bypayload)(struct proto_identifier_t* p, connection_t *conn, int inconnfd, char *payload);
+typedef protocols_app (pi_bypayload)(struct proto_identifier_t* p, connection_t *conn, char *payload, size_t payload_len);
 
 enum epi_type { inbuild, opendpi };
 typedef enum epi_type pi_type;

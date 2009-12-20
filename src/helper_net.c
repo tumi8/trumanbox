@@ -366,7 +366,7 @@ int parse_conntrack(connection_t *conn) {
 					begin = strstr(line, "dst=") + 4;
 					end = strchr(begin, ' ');
 
-					strncpy(conn->dest, begin, end-begin);
+					strncpy(conn->orig_dest, begin, end-begin);
 
 					begin = strstr(end, "dport=") + 6;
 					end = strchr(begin, ' ');

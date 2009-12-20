@@ -17,7 +17,7 @@ struct dispatcher_t {
 	int tcpfd;
 	int udpfd;
 	struct proto_identifier_t* pi;
-	struct protohandler_t** ph;
+	struct proto_handler_t** ph;
 	int running;
 	struct configuration_t* config;
 };
@@ -136,6 +136,7 @@ void disp_run(struct dispatcher_t* disp)
 	for ( ; ; ) {
 	start:
 		connection.net_proto = wait_for_incomming_connection(disp->tcpfd, disp->udpfd, disp->controlfd);
+		connection.app_proto = UNKNOWN;
 
 		if (connection.net_proto == ERROR)
 			continue;
@@ -146,6 +147,7 @@ void disp_run(struct dispatcher_t* disp)
 			
 			Inet_ntop(AF_INET, &cliaddr.sin_addr, connection.source, 15);
 			connection.sport = ntohs(cliaddr.sin_port);
+			// parse_conntrack fills in the remaining variables of connection
 			while ( parse_conntrack(&connection) != 0 ) {
 				msg(MSG_DEBUG, "could not parse conntrack table, trying again in 2sec...");
 				sleep(2);

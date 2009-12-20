@@ -32,17 +32,17 @@ int ph_http_deinit(void* handler)
 	return 0;
 }
 
-int ph_http_handle_payload_stc(void* handler, const char* payload)
+int ph_http_handle_payload_stc(void* handler, const char* payload, size_t len)
 {
 	return 0;
 }
 
-int ph_http_handle_payload_cts(void* handler, const char* payload)
+int ph_http_handle_payload_cts(void* handler, const char* payload, size_t len)
 {
 	return 0;
 }
 
-int ph_http_handle_packet(void* handler, const char* packet)
+int ph_http_handle_packet(void* handler, const char* packet, size_t len)
 {
 	return 0;
 }

@@ -14,10 +14,10 @@ struct tcp_handler_t {
 	connection_t* connection;
 	int inconnfd;
 	struct proto_identifier_t* pi;
-	struct protohandler_t** ph;
+	struct proto_handler_t** ph;
 };
 
-struct tcp_handler_t* tcphandler_create(struct configuration_t* config, connection_t* c, int inconn, struct proto_identifier_t* pi, struct protohandler_t** ph)
+struct tcp_handler_t* tcphandler_create(struct configuration_t* config, connection_t* c, int inconn, struct proto_identifier_t* pi, struct proto_handler_t** ph)
 {
 	struct tcp_handler_t* ret = (struct tcp_handler_t*)malloc(sizeof(struct tcp_handler_t*));
 	ret->config = config;
@@ -40,174 +40,164 @@ void tcphandler_destroy(struct tcp_handler_t* t)
 
 void tcphandler_run(struct tcp_handler_t* tcph)
 {
-	int			targetservicefd,
-				maxfdp;
-	struct sockaddr_in	targetservaddr;
-	char			payload[MAXLINE],
-				to_drop[MAXLINE],
-				*ptr,
-				*protocol_dir = NULL;
-	ssize_t			r, w, d;
-	fd_set 			rset;
-	struct timeval 		tv;
-	protocols_app proto;
-	
-	targetservicefd = Socket(AF_INET, SOCK_STREAM, 0);
-	
-	bzero(&targetservaddr, sizeof(targetservaddr));
-	targetservaddr.sin_family = AF_INET;
-	targetservaddr.sin_port = htons((uint16_t)tcph->connection->dport);
-	Inet_pton(AF_INET, tcph->connection->dest, &targetservaddr.sin_addr);
-	
-	msg(MSG_DEBUG, "we start doing protocol identification by payload...");
-	
-	proto = tcph->pi->identify(tcph->pi, tcph->connection, tcph->inconnfd, payload);
+	int targetServiceFd, maxfd;
+	struct sockaddr_in targetServAddr;
+	//int connectedToFinalTarget = 0;
+	int r;
+	fd_set rset;
+	struct timeval tv;
+	char payload[MAXLINE];
+	protocols_app app_proto;
+	struct proto_handler_t* proto_handler;
 
-	// redirect traffic if we are in emulation mode
-
-	tcph->ph[proto]->determine_target(tcph->ph[proto]->handler, &targetservaddr);
-		
-	if (Connect(targetservicefd, (SA *) &targetservaddr, sizeof(targetservaddr)) < 0) {
-		Close_conn(tcph->inconnfd, "connection to targetservice could not be established");
-		return;
-	} else
-		msg(MSG_DEBUG, "the connection to the targetservice is established and we can now start forwarding\n");
+	bzero(payload, MAXLINE);
+	targetServiceFd = Socket(AF_INET, SOCK_STREAM, 0);
 	
-	// now we are definitely connected to the targetservice ...
-	switch(tcph->connection->app_proto) {
-		case FTP:
-			protocol_dir = FTP_COLLECTING_DIR;
-			break;
-		case FTP_anonym:
-			protocol_dir = FTP_COLLECTING_DIR;
-			break;
-		case FTP_data:
-			protocol_dir = FTP_COLLECTING_DIR;
-			break;
-		case SMTP:
-			protocol_dir = SMTP_COLLECTING_DIR;
-			break;
-		case HTTP:
-			protocol_dir = HTTP_COLLECTING_DIR;
-			break;
-		case IRC:
-			protocol_dir = IRC_COLLECTING_DIR;
-			break;
-		default:
-			msg(MSG_ERROR, "Could not set protocol_dir");
-			break;
+	// Determine target service address. This address depends on the chosen program mode
+	switch (tcph->mode) {
+	case full_emulation:
+		// Final target depends on the protocol, protocol identification
+		// can only be performed on the payload from the client side.
+		// If payload identification on the client side is not possible, 
+		// we can only determine the target based on port numbers. 
+		// This mode can therefore not determine applications which contain
+		// initial server payload and do not use standard ports
+		bzero(tcph->connection->dest, IPLENGTH);
+		break;
+	case half_proxy:
+		// Final target depends on the protocol. Protcol identification
+		// can be performed on both the intial client as well as the 
+		// initial server string
+		bzero(tcph->connection->dest, IPLENGTH);
+		break;
+	case full_proxy:
+		// Connect to the original target (if this target is available)
+		bzero(&targetServAddr, sizeof(targetServAddr));
+		targetServAddr.sin_family = AF_INET;
+		targetServAddr.sin_port = htons((uint16_t)tcph->connection->dport);
+		memcpy(tcph->connection->dest, tcph->connection->orig_dest, IPLENGTH);
+		Inet_pton(AF_INET, tcph->connection->dest, &targetServAddr.sin_addr);
+	default:
+		msg(MSG_FATAL, "Unknown mode: This is an internal programming error!!!! Exiting!");
+		exit(-1);
 	}
-	
-	print_timestamp(tcph->connection, protocol_dir);
-	
-	msg(MSG_DEBUG, "payload is:\n%s", payload);
-	
-	r = strlen(payload);
-	
-	if (r) {
-		ptr = payload;
-		if ((tcph->connection->app_proto == SMTP) || (tcph->connection->app_proto == FTP) ||
-		    (tcph->connection->app_proto == FTP_anonym)) {
-			d = read(targetservicefd, to_drop, MAXLINE-1);
-			msg(MSG_DEBUG, "the following %d characters are dropped:\n%s", d, to_drop);
-			
-			content_substitution_and_logging_stc(tcph->connection, payload, &r);
-			
-			while(r > 0 && (w = write(tcph->inconnfd, ptr, r)) > 0) {
-				ptr += w;
-				r -= w;
+
+	FD_ZERO(&rset);
+	FD_SET(targetServiceFd, &rset); // as this socket is not connected to anyone, it should to be responsible for select to fail
+	FD_SET(tcph->inconnfd, &rset);
+	maxfd = max(targetServiceFd, tcph->inconnfd);
+
+	// wait 3 seconds for initial client payload
+	// try to receive server payload if there is no 
+	// payload from the client.
+	tv.tv_sec = 3;
+	tv.tv_usec = 0; 
+
+	while (-1 != select(maxfd, &rset, NULL, NULL, &tv)) {
+		if (FD_ISSET(targetServiceFd, &rset)) {
+			// we received data from the internet server
+			r = read(targetServiceFd, payload, MAXLINE - 1);
+			if (!r) {
+				msg(MSG_DEBUG, "Target closed the connection...");
+				goto out;
+			}
+			if (tcph->connection->app_proto == UNKNOWN) {
+				app_proto = tcph->pi->bypayload(tcph->pi, tcph->connection, payload, r);
+				if (app_proto == UNKNOWN) {
+					// TODO: handle this one! can we manage this?
+				}
+			}
+			proto_handler = tcph->ph[tcph->connection->app_proto];
+			proto_handler->handle_payload_stc(proto_handler->handler, payload, r);
+		} else if FD_ISSET(tcph->inconnfd, &rset) {
+			// we received data from the infrected machine
+			r = read(tcph->inconnfd, payload, MAXLINE - 1);
+			if (!r) {
+				msg(MSG_DEBUG, "Source closed the connection...");
+				goto out;
+			}
+			if (tcph->connection->app_proto == UNKNOWN) {
+				// TODO: identify protocol
 			}
 		} else {
-			if (tcph->mode < full_proxy) {
-				content_substitution_and_logging_cts(tcph->connection, payload, &r);
-				build_tree(tcph->connection, payload);
+			// We received a timeout. There are know to possiblities:
+			// 1.) We already identified the protocol: There is something wrong, as there should not be any timeout
+			// 2.) We did not identify the payload: We need to perform some 
+			//     actions to enable payload identification
+			if (tcph->connection->app_proto != UNKNOWN) {
+				goto out; // exit function
 			}
-	
-			while(r > 0 && (w = write(targetservicefd, ptr, r)) > 0) {
-				ptr += w;
-				r -= w;
+			// try to save the day
+			switch (tcph->mode) {
+			case full_emulation:
+				// TODO: try port-based identification
+				// if portbased failed:
+				msg(MSG_ERROR, "Cannot identify application protocol in full_emulation mode!");
+				goto out;
+			case  half_proxy:
+				// TODO: fetch banner
+				// try to identify using fetched banner
+				break;
+			case full_proxy:
+				// TODO: try to connect to the original target
+				break;
+			default:
+				msg(MSG_FATAL, "Unknown mode: This is an internal programming error!!!! Exiting!");
+				exit(-1);
 			}
-			msg(MSG_DEBUG, "and has been sent to server...\n");
-		}
-	}
-	
-	memset(payload, 0, sizeof(payload));
-	
-	FD_ZERO(&rset);
-	FD_SET(tcph->inconnfd, &rset);
-	FD_SET(targetservicefd, &rset);
-			
-	tv.tv_sec = 300;
-	tv.tv_usec = 0;
-	
-	maxfdp = max(tcph->inconnfd, targetservicefd) + 1;
-	
-	while (select(maxfdp, &rset, NULL, NULL, &tv)) {
-		if (FD_ISSET(tcph->inconnfd, &rset)) {
-			// forwarding from the client to the server
-			msg(MSG_DEBUG, "inconnfd is ready\n");
-			if ((r = read(tcph->inconnfd, payload, MAXLINE-1)) == 0) {
-				msg(MSG_DEBUG, "client has closed the connection");
-				Close_conn(targetservicefd, "connection to targetservice, because the client has closed the connection");
-				Close_conn(tcph->inconnfd, "incomming connection, because the client has closed the connection");
-				return;
-			} else if (r > 0) {
-				msg(MSG_DEBUG, "(pid: %d) payload from client:\n%s", getpid(), payload);  // for debugging
-				if (tcph->mode < full_proxy) {
-					content_substitution_and_logging_cts(tcph->connection, payload, &r);
-					build_tree(tcph->connection, payload);
-				}
-				if (tcph->mode == full_proxy) // FIXME is this really stable???
-					delete_row_starting_with_pattern(payload, "Accept-Encoding:");
-					
-				msg(MSG_DEBUG, "(pid: %d) changed payload from client:\n%s", getpid(), payload);  // for debugging
-	
-				ptr = payload;
-				while (r > 0 && (w = write(targetservicefd, ptr, r)) > 0) {
-					ptr += w;
-					r -= w;
-				}
-
-				msg(MSG_DEBUG, "...has been sent to server");
-			} else {
-				msg(MSG_DEBUG, "read error: reading from inconnfd");
-				return;
-			}
-		}
-		memset(payload, 0, sizeof(payload));
-		
-		if (FD_ISSET(targetservicefd, &rset)) { 
-			// forwarding from the server to the client
-			msg(MSG_DEBUG, "targetservicefd is ready");
-			if ((r = read(targetservicefd, payload, MAXLINE-1)) == 0) {
-				msg(MSG_DEBUG, "server has closed the connection\n");
-				Close_conn(tcph->inconnfd, "incoming connection, because the server has closed the connection");
-				Close_conn(targetservicefd, "connection to targetservice, because the server has closed the connection");
-				return;
-			} else if (r > 0) {
-				msg(MSG_DEBUG, "(pid: %d) payload from server:\n%s", (int)getpid(), payload);
 				
-				content_substitution_and_logging_stc(tcph->connection, payload, &r);
-				
-				msg(MSG_DEBUG, "(pid: %d) changed payload from server:\n%s", getpid(), payload);
-				
-				ptr = payload;
-				while (r > 0 && (w = write(tcph->inconnfd, ptr, r)) > 0) {
-					ptr += w;
-					r -= w;
-				}
-				msg(MSG_DEBUG, "has been sent to client...");
-				
-				memset(payload, 0, sizeof(payload));
-			} else {
-				msg(MSG_ERROR, "(pid: %d)read error: reading from targetservicefd", getpid());
-			}
 		}
 		FD_ZERO(&rset);
+		FD_SET(targetServiceFd, &rset); // as this socket is not connected to anyone, it should to be responsible for select to fail
 		FD_SET(tcph->inconnfd, &rset);
-		FD_SET(targetservicefd, &rset);
+		maxfd = max(targetServiceFd, tcph->inconnfd);
+		tv.tv_sec = 300;
+		tv.tv_usec = 0; 
 	}
+//	msg(MSG_DEBUG, "we start doing protocol identification by payload...");
+//	
+//	proto = tcph->pi->identify(tcph->pi, tcph->connection, tcph->inconnfd, payload, &r);
+//
+//	// redirect traffic if we are in emulation mode
+//
+//	tcph->ph[proto]->determine_target(tcph->ph[proto]->handler, &targetservaddr);
+//		
+//	if (Connect(targetservicefd, (SA *) &targetservaddr, sizeof(targetservaddr)) < 0) {
+//		Close_conn(tcph->inconnfd, "connection to targetservice could not be established");
+//		return;
+//	} else
+//		msg(MSG_DEBUG, "the connection to the targetservice is established and we can now start forwarding\n");
+//	
+//	// now we are definitely connected to the targetservice ...
+//	switch(tcph->connection->app_proto) {
+//		case FTP:
+//			protocol_dir = FTP_COLLECTING_DIR;
+//			break;
+//		case FTP_anonym:
+//			protocol_dir = FTP_COLLECTING_DIR;
+//			break;
+//		case FTP_data:
+//			protocol_dir = FTP_COLLECTING_DIR;
+//			break;
+//		case SMTP:
+//			protocol_dir = SMTP_COLLECTING_DIR;
+//			break;
+//		case HTTP:
+//			protocol_dir = HTTP_COLLECTING_DIR;
+//			break;
+//		case IRC:
+//			protocol_dir = IRC_COLLECTING_DIR;
+//			break;
+//		default:
+//			msg(MSG_ERROR, "Could not set protocol_dir");
+//			break;
+//	}
+//	
+//	print_timestamp(tcph->connection, protocol_dir);
+//	
+//	msg(MSG_DEBUG, "payload is:\n%s", payload);
+out:
 	Close_conn(tcph->inconnfd, "incomming connection, because we are done with this connection");
-	Close_conn(targetservicefd, "connection to targetservice, because we are done with this connection");
+	Close_conn(targetServiceFd, "connection to targetservice, because we are done with this connection");
 }
 

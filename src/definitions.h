@@ -61,6 +61,7 @@ struct s_connection {
 	char orig_source[IPLENGTH];
 	char source[IPLENGTH];
 	char dest[IPLENGTH];
+	char orig_dest[IPLENGTH];
 	u_int16_t sport;
 	u_int16_t dport;
 	protocols_net net_proto;

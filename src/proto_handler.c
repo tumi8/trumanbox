@@ -9,9 +9,9 @@
 
 #include <stdlib.h>
 
-static struct protohandler_t* create_handler(protocols_app app)
+static struct proto_handler_t* create_handler(protocols_app app)
 {
-	struct protohandler_t* ret = (struct protohandler_t*)malloc(sizeof(struct protohandler_t));
+	struct proto_handler_t* ret = (struct proto_handler_t*)malloc(sizeof(struct proto_handler_t));
 	switch (app) {
 	case FTP:
 	case FTP_data:
@@ -58,9 +58,9 @@ static struct protohandler_t* create_handler(protocols_app app)
 	return ret;
 }
 
-struct protohandler_t** ph_create(struct configuration_t* c)
+struct proto_handler_t** ph_create(struct configuration_t* c)
 {
-	struct protohandler_t** result = (struct protohandler_t**)malloc(sizeof(struct protohandler_t*)*UNKNOWN);
+	struct proto_handler_t** result = (struct proto_handler_t**)malloc(sizeof(struct proto_handler_t*)*UNKNOWN);
 	int i = 0;
 	for (i = 0; i != UNKNOWN; i++) {
 		result[i] = create_handler(i);
@@ -71,7 +71,7 @@ struct protohandler_t** ph_create(struct configuration_t* c)
 }
 
 
-int ph_destroy(struct protohandler_t** p)
+int ph_destroy(struct proto_handler_t** p)
 {
 	int i = 0;
 	for (i = 0; i != UNKNOWN; i++) {
