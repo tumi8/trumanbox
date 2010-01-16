@@ -6,6 +6,9 @@
 #include "helper_net.h"
 #include "msg.h"
 
+#include <string.h>
+#include <time.h>
+#include <ctype.h>
 
 void print_payload(const u_char *payload, int len) {
 	int i;

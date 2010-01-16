@@ -1,6 +1,13 @@
 #include "semaphore.h"
 #include "msg.h"
 
+#include <errno.h>
+#include <stdlib.h>
+#include <sys/sem.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/types.h>
+
 void semaph_init() {
    int id;
 

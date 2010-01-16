@@ -1,6 +1,10 @@
 #include "signals.h"
 #include "msg.h"
 
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
 Sigfunc *signal(int signo, Sigfunc *func) {
         struct sigaction        act, oact;
 

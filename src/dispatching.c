@@ -10,6 +10,12 @@
 #include "process_manager.h"
 #include "proto_ident.h"
 #include "proto_handler.h"
+#include "wrapper.h"
+
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <signal.h>
 
 struct dispatcher_t {
 	const char* dump_dir;

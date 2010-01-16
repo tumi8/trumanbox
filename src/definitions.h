@@ -1,3 +1,6 @@
+#ifndef _DEFINITIONS_H_
+#define _DEFINITIONS_H_
+
 #include <sys/types.h>
 
 #define VALID_FTP_USER		"ftpin\r\n"
@@ -81,3 +84,4 @@ typedef enum {
 } operation_mode_t;
 #endif
 
+#endif

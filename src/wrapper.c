@@ -1,9 +1,14 @@
 #include "wrapper.h"
-#include <sys/types.h>
-#include <stdio.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
 #include "msg.h"
+
+#include <sys/types.h>
+#include <unistd.h>
+#include <sys/uio.h>
+#include <stdio.h>
+#include <arpa/inet.h>
+#include <errno.h>
+#include <string.h> 
+#include <stdlib.h>
 
 // in the following some wrapper functions
 void Write(int fd, void *ptr, size_t nbytes) {

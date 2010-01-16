@@ -1,11 +1,7 @@
-#include "definitions.h"
-#include "semaphore.h"
+#ifndef _HELPER_NET_H_
+#define _HELPER_NET_H_
 
-#include "dispatching.h"
-#include "wrapper.h"
-#include "proto_ident.h"
-#include "payload_alter_log.h"
-#include "helper_file.h"
+#include "definitions.h"
 
 int readable_timeout(int fd, int sec);
 int try_anonymous_login(int conn_fd);
@@ -16,3 +12,5 @@ void unset_so_linger(int sd);
 int fetch_banner(int mode, const connection_t *connection, int *anonym_ftp, char *payload);
 int get_irc_banner(const connection_t *conn, char *payload);
 int parse_conntrack(connection_t *conn);
+
+#endif

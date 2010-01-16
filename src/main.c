@@ -41,9 +41,17 @@
  *
  */
 
-#include "main.h"
 #include "msg.h"
 #include "configuration.h"
+#include "helper_file.h"
+#include "dns_resolver.h"
+#include "dispatching.h"
+#include "semaphore.h"
+
+#include <string.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 static operation_mode_t interactive_menu();
 static void usage(const char* progname);

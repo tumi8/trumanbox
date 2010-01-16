@@ -3,6 +3,8 @@
 #include "msg.h"
 #include "string.h"
 
+#include <stdio.h>
+
 int pi_buildin_init(struct proto_identifier_t* p) { return 0; }
 int pi_buildin_deinit(struct proto_identifier_t* p) { return 0; }
 

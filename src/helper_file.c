@@ -1,10 +1,19 @@
 #include "helper_file.h"
+#include "semaphore.h"
 #include "dispatching.h"
 #include "wrapper.h"
 #include "helper_net.h"
 #include "proto_ident.h"
 #include "payload_alter_log.h"
 #include "msg.h"
+
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <sys/stat.h>
 
 void create_tmp_folders() {
 	int preexisting_folders = 0;

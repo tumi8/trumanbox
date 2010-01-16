@@ -4,6 +4,7 @@
 #include "signals.h"
 #include "process_manager.h"
 #include "configuration.h"
+#include "wrapper.h"
 
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -11,6 +12,9 @@
 #include <signal.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
 
 // XXX: check with RFC
 #define MAX_REQUEST_LEN 1000

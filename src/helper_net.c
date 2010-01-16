@@ -14,6 +14,8 @@
 
 #include "helper_net.h"
 #include "msg.h"
+#include "wrapper.h"
+#include "helper_file.h"
 
 
 int readable_timeout(int fd, int sec) {

@@ -4,8 +4,15 @@
 #include "msg.h"
 #include "proto_handler.h"
 #include "configuration.h"
+#include "wrapper.h"
 
+#include <sys/types.h>
+#include <sys/uio.h>
+#include <unistd.h>
+#include <string.h>
 #include <stdlib.h>
+#include <strings.h>
+#include <stdio.h>
 
 struct tcp_handler_t {
 	operation_mode_t mode; // get from config
