@@ -8,6 +8,9 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <signal.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 
 // XXX: check with RFC
 #define MAX_REQUEST_LEN 1000

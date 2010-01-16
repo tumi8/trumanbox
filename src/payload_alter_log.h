@@ -1,6 +1,4 @@
 #include <stdio.h>
-#include <netinet/ip.h>
-#include <netinet/tcp.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <sys/stat.h>

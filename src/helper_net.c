@@ -1,5 +1,20 @@
+#include <stdio.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <string.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <time.h>
+#include <netinet/in.h>
+
 #include "helper_net.h"
 #include "msg.h"
+
 
 int readable_timeout(int fd, int sec) {
 	fd_set rset;

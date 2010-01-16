@@ -1,6 +1,4 @@
 #include <stdio.h>
-#include <netinet/ip.h>
-#include <netinet/tcp.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -12,6 +10,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <signal.h>
 #include <time.h>
 
 
