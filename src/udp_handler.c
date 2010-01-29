@@ -4,6 +4,7 @@
 #include "wrapper.h"
 
 #include <stdlib.h>
+#include <sys/select.h>
 #include <netinet/in.h>
 #include <string.h>
 
