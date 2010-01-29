@@ -223,34 +223,6 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 		tv.tv_usec = 0; 
 	}
 
-//	// now we are definitely connected to the targetservice ...
-//	switch(tcph->connection->app_proto) {
-//		case FTP:
-//			protocol_dir = FTP_COLLECTING_DIR;
-//			break;
-//		case FTP_anonym:
-//			protocol_dir = FTP_COLLECTING_DIR;
-//			break;
-//		case FTP_data:
-//			protocol_dir = FTP_COLLECTING_DIR;
-//			break;
-//		case SMTP:
-//			protocol_dir = SMTP_COLLECTING_DIR;
-//			break;
-//		case HTTP:
-//			protocol_dir = HTTP_COLLECTING_DIR;
-//			break;
-//		case IRC:
-//			protocol_dir = IRC_COLLECTING_DIR;
-//			break;
-//		default:
-//			msg(MSG_ERROR, "Could not set protocol_dir");
-//			break;
-//	}
-//	
-//	print_timestamp(tcph->connection, protocol_dir);
-//	
-//	msg(MSG_DEBUG, "payload is:\n%s", payload);
 out:
 	Close_conn(tcph->inConnFd, "incomming connection, because we are done with this connection");
 	Close_conn(tcph->targetServiceFd, "connection to targetservice, because we are done with this connection");
