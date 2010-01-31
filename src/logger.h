@@ -7,7 +7,9 @@ struct logger_t;
 struct configuration_t;
 
 typedef int (lg_init)(struct logger_t*);
-typedef int (lg_log)(struct logger_t*);
+typedef int (lg_create_log)(struct logger_t*);
+typedef int (lg_finish_log)(struct logger_t*);
+typedef int (lg_log_text)(struct logger_t*, char* fmt, ...);
 
 enum logger_type { directory };
 
@@ -16,7 +18,9 @@ struct logger_t {
 	struct configuration_t* config;
 
 	lg_init* init;
-	lg_log* log;	
+	lg_create_log* create_log;
+	lg_finish_log* finish_log;
+	lg_log_text* log;
 };
 
 struct logger_t* logger_create(struct configuration_t* config);
