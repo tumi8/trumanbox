@@ -49,9 +49,13 @@ operation_mode_t conf_get_mode(struct configuration_t* c)
 {
 	operation_mode_t m = invalid;
 	if (-1 == (m = conf_getint(c, "main", "mode", -1))) {
+		// no mode in configuration file. we return the 
+		// value stored in configuration_t as this is invalid
+		// by default or set by conf_set_mode()
 		return c->mode;
 	}
 	if (m > invalid && m < quit) {
+		c->mode = m;
 		return c->mode;
 	}
 	return invalid;
