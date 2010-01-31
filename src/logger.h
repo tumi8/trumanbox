@@ -7,6 +7,7 @@ struct logger_t;
 struct configuration_t;
 
 typedef int (lg_init)(struct logger_t*);
+typedef int (lg_deinit)(struct logger_t*);
 typedef int (lg_create_log)(struct logger_t*);
 typedef int (lg_finish_log)(struct logger_t*);
 typedef int (lg_log_text)(struct logger_t*, char* fmt, ...);
