@@ -209,8 +209,8 @@ int fetch_banner(int mode, const connection_t *connection, int *anonym_ftp, char
 	r = 0;
 	memset(full_path_ano, 0, sizeof(full_path_ano));
 	memset(full_path, 0, sizeof(full_path));
-	sprintf(full_path, "%s/%s:%d", RESPONSE_COLLECTING_DIR, connection->dest, connection->dport);
-	sprintf(full_path_ano, "%s/%s:%d_ano", RESPONSE_COLLECTING_DIR, connection->dest, connection->dport);
+	//sprintf(full_path, "%s/%s:%d", RESPONSE_COLLECTING_DIR, connection->dest, connection->dport);
+	//sprintf(full_path_ano, "%s/%s:%d_ano", RESPONSE_COLLECTING_DIR, connection->dest, connection->dport);
 
 	if ( (fd = open(full_path, O_RDONLY)) == -1) {
 		msg(MSG_ERROR, "could not open %s readonly: %s", full_path, strerror(errno));
@@ -237,7 +237,7 @@ int fetch_banner(int mode, const connection_t *connection, int *anonym_ftp, char
 						}
 						else {
 							msg(MSG_DEBUG, "we got our payload from the serverside\n");
-							write_to_nonexisting_file(payload, connection, RESPONSE_COLLECTING_DIR);
+							//write_to_nonexisting_file(payload, connection, RESPONSE_COLLECTING_DIR);
 							break;
 						}
 					}
@@ -317,7 +317,7 @@ int get_irc_banner(const connection_t *conn, char *payload) {
 		else {
 			msg(MSG_DEBUG, "we received irc response from the serverside\n");
 			snprintf(filename, MAXLINE-1, "%s:%d", conn->dest, conn->dport);
-			write_to_file(response, filename, RESPONSE_COLLECTING_DIR);
+			//write_to_file(response, filename, RESPONSE_COLLECTING_DIR);
 			msg(MSG_DEBUG, "and wrote the response to some file\n");
 			Close_conn(irc_server_fd, "connection to real irc server");
 			ptr = strchr(response, ' ');

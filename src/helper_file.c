@@ -16,84 +16,14 @@
 #include <sys/stat.h>
 
 void create_tmp_folders() {
-	int preexisting_folders = 0;
 
-	if (mkdir(TMP_TRUMANBOX, PERMS) < 0) {
-		if (errno == EEXIST)
-			preexisting_folders = 1;
-		else {
-			msg(MSG_FATAL, "%s could not be created: %s", TMP_TRUMANBOX, strerror(errno));
-			exit(1);
-		}
-	}
-
-	if (mkdir(RESPONSE_COLLECTING_DIR, PERMS) < 0) {
-		if (errno == EEXIST)
-			preexisting_folders = 1;
-		else {
-			msg(MSG_FATAL, "%s could not be created: %s", RESPONSE_COLLECTING_DIR, strerror(errno));
-			exit(1);
-		}
-	}	
-
-	if (mkdir(FTP_COLLECTING_DIR, PERMS) < 0) {
-		if (errno == EEXIST)
-			preexisting_folders = 1;
-		else {
-			msg(MSG_FATAL, "%s could not be created: %s", FTP_COLLECTING_DIR, strerror(errno));
-			exit(1);
-		}
-	}
-
-	if (mkdir(IRC_COLLECTING_DIR, PERMS) < 0) {
-		if (errno == EEXIST)
-			preexisting_folders = 1;
-		else {
-			msg(MSG_FATAL, "%s could not be created: %s", IRC_COLLECTING_DIR, strerror(errno));
-			exit(1);
-		}
-	}
-
-	if (mkdir(SMTP_COLLECTING_DIR, PERMS) < 0) {
-		if (errno == EEXIST)
-			preexisting_folders = 1;
-		else {
-			msg(MSG_FATAL, "%s could not be created: %s", SMTP_COLLECTING_DIR, strerror(errno));
-			exit(1);
-		}
-	}
-
-	if (mkdir(HTTP_COLLECTING_DIR, PERMS) < 0) {
-		if (errno == EEXIST)
-			preexisting_folders = 1;
-		else {
-			msg(MSG_FATAL, "%s could not be created: %s", HTTP_COLLECTING_DIR, strerror(errno));
-			exit(1);
-		}
-	}
-
-	if (mkdir(DUMP_FOLDER, PERMS) < 0) {
-		if (errno == EEXIST)
-			preexisting_folders = 1;
-		else {
-			msg(MSG_FATAL, "%s could not be created: %s", DUMP_FOLDER, strerror(errno));
-			exit(1);
-		}
-	}
-
-	if (preexisting_folders)
-		msg(MSG_INFO, "Probably there are preexisting logfiles. Those do not\n \
-			affect the TrumanBox, but migh disturb during later\n \
-			analyses.");
-	
-	return;
 }
 
 void change_to_tmp_folder() {
-	if (chdir(RESPONSE_COLLECTING_DIR) < 0) {
-		msg(MSG_FATAL, "cannot change working dir to %s: %s", RESPONSE_COLLECTING_DIR, strerror(errno));
-		exit(1);
-	}
+	//if (chdir(RESPONSE_COLLECTING_DIR) < 0) {
+	//	msg(MSG_FATAL, "cannot change working dir to %s: %s", RESPONSE_COLLECTING_DIR, strerror(errno));
+	//	exit(1);
+	//}
 }
 
 int create_index_file() {

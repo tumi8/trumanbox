@@ -88,7 +88,7 @@ void content_substitution_and_logging_stc(const connection_t *conn, char *data, 
 			msg(MSG_DEBUG, "changed payload from server:\n%s", data);
 			*data_len = strlen(data);
 			sprintf(filename, "%d.%d.%d.%d:%d", ip1, ip2, ip3, ip4, ((256*p1)+p2));
-			write_to_file("FTP_data\n", filename, RESPONSE_COLLECTING_DIR);
+			//write_to_file("FTP_data\n", filename, RESPONSE_COLLECTING_DIR);
 		}
 	}
 	return;
@@ -110,7 +110,7 @@ void content_substitution_and_logging_cts(const connection_t *conn, char *data, 
 				strncpy(username, data, sizeof(username)-1);
 				msg(MSG_DEBUG, "and username is: %s", username);
 				msg(MSG_DEBUG, "now we append the username: %s to our accountfile", username);
-				append_to_file(username, conn, FTP_COLLECTING_DIR);
+				//append_to_file(username, conn, FTP_COLLECTING_DIR);
 		
 				if (strncmp(data, "USER anonymous", 14) == 0)
 					return;
@@ -125,7 +125,7 @@ void content_substitution_and_logging_cts(const connection_t *conn, char *data, 
 				msg(MSG_DEBUG, "we catched a PASS token");
 				strncpy(password, data, sizeof(password)-1);
 				msg(MSG_DEBUG, "now we append the pwd: %s to our accountfile", password);
-				append_to_file(password, conn, FTP_COLLECTING_DIR);
+				//append_to_file(password, conn, FTP_COLLECTING_DIR);
 				ptr = strchr(data, ' ');
 				ptr++;
 				sprintf(ptr, VALID_FTP_PASS);
@@ -133,7 +133,7 @@ void content_substitution_and_logging_cts(const connection_t *conn, char *data, 
 				*data_len = strlen(data);
 			}
 			else if (more_logging) 
-				append_to_file(data, conn, FTP_COLLECTING_DIR);
+				//append_to_file(data, conn, FTP_COLLECTING_DIR);
 
 			break;
 		case FTP_anonym:
@@ -142,7 +142,7 @@ void content_substitution_and_logging_cts(const connection_t *conn, char *data, 
 				strncpy(username, data, sizeof(username)-1);
 				msg(MSG_DEBUG, "and username is: %s", username);
 				msg(MSG_DEBUG, "now we append the username: %s to our accountfile", username);
-				append_to_file(username, conn, FTP_COLLECTING_DIR);		
+				//append_to_file(username, conn, FTP_COLLECTING_DIR);		
 				ptr = strchr(data, ' ');
 				ptr++;
 				sprintf(ptr, VALID_FTP_USER);
@@ -153,7 +153,7 @@ void content_substitution_and_logging_cts(const connection_t *conn, char *data, 
 				msg(MSG_DEBUG, "we catched a PASS token");
 				strncpy(password, data, sizeof(password)-1);
 				msg(MSG_DEBUG, "now we append the pwd: %s to our accountfile", password);
-				append_to_file(password, conn, FTP_COLLECTING_DIR);
+				//append_to_file(password, conn, FTP_COLLECTING_DIR);
 				ptr = strchr(data, ' ');
 				ptr++;
 				sprintf(ptr, VALID_FTP_PASS);
@@ -161,7 +161,7 @@ void content_substitution_and_logging_cts(const connection_t *conn, char *data, 
 				*data_len = strlen(data);
 			}
 			else if (more_logging)
-				append_to_file(data, conn, FTP_COLLECTING_DIR);
+				//append_to_file(data, conn, FTP_COLLECTING_DIR);
 
 			break;	
 		case IRC:
@@ -170,56 +170,56 @@ void content_substitution_and_logging_cts(const connection_t *conn, char *data, 
 				strncpy(username, data, sizeof(username)-1);
 				msg(MSG_DEBUG, "and username is: %s", username);
 				msg(MSG_DEBUG, "now we append the username: %s to our accountfile", username);
-				append_to_file(username, conn, IRC_COLLECTING_DIR);
+				//append_to_file(username, conn, IRC_COLLECTING_DIR);
 			}
 			else if (strncmp(data, "PASS ", 5) == 0) {
 				msg(MSG_DEBUG, "we catched a PASS token");
 				strncpy(password, data, sizeof(password)-1);
 				msg(MSG_DEBUG, "now we append the pwd: %s to our accountfile", password);
-				append_to_file(password, conn, IRC_COLLECTING_DIR);
+				//append_to_file(password, conn, IRC_COLLECTING_DIR);
 			}
 			else if (strncmp(data, "JOIN ", 5) == 0) {
 				msg(MSG_DEBUG, "we catched a JOIN token");
 				strncpy(catched_data, data, sizeof(catched_data)-1);
 				msg(MSG_DEBUG, "now we append: %s to our accountfile", catched_data);
-				append_to_file(catched_data, conn, IRC_COLLECTING_DIR);
+				//append_to_file(catched_data, conn, IRC_COLLECTING_DIR);
 			}
 			else if (strncmp(data, "WHO ", 4) == 0) {
 				msg(MSG_DEBUG, "we catched a WHO token");
 				strncpy(catched_data, data, sizeof(catched_data)-1);
 				msg(MSG_DEBUG, "now we append: %s to our accountfile", catched_data);
-				append_to_file(catched_data, conn, IRC_COLLECTING_DIR);
+				//append_to_file(catched_data, conn, IRC_COLLECTING_DIR);
 			}
 			else if (strncmp(data, "NICK ", 5) == 0) {
 				msg(MSG_DEBUG, "we catched a NICK token");
 				strncpy(catched_data, data, sizeof(catched_data)-1);
 				msg(MSG_DEBUG, "now we append: %s to our accountfile", catched_data);
-				append_to_file(catched_data, conn, IRC_COLLECTING_DIR);
+				//append_to_file(catched_data, conn, IRC_COLLECTING_DIR);
 			}
 			else if (strncmp(data, "PROTOCTL ", 9) == 0) {
 				msg(MSG_DEBUG, "we catched a PROTOCTL token");
 				strncpy(catched_data, data, sizeof(catched_data)-1);
 				msg(MSG_DEBUG, "now we append: %s to our accountfile\n", catched_data);
-				append_to_file(catched_data, conn, IRC_COLLECTING_DIR);
+				//append_to_file(catched_data, conn, IRC_COLLECTING_DIR);
 			}
 			else if (strncmp(data, "PING ", 5) == 0) {
 				msg(MSG_DEBUG, "we catched a PING token\n");
 				strncpy(catched_data, data, sizeof(catched_data)-1);
 				msg(MSG_DEBUG, "now we append: %s to our accountfile\n", catched_data);
-				append_to_file(catched_data, conn, IRC_COLLECTING_DIR);
+				//append_to_file(catched_data, conn, IRC_COLLECTING_DIR);
 			}
 			else if (strncmp(data, "MODE ", 5) == 0) {
 				msg(MSG_DEBUG, "we catched a MODE token\n");
 				strncpy(catched_data, data, sizeof(catched_data)-1);
 				msg(MSG_DEBUG, "now we append: %s to our accountfile\n", catched_data);
-				append_to_file(catched_data, conn, IRC_COLLECTING_DIR);
+				//append_to_file(catched_data, conn, IRC_COLLECTING_DIR);
 			}
 			else if (more_logging)
-				append_to_file(data, conn, IRC_COLLECTING_DIR);
+				//append_to_file(data, conn, IRC_COLLECTING_DIR);
 			break;
 		case SMTP:
 			if (more_logging)
-				append_to_file(data, conn, SMTP_COLLECTING_DIR);
+				//append_to_file(data, conn, SMTP_COLLECTING_DIR);
 
 			if (strncasecmp(data, "rcpt to:", 8) == 0) {
 				ptr = strchr(data, ':');
@@ -232,7 +232,7 @@ void content_substitution_and_logging_cts(const connection_t *conn, char *data, 
 			break;
 		case HTTP:
 			if (more_logging)
-				append_to_file(data, conn, HTTP_COLLECTING_DIR);
+				//append_to_file(data, conn, HTTP_COLLECTING_DIR);
 			break;
 		default:
 			break;

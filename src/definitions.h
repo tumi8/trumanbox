@@ -10,14 +10,6 @@
 #define MAX_PATH_LENGTH 	4096
 #define HTTP_BASE_DIR 		"/var/www"
 #define FTP_BASE_DIR 		"/home/ftp"
-//#define TRUMAN_CONFIG_DIR 	"/etc/trumanbox"
-#define TMP_TRUMANBOX 		"/var/local/truman-box"
-#define RESPONSE_COLLECTING_DIR "/var/local/truman-box/server-responses"
-#define FTP_COLLECTING_DIR 	"/var/local/truman-box/ftp"
-#define IRC_COLLECTING_DIR 	"/var/local/truman-box/irc"
-#define SMTP_COLLECTING_DIR	"/var/local/truman-box/smtp"
-#define HTTP_COLLECTING_DIR	"/var/local/truman-box/http"
-#define DUMP_FOLDER		"/var/local/truman-box/dump"
 #define BUFSIZE 		65535
 #define	BUFFSIZE		20000	/* buffer size for reads and writes */
 #define MAXLINE 		10000
