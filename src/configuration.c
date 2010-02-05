@@ -72,7 +72,7 @@ int conf_set_mode(struct configuration_t* c, operation_mode_t mode)
 		msg(MSG_ERROR, "Invalid mode given: %d", mode);
 		return -1;
 	} else {
-		msg(MSG_ERROR, "Mode given in configuration file. Cannot overwrite this value!");
+		msg(MSG_DEBUG, "Mode given in configuration file. Cannot overwrite this value!");
 	}
 	return -1;
 }

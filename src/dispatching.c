@@ -18,7 +18,6 @@
 #include <signal.h>
 
 struct dispatcher_t {
-	const char* dump_dir;
 	int controlfd;
 	int tcpfd;
 	int udpfd;
@@ -35,8 +34,7 @@ enum e_command read_command(int fd);
 struct dispatcher_t* disp_create(struct configuration_t* c)
 {
 	struct dispatcher_t* ret = (struct dispatcher_t*)malloc(sizeof(struct dispatcher_t));
-	ret->dump_dir = conf_get(c, "main", "dump_dir");	
-	ret->pi = pi_create(c, conf_getint(c, "main", "protcol_identifier", 0));
+	ret->pi = pi_create(c, conf_getint(c, "main", "protocol_identifier", 0));
 	ret->pi->init(ret->pi);
 	ret->ph = ph_create(c);
 	ret->config = c;
