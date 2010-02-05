@@ -6,8 +6,8 @@
 struct logger_t;
 struct configuration_t;
 
-typedef int (lg_init)(struct logger_t*);
-typedef int (lg_deinit)(struct logger_t*);
+typedef int (lg_init)(struct logger_t*); // initializes the logging module. Returns 0 on sucess, a value < 0 otherwise
+typedef int (lg_deinit)(struct logger_t*);// cleans up the logger module. Returns 0 on sucess, a value < 0 otherwise
 typedef int (lg_create_log)(struct logger_t*);
 typedef int (lg_finish_log)(struct logger_t*);
 typedef int (lg_log_text)(struct logger_t*, char* fmt, ...);
@@ -33,11 +33,17 @@ struct logger_t {
 
 /**
  * This creates the logging object. There may be an arbitrary number of logging objets
- * The logging module *MUST* expect that different *processes* want concurrent access to
- * the logs. 
+ * The logging module *MUST* expect that different *processes* and modules want concurrent 
+ * access to the logs. 
  */
-struct logger_t* logger_create(struct configuration_t* config);
+int logger_create(struct configuration_t* config);
 
-void logger_destroy(struct logger_t*);
+/**
+ * Get the global logger object. logger_create MUST be called once before 
+ * this function is called.
+ */
+inline struct logger_t* logger_get();
+
+int logger_destroy();
 
 #endif

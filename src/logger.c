@@ -7,39 +7,55 @@
 #include <stdlib.h>
 #include <string.h>
 
+struct logger_t* global_logger = NULL;
 
-struct logger_t* logger_create(struct configuration_t* config)
+int logger_create(struct configuration_t* config)
 {
-	struct logger_t* log = (struct logger_t*)malloc(sizeof(struct logger_t));
+	if (global_logger) {
+		msg(MSG_ERROR, "Logging module has already been created!");
+		return -1;
+	}
+	global_logger = (struct logger_t*)malloc(sizeof(struct logger_t));
 
-	log->config = config;
+	global_logger->config = config;
 
 	// check with logger to instantiate
-	const char* logger = conf_get(config, "logger", "type");
+	const char* logger = conf_get(config, "logging", "type");
 	
 	if (!strcmp(logger, "truman")) {
-		log->init = lt_init;
-		log->deinit = lt_deinit;
-		log->create_log = lt_create_log;
-		log->finish_log = lt_finish_log;
-		log->log = lt_log_text;
+		global_logger->init = lt_init;
+		global_logger->deinit = lt_deinit;
+		global_logger->create_log = lt_create_log;
+		global_logger->finish_log = lt_finish_log;
+		global_logger->log = lt_log_text;
 	} else {
 		msg(MSG_FATAL, "Unknown or not logging subsystem defined in configuration");
 		goto out;
 	}
 
-	log->init(log);
-
-	return log;
+	return global_logger->init(global_logger);
 
 out:
-	free(log);
-	return NULL;
+	free(global_logger);
+	global_logger = NULL;
+	return -1;
 }
 
-void logger_destroy(struct logger_t* logger)
+inline struct logger_t* logger_get()
 {
-	logger->deinit(logger);
-	free(logger);
+	return global_logger;
+}
+
+int logger_destroy()
+{
+	if (!global_logger) {
+		msg(MSG_ERROR, "Cannot destroy logging module as it has not been created");
+		return -1;
+	}
+	global_logger->deinit(global_logger);
+	free(global_logger);
+	global_logger = NULL;
+	
+	return 0;
 }
 

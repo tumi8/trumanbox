@@ -47,6 +47,7 @@
 #include "dns_resolver.h"
 #include "dispatching.h"
 #include "semaphore.h"
+#include "logger.h"
 
 #include <string.h>
 #include <unistd.h>
@@ -120,11 +121,14 @@ int main(int argc, char **argv) {
 
 	msg(MSG_DEBUG, "Trumanbox is running in mode %d", mode);
 
-	create_tmp_folders();
 	config_dir = conf_get(config, "main", "config_dir");
-	change_to_tmp_folder();
 
 	semaph_init();
+
+	if (0 > logger_create(config)) {
+		msg(MSG_FATAL, "Failure while initializing logging module. Exiting ...");
+		return -1;
+	}
 
 	dns_resolver = dns_create_resolver(config);
 	dispatcher = disp_create(config);
@@ -137,6 +141,8 @@ int main(int argc, char **argv) {
 	dns_stop_resolver(dns_resolver);
 	dns_destroy_resolver(dns_resolver);
 	disp_destroy(dispatcher);
+	logger_destroy();
+
 	conf_destroy(config);
 	msg(MSG_DEBUG, "Trumanbox is quitting...");
 
