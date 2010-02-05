@@ -15,16 +15,6 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 
-void create_tmp_folders() {
-
-}
-
-void change_to_tmp_folder() {
-	//if (chdir(RESPONSE_COLLECTING_DIR) < 0) {
-	//	msg(MSG_FATAL, "cannot change working dir to %s: %s", RESPONSE_COLLECTING_DIR, strerror(errno));
-	//	exit(1);
-	//}
-}
 
 int create_index_file() {
 	FILE *fd;

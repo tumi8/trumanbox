@@ -37,10 +37,11 @@ int create_or_clean_dir(const char* dirname, mode_t mode)
 				return -1;
 			}
 			while (NULL != (ent = readdir(dir))) {
+				if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, ".."))
+					continue;
 				snprintf(file, 255, "%s/%s", dirname, ent->d_name);
 				if (-1 == unlink(file)) {
-					msg(MSG_FATAL, "Cannot clean file %s: %s", file, strerror(errno));
-					return -1;
+					msg(MSG_DEBUG, "Cannot clean file %s: %s", file, strerror(errno));
 				}
 			}
 			closedir(dir);
@@ -61,6 +62,7 @@ int lt_init(struct logger_t* logger)
 	data->ftp = conf_get(logger->config, "logging", "ftp");
 	data->irc = conf_get(logger->config, "logging", "irc");
 	data->smtp = conf_get(logger->config, "logging", "smtp");
+	data->http = conf_get(logger->config, "logging", "http");
 	data->dump = conf_get(logger->config, "logging", "dump");
 
 	if (!data->basedir)

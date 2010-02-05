@@ -49,6 +49,8 @@
 #include "semaphore.h"
 #include "logger.h"
 
+
+#include <errno.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -59,7 +61,7 @@ static void usage(const char* progname);
 static operation_mode_t get_mode(const char* mode_string);
 
 int main(int argc, char **argv) {
-	const char*	config_dir; //, config_cmd[256];
+	const char *config_dir, *workdir;
 	int		c;
 	operation_mode_t mode = invalid;
 	struct dns_resolver_t* dns_resolver;
@@ -124,6 +126,14 @@ int main(int argc, char **argv) {
 	config_dir = conf_get(config, "main", "config_dir");
 
 	semaph_init();
+
+	// change to working dir
+	workdir = conf_get(config, "main", "work_dir");
+  	if (chdir(workdir) < 0) {
+		msg(MSG_FATAL, "cannot change working dir to %s: %s", workdir, strerror(errno));
+		return -1;
+	}
+
 
 	if (0 > logger_create(config)) {
 		msg(MSG_FATAL, "Failure while initializing logging module. Exiting ...");
