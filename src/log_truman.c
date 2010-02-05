@@ -19,9 +19,10 @@ struct lt_data {
 	const char* smtp;
 	const char* http;
 	const char* dump;
+	const char* dns;
 };
 
-int create_or_clean_dir(const char* dirname, mode_t mode)
+static int create_or_clean_dir(const char* dirname, mode_t mode)
 {
 	if (!dirname) {
 		return -1;
@@ -53,17 +54,9 @@ int create_or_clean_dir(const char* dirname, mode_t mode)
 	return 0;
 }
 
-int lt_init(struct logger_t* logger)
+static int init_directories(struct lt_data* data)
 {
 	int ret = 0;
-	struct lt_data* data = (struct lt_data*)malloc(sizeof(struct lt_data));
-	data->basedir = conf_get(logger->config, "logging", "log_base");
-	data->serv_response = conf_get(logger->config, "logging", "server_responses");
-	data->ftp = conf_get(logger->config, "logging", "ftp");
-	data->irc = conf_get(logger->config, "logging", "irc");
-	data->smtp = conf_get(logger->config, "logging", "smtp");
-	data->http = conf_get(logger->config, "logging", "http");
-	data->dump = conf_get(logger->config, "logging", "dump");
 
 	if (!data->basedir)
 		msg(MSG_FATAL, "No base logging directory given!");
@@ -93,6 +86,28 @@ int lt_init(struct logger_t* logger)
 		msg(MSG_FATAL, "No dump logging directory given!");
 	ret += create_or_clean_dir(data->dump, PERMS);
 
+	if (!data->dns)
+		msg(MSG_FATAL, "No DNS logging directory given!");
+	ret += create_or_clean_dir(data->dns, PERMS);
+
+	return ret;
+}
+
+int lt_init(struct logger_t* logger)
+{
+	int ret = 0;
+	struct lt_data* data = (struct lt_data*)malloc(sizeof(struct lt_data));
+	data->basedir = conf_get(logger->config, "logging", "log_base");
+	data->serv_response = conf_get(logger->config, "logging", "server_responses");
+	data->ftp = conf_get(logger->config, "logging", "ftp");
+	data->irc = conf_get(logger->config, "logging", "irc");
+	data->smtp = conf_get(logger->config, "logging", "smtp");
+	data->http = conf_get(logger->config, "logging", "http");
+	data->dump = conf_get(logger->config, "logging", "dump");
+	data->dump = conf_get(logger->config, "logging", "dns");
+
+	ret = init_directories(data);
+
 	logger->data = (void*)data;
 
        	return ret;
@@ -107,7 +122,7 @@ int lt_deinit(struct logger_t* logger)
 
 int lt_create_log(struct logger_t* logger)
 {
-	return 0;
+	return init_directories(logger->data);
 }
 
 int lt_finish_log(struct logger_t* logger)
@@ -115,8 +130,9 @@ int lt_finish_log(struct logger_t* logger)
 	return 0;
 }
 
-int lt_log_text(struct logger_t* logger, char* fmt, ...)
+int lt_log_text(struct logger_t* logger, connection_t* conn, char* type, char* message)
 {
+	
 	return 0;
 }
 
