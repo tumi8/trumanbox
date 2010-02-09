@@ -34,6 +34,7 @@ enum e_command read_command(int fd);
 struct dispatcher_t* disp_create(struct configuration_t* c)
 {
 	struct dispatcher_t* ret = (struct dispatcher_t*)malloc(sizeof(struct dispatcher_t));
+
 	ret->pi = pi_create(c, conf_getint(c, "main", "protocol_identifier", 0));
 	ret->pi->init(ret->pi);
 	ret->ph = ph_create(c);
