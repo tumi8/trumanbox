@@ -1,6 +1,8 @@
 #include "log_truman.h"
 #include "msg.h"
 #include "configuration.h"
+#include "wrapper.h"
+#include "semaphore.h"
 
 #include <errno.h>
 #include <sys/stat.h>
@@ -10,6 +12,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <fcntl.h>
+
+#define MAX_FILE_NAME 256
 
 struct lt_data { 
 	const char* basedir;
@@ -31,7 +36,7 @@ static int create_or_clean_dir(const char* dirname, mode_t mode)
 		if (errno == EEXIST) {
 			// clean it if there exist any log files in it
 			DIR* dir = opendir(dirname);
-			char file[256];
+			char file[MAX_FILE_NAME];
 			struct dirent* ent; 
 			if (!dir) {
 				msg(MSG_FATAL, "Cannot open logdir %s: %s", dirname, strerror(errno));
@@ -40,7 +45,7 @@ static int create_or_clean_dir(const char* dirname, mode_t mode)
 			while (NULL != (ent = readdir(dir))) {
 				if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, ".."))
 					continue;
-				snprintf(file, 255, "%s/%s", dirname, ent->d_name);
+				snprintf(file, MAX_FILE_NAME -1, "%s/%s", dirname, ent->d_name);
 				if (-1 == unlink(file)) {
 					msg(MSG_DEBUG, "Cannot clean file %s: %s", file, strerror(errno));
 				}
@@ -104,7 +109,7 @@ int lt_init(struct logger_t* logger)
 	data->smtp = conf_get(logger->config, "logging", "smtp");
 	data->http = conf_get(logger->config, "logging", "http");
 	data->dump = conf_get(logger->config, "logging", "dump");
-	data->dump = conf_get(logger->config, "logging", "dns");
+	data->dns = conf_get(logger->config, "logging", "dns");
 
 	ret = init_directories(data);
 
@@ -130,10 +135,60 @@ int lt_finish_log(struct logger_t* logger)
 	return 0;
 }
 
-int lt_log_text(struct logger_t* logger, connection_t* conn, char* type, char* message)
+int lt_log_text(struct logger_t* logger, connection_t* conn, protocols_app app, char* message)
 {
-	
+	// returns 1 on success, 0 if file exists, and -1 if something goes totally wrong ;-)
+	char full_path[MAX_FILE_NAME], *ptr;
+	int fd, w, r;
+	const char* base_dir;
+	struct lt_data* data = logger->data;
+
+	switch (app) {
+	case SMTP:
+		base_dir = data->smtp;
+		break;
+	case FTP:
+	case FTP_anonym:
+	case FTP_data:
+		base_dir = data->ftp;
+		break;
+	case HTTP:
+		base_dir = data->http;
+		break;
+	case IRC:
+		base_dir = data->irc;
+		break;
+	case DNS:
+		base_dir = data->dns;
+		break;
+	case UNKNOWN:
+	default:
+		base_dir = data->dump;
+		break;
+	}
+
+	sprintf(full_path, "%s/%s:%d", base_dir, conn->dest, conn->dport);
+
+	msg(MSG_DEBUG, "now we open %s for appending the string: %s", full_path, message);
+
+	semaph_alloc();
+
+	if ( (fd = open(full_path, O_WRONLY | O_CREAT | O_APPEND | O_EXCL | O_SYNC, S_IRUSR | S_IWUSR)) == -1) {
+		msg(MSG_ERROR, "cant open file %s, ", full_path);
+		return -1;
+	}
+
+	r = strlen(message);
+	ptr = message;
+
+	while (r > 0 && (w = write(fd, ptr, r)) > 0) {
+		ptr += w;
+		r -= w;
+	}
+
+	Close(fd);	
+
+	semaph_free();
+
 	return 0;
 }
-
-
