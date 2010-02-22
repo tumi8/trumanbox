@@ -2,7 +2,9 @@
 
 #include <stdlib.h>
 #include <string.h>
+
 #include "wrapper.h"
+#include "logger.h"
 
 struct ph_ftp {
 	struct configuration_t* config;
@@ -32,14 +34,14 @@ int ph_ftp_deinit(void* handler)
 	return 0;
 }
 
-int ph_ftp_handle_payload_stc(void* handler, const char* payload, size_t len)
+int ph_ftp_handle_payload_stc(void* handler, connection_t* conn, const char* payload, size_t len)
 {
-	return 0;
+	return logger_get()->log(logger_get(), conn, conn->app_proto, payload);
 }
 
-int ph_ftp_handle_payload_cts(void* handler, const char* payload, size_t len)
+int ph_ftp_handle_payload_cts(void* handler, connection_t* conn, const char* payload, size_t len)
 {
-	return 0;
+	return logger_get()->log(logger_get(), conn, conn->app_proto, payload);
 }
 
 int ph_ftp_handle_packet(void* handler, const char* packet, size_t len)
