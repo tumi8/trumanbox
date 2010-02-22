@@ -225,10 +225,11 @@ int lt_finish_log(struct logger_t* logger)
 	return 0;
 }
 
-int lt_log_text(struct logger_t* logger, connection_t* conn, protocols_app app, char* message)
+int lt_log_text(struct logger_t* logger, connection_t* conn, protocols_app app, const char* message)
 {
 	// returns 1 on success, 0 if file exists, and -1 if something goes totally wrong ;-)
-	char full_path[MAX_FILE_NAME], *ptr;
+	char full_path[MAX_FILE_NAME];
+	const char *ptr;
 	int fd, w, r;
 	const char* base_dir;
 	struct lt_data* data = logger->data;

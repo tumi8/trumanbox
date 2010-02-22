@@ -43,7 +43,6 @@ int print_timestamp(const connection_t *connection, char *protocol_dir) {
 		return 0;
 	}
 
-	append_to_file(outstr, connection, protocol_dir);
 	return 1;
 }
 

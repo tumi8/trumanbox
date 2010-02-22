@@ -1,13 +1,15 @@
 #ifndef _PROTO_HANDLER_H_
 #define _PROTO_HANDLER_H_
 
+#include "definitions.h"
+
 #include <netinet/in.h>
 
 struct configuration_t;
 
 typedef int (ph_init)(void* handler, struct configuration_t* c);
 typedef int (ph_deinit)(void* handler);
-typedef int (ph_handle_payload)(void* handler, const char* payload, size_t len);
+typedef int (ph_handle_payload)(void* handler, connection_t* conn, const char* payload, size_t len);
 typedef int (ph_handle_packet)(void* handler, const char* packet, size_t len);
 typedef int (ph_determine_target)(void* handler, struct sockaddr_in* addr);
 

@@ -181,7 +181,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 				}
 			}
 			proto_handler = tcph->ph[tcph->connection->app_proto];
-			proto_handler->handle_payload_stc(proto_handler->handler, payload, r);
+			proto_handler->handle_payload_stc(proto_handler->handler, tcph->connection, payload, r);
 			if (-1 == write(tcph->inConnFd, payload, r)) {
 				msg(MSG_FATAL, "Could not write to target!");
 				goto out;
@@ -200,7 +200,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 				}
 			}
 			proto_handler = tcph->ph[tcph->connection->app_proto];
-			proto_handler->handle_payload_cts(proto_handler->handler, payload, r);
+			proto_handler->handle_payload_cts(proto_handler->handler, tcph->connection, payload, r);
 			if (-1 == write(tcph->targetServiceFd, payload, r)) {
 				msg(MSG_FATAL, "Could not write to infected!");
 				goto out;
