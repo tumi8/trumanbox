@@ -14,7 +14,11 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#include <libxml/encoding.h>
+#include <libxml/xmlwriter.h>
+
 #define MAX_FILE_NAME 256
+#define DOCUMENT_ENCODING "ISO-8859-1"
 
 struct lt_data { 
 	const char* basedir;
@@ -25,7 +29,46 @@ struct lt_data {
 	const char* http;
 	const char* dump;
 	const char* dns;
+	const char* xml;
 };
+
+static int dump_to_xml_file(xmlTextWriterPtr xml, const char* directory)
+{
+	DIR* dir = opendir(directory);
+	FILE* f;
+	char file[MAX_FILE_NAME];
+	char text[MAXLINE];
+	struct dirent* ent;
+	if (!dir) {
+		msg(MSG_ERROR, "Cannot open logdir %s: %s", directory, strerror(errno));
+		return -1;
+	}
+	while (NULL != (ent = readdir(dir))) {
+		if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..")) {
+			continue;
+		}
+		snprintf(file, MAX_FILE_NAME - 1, "%s/%s", directory, ent->d_name);
+
+		f = fopen(file, "r");
+		if (!f) {
+			msg(MSG_ERROR, "Cannot open logfile %s for reading: %s", file, strerror(errno));
+			continue;
+		}
+
+		while (fgets(text, MAXLINE, f)) {
+			xmlTextWriterWriteElement(xml, BAD_CAST "Line", BAD_CAST text);
+		}
+
+		if (!feof(f)) {
+			msg(MSG_ERROR, "Error reading from file %s: %s", file, strerror(errno));
+		}
+		
+		fclose(f);
+		
+	}
+	closedir(dir);
+	return 0;
+}
 
 static int create_or_clean_dir(const char* dirname, mode_t mode)
 {
@@ -110,6 +153,7 @@ int lt_init(struct logger_t* logger)
 	data->http = conf_get(logger->config, "logging", "http");
 	data->dump = conf_get(logger->config, "logging", "dump");
 	data->dns = conf_get(logger->config, "logging", "dns");
+	data->xml = conf_get(logger->config, "logging", "xml");
 
 	ret = init_directories(data);
 
@@ -132,6 +176,52 @@ int lt_create_log(struct logger_t* logger)
 
 int lt_finish_log(struct logger_t* logger)
 {
+	struct lt_data* data = (struct lt_data*)logger->data;
+	xmlTextWriterPtr writer;
+	int rc;
+	//xmlChar* tmp;
+	writer = xmlNewTextWriterFilename(data->xml, 0);
+	if (!writer) {
+		msg(MSG_ERROR, "Cannot create output xml file: %s", data->xml);
+		return -1;
+	}
+	rc = xmlTextWriterStartDocument(writer, NULL, DOCUMENT_ENCODING, NULL);
+	if (rc < 0) {
+		msg(MSG_ERROR, "Could not start document %s", data->xml);
+		return -1;
+	}
+
+	xmlTextWriterStartElement(writer, BAD_CAST "FTP");
+	dump_to_xml_file(writer, data->ftp);
+	xmlTextWriterEndElement(writer);
+
+	xmlTextWriterStartElement(writer, BAD_CAST "IRC");
+	dump_to_xml_file(writer, data->irc);
+	xmlTextWriterEndElement(writer);
+
+	xmlTextWriterStartElement(writer, BAD_CAST "SMTP");
+	dump_to_xml_file(writer, data->smtp);
+	xmlTextWriterEndElement(writer);
+
+	xmlTextWriterStartElement(writer, BAD_CAST "HTTP");
+	dump_to_xml_file(writer, data->http);
+	xmlTextWriterEndElement(writer);
+
+	xmlTextWriterStartElement(writer, BAD_CAST "DUMP");
+	dump_to_xml_file(writer, data->dump);
+	xmlTextWriterEndElement(writer);
+	
+	xmlTextWriterStartElement(writer, BAD_CAST "DNS");
+	dump_to_xml_file(writer, data->dns);
+	xmlTextWriterEndElement(writer);
+
+	rc = xmlTextWriterEndDocument(writer);
+	if (rc < 0) {
+		msg(MSG_ERROR, "Error at testXmlWriterFilename");
+		return -1;
+	}
+	xmlFreeTextWriter(writer);
+
 	return 0;
 }
 
