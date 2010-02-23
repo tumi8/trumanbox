@@ -69,7 +69,7 @@ static struct proto_handler_t* create_handler(protocols_app app)
 
 struct proto_handler_t** ph_create(struct configuration_t* c)
 {
-	struct proto_handler_t** result = (struct proto_handler_t**)malloc(sizeof(struct proto_handler_t*)*UNKNOWN);
+	struct proto_handler_t** result = (struct proto_handler_t**)malloc(sizeof(struct proto_handler_t*)*(UNKNOWN+1));
 	int i = 0;
 	for (i = 0; i <= UNKNOWN; i++) {
 		msg(MSG_DEBUG, "Creating protocol handler for %d", i);
