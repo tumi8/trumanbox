@@ -156,9 +156,10 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 	tcphandler_determine_target(tcph, UNKNOWN, &targetServAddr);
 
 	FD_ZERO(&rset);
-	FD_SET(tcph->targetServiceFd, &rset); // as this socket is not connected to anyone, it should to be responsible for select to fail
+	//FD_SET(tcph->targetServiceFd, &rset); // as this socket is not connected to anyone, it should to be responsible for select to fail
 	FD_SET(tcph->inConnFd, &rset);
-	maxfd = max(tcph->targetServiceFd, tcph->inConnFd);
+	//maxfd = max(tcph->targetServiceFd, tcph->inConnFd) + 1;
+	maxfd = tcph->inConnFd + 1;
 
 	// wait 3 seconds for initial client payload
 	// try to receive server payload if there is no 
@@ -167,9 +168,9 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 	tv.tv_usec = 0; 
 
 	while (-1 != select(maxfd, &rset, NULL, NULL, &tv)) {
-		msg(MSG_FATAL, "Selecting");
 		if (FD_ISSET(tcph->targetServiceFd, &rset)) {
 			// we received data from the internet server
+			msg(MSG_DEBUG, "Received data from target server!");
 			r = read(tcph->targetServiceFd, payload, MAXLINE - 1);
 			if (!r) {
 				msg(MSG_DEBUG, "Target closed the connection...");
@@ -177,10 +178,11 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 			}
 			if (tcph->connection->app_proto == UNKNOWN) {
 				app_proto = tcph->pi->bypayload(tcph->pi, tcph->connection, payload, r);
+				msg(MSG_ERROR, "%d %d", app_proto, tcph->connection->app_proto);
 				if (app_proto == UNKNOWN) {
 					// TODO: handle this one! can we manage this?
 					msg(MSG_FATAL, "We could not determine protocol after reading from source and taget!");
-					exit(1);
+					goto out;
 				}
 			}
 			proto_handler = tcph->ph[tcph->connection->app_proto];
@@ -190,6 +192,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 				goto out;
 			}
 		} else if (FD_ISSET(tcph->inConnFd, &rset)) {
+			msg(MSG_DEBUG, "Received data from infected machine!");
 			// we received data from the infected machine
 			r = read(tcph->inConnFd, payload, MAXLINE - 1);
 			if (!r) {
@@ -221,7 +224,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 		FD_ZERO(&rset);
 		FD_SET(tcph->targetServiceFd, &rset); // as this socket is not connected to anyone, it should to be responsible for select to fail
 		FD_SET(tcph->inConnFd, &rset);
-		maxfd = max(tcph->targetServiceFd, tcph->inConnFd);
+		maxfd = max(tcph->targetServiceFd, tcph->inConnFd) + 1;
 		tv.tv_sec = 300;
 		tv.tv_usec = 0; 
 	}
