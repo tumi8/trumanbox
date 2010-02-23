@@ -72,9 +72,13 @@ struct proto_handler_t** ph_create(struct configuration_t* c)
 	struct proto_handler_t** result = (struct proto_handler_t**)malloc(sizeof(struct proto_handler_t*)*UNKNOWN);
 	int i = 0;
 	for (i = 0; i <= UNKNOWN; i++) {
+		msg(MSG_DEBUG, "Creating protocol handler for %d", i);
 		result[i] = create_handler(i);
+		msg(MSG_DEBUG, "Created protocol handler for %d ... Initializing handler ...", i);
 		result[i]->init(result[i]->handler, c);
+		msg(MSG_DEBUG, "Finished handler initialization");
 	}
+	msg(MSG_DEBUG, "Created every handler!");
 
 	return result;
 }

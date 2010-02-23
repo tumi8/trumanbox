@@ -163,6 +163,7 @@ void disp_run(struct dispatcher_t* disp)
 				}
 			}
 			if ( (childpid = pm_fork_temporary()) == 0) {        /* child process */
+				msg(MSG_DEBUG, "Forked TCP handler with pid %d", getpid());
 				Close(disp->tcpfd);     /* close listening socket within child process */
 				struct tcp_handler_t* t = tcphandler_create(disp->config, &connection, inconnfd, disp->pi, disp->ph);
 				tcphandler_run(t);
@@ -173,6 +174,7 @@ void disp_run(struct dispatcher_t* disp)
 		}
 		else if (connection.net_proto == UDP) {
 			if ( (childpid = pm_fork_temporary()) == 0) {	/* child process */
+				msg(MSG_DEBUG, "Forked UDP handler with pid %d", getpid());
 				struct udp_handler_t* u = udphandler_create(disp->udpfd);
 				udphandler_run(u);
 				udphandler_destroy(u);

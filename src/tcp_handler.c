@@ -35,7 +35,7 @@ struct tcp_handler_t* tcphandler_create(struct configuration_t* config, connecti
 	ret->inConnFd = inconn;
 	ret->targetServiceFd = 0;
 	ret->pi = pi;
-	ret->ph = ph_create(config);
+	ret->ph = ph;
 	ret->connectedToFinal = 0;
 
 	return ret;
@@ -148,6 +148,8 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 	protocols_app app_proto = UNKNOWN;
 	struct proto_handler_t* proto_handler;
 
+	msg(MSG_DEBUG, "Running TCP handler");
+
 	bzero(payload, MAXLINE);
 	tcph->targetServiceFd = Socket(AF_INET, SOCK_STREAM, 0);
 
@@ -165,6 +167,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 	tv.tv_usec = 0; 
 
 	while (-1 != select(maxfd, &rset, NULL, NULL, &tv)) {
+		msg(MSG_FATAL, "Selecting");
 		if (FD_ISSET(tcph->targetServiceFd, &rset)) {
 			// we received data from the internet server
 			r = read(tcph->targetServiceFd, payload, MAXLINE - 1);
