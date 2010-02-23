@@ -39,8 +39,13 @@ void sig_chld(int signo) {
 	pid_t pid;
 	int   stat;
 	
-	while( (pid = waitpid(-1, &stat, WNOHANG)) > 0)
-		msg(MSG_DEBUG, "child %d terminated", pid);
+	while( (pid = waitpid(-1, &stat, WNOHANG)) > 0) {
+		msg(MSG_DEBUG, "child %d terminated %s", pid, WIFEXITED(stat)?"normally":"abnormally");
+		if (WIFEXITED(stat))
+			msg(MSG_DEBUG, "\tExit code was %d", WEXITSTATUS(stat));
+		if (WIFSIGNALED(stat)) 
+			msg(MSG_DEBUG, "\tProcess was signaled with signal %d", WTERMSIG(stat));
+	}
 	return;
 }
 
