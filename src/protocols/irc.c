@@ -55,8 +55,8 @@ int ph_irc_determine_target(void* handler, struct sockaddr_in* addr)
 	if (conf_get_mode(irc->config) < full_proxy) {
                 bzero(addr, sizeof(struct sockaddr_in));
                 addr->sin_family = AF_INET;
-                Inet_pton(AF_INET, conf_get(irc->config, "main", "irc_redirect"), &addr->sin_addr);
-		addr->sin_port = htons((uint16_t)21);
+                Inet_pton(AF_INET, conf_get(irc->config, "irc", "irc_redirect"), &addr->sin_addr);
+		addr->sin_port = htons((uint16_t)6667);
 	}
 	return 0;
 }

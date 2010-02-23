@@ -55,8 +55,8 @@ int ph_smtp_determine_target(void* handler, struct sockaddr_in* addr)
 	if (conf_get_mode(smtp->config) < full_proxy) {
                 bzero(addr, sizeof(struct sockaddr_in));
                 addr->sin_family = AF_INET;
-                Inet_pton(AF_INET, conf_get(smtp->config, "main", "smtp_redirect"), &addr->sin_addr);
-		addr->sin_port = htons((uint16_t)21);
+                Inet_pton(AF_INET, conf_get(smtp->config, "smtp", "smtp_redirect"), &addr->sin_addr);
+		addr->sin_port = htons((uint16_t)25);
 	}
 	return 0;
 }
