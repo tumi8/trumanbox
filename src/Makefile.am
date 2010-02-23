@@ -14,6 +14,6 @@ trumanbox_SOURCES=config.h definitions.h dns_resolver.c helper_file.h iniparser.
 	protocols/unknown.h protocols/unknown.c
 
 
-AM_CFLAGS=`xml2-config --cflags` $(OPENDPI_CFLAGS) -Wall -Werror
+AM_CFLAGS=`xml2-config --cflags` $(OPENDPI_CFLAGS) -Wall -Werror -g -pg -O0
 AM_LDFLAGS=`xml2-config --libs`
 LDADD=$(OPENDPI_LIBRARY)
