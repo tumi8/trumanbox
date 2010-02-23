@@ -358,16 +358,14 @@ int parse_conntrack(connection_t *conn) {
 	while ( (NULL != (r = fgets(line, MAX_LINE_LENGTH, fd))) || (line != NULL) ) {
 		//sleep(2);
 
-		msg(MSG_DEBUG, "We got:\n%s\n", line);
+		msg(MSG_DEBUG, "We got:\n%s", line);
 
 		if (strncmp(line, proto, 3) == 0) {
 
 			begin = strstr(line, "src=") + 4;
 			end = strchr(begin, ' ');
 			
-			snprintf(tmp, (end-begin), "%s", begin);
-
-			msg(MSG_DEBUG, "The source IP: %s\ndoes not match with the corresponding conntrack entry: %s\n\n", conn->source, tmp);
+			snprintf(tmp, (end-begin+1), "%s", begin);
 
 			if (strncmp(conn->source, begin, (end - begin)) == 0) {
 				begin = strstr(end, "sport=") + 6;
@@ -375,10 +373,9 @@ int parse_conntrack(connection_t *conn) {
 			
 				snprintf(portnum, end-begin+1, "%s", begin);
 
-				msg(MSG_DEBUG, "Source port string: %s\nSource port int: %d\n", portnum, atoi(portnum));
+				msg(MSG_DEBUG, "Source port string: %s\nSource port int: %d", portnum, atoi(portnum));
 
 				if (conn->sport == atoi(portnum)) {
-					
 					// We have found right conntrack entry
 					begin = strstr(line, "dst=") + 4;
 					end = strchr(begin, ' ');
@@ -400,7 +397,7 @@ int parse_conntrack(connection_t *conn) {
 				}
 			}
 			else {
-				msg(MSG_ERROR, "Source IP does not match\n");
+				msg(MSG_DEBUG, "The source IP: %s\ndoes not match with the corresponding conntrack entry: %s\n", conn->source, tmp);
 				continue;
 			}
 		}
@@ -409,6 +406,7 @@ int parse_conntrack(connection_t *conn) {
 			continue;
 		}
 	}
+
 	return -1;
 }
 

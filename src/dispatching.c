@@ -150,7 +150,7 @@ void disp_run(struct dispatcher_t* disp)
 			clilen = sizeof(cliaddr);
 			inconnfd = Accept(disp->tcpfd, (SA *) &cliaddr, &clilen);
 			
-			Inet_ntop(AF_INET, &cliaddr.sin_addr, connection.source, 15);
+			Inet_ntop(AF_INET, &cliaddr.sin_addr, connection.source, sizeof(connection.source));
 			connection.sport = ntohs(cliaddr.sin_port);
 			// parse_conntrack fills in the remaining variables of connection
 			while ( parse_conntrack(&connection) != 0 ) {
