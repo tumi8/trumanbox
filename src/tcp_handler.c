@@ -28,7 +28,7 @@ struct tcp_handler_t {
 
 struct tcp_handler_t* tcphandler_create(struct configuration_t* config, connection_t* c, int inconn, struct proto_identifier_t* pi, struct proto_handler_t** ph)
 {
-	struct tcp_handler_t* ret = (struct tcp_handler_t*)malloc(sizeof(struct tcp_handler_t*));
+	struct tcp_handler_t* ret = (struct tcp_handler_t*)malloc(sizeof(struct tcp_handler_t));
 	ret->config = config;
 	ret->mode = conf_get_mode(config);
 	ret->connection = c;
@@ -60,6 +60,7 @@ void tcphandler_determine_target(struct tcp_handler_t* tcph, protocols_app app_p
 		// we can only determine the target based on port numbers. 
 		// This mode can therefore not determine applications which contain
 		// initial server payload and do not use standard ports
+		msg(MSG_DEBUG, "Determine target for full emulation mode...");
 		if (app_proto == UNKNOWN) {
 			bzero(tcph->connection->dest, IPLENGTH);
 		} else {
@@ -70,6 +71,7 @@ void tcphandler_determine_target(struct tcp_handler_t* tcph, protocols_app app_p
 		// Final target depends on the protocol. Protcol identification
 		// can be performed on both the intial client as well as the 
 		// initial server string
+		msg(MSG_DEBUG, "Determine target for half proxy mode...");
 		if (app_proto == UNKNOWN) {
 			bzero(tcph->connection->dest, IPLENGTH);
 		} else {
@@ -78,6 +80,7 @@ void tcphandler_determine_target(struct tcp_handler_t* tcph, protocols_app app_p
 		break;
 	case full_proxy:
 		// Connect to the original target (if this target is available)
+		msg(MSG_DEBUG, "Determine target for full proxy mode ...");
 		bzero(&targetServAddr, sizeof(targetServAddr));
 		targetServAddr->sin_family = AF_INET;
 		targetServAddr->sin_port = htons((uint16_t)tcph->connection->dport);
@@ -148,8 +151,6 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 	protocols_app app_proto = UNKNOWN;
 	struct proto_handler_t* proto_handler;
 
-	msg(MSG_DEBUG, "Running TCP handler");
-
 	bzero(payload, MAXLINE);
 	tcph->targetServiceFd = Socket(AF_INET, SOCK_STREAM, 0);
 
@@ -178,7 +179,6 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 			}
 			if (tcph->connection->app_proto == UNKNOWN) {
 				app_proto = tcph->pi->bypayload(tcph->pi, tcph->connection, payload, r);
-				msg(MSG_ERROR, "%d %d", app_proto, tcph->connection->app_proto);
 				if (app_proto == UNKNOWN) {
 					// TODO: handle this one! can we manage this?
 					msg(MSG_FATAL, "We could not determine protocol after reading from source and taget!");
@@ -203,20 +203,32 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 				app_proto = tcph->pi->bypayload(tcph->pi, tcph->connection, payload, r);
 				if (app_proto == UNKNOWN) {
 					tcphandler_handle_unknown(tcph, &targetServAddr);
+				} else if (!tcph->connectedToFinal) {
+					msg(MSG_DEBUG, "Identified protocol. Connecting to target");
+					tcphandler_determine_target(tcph, tcph->connection->app_proto, &targetServAddr);
+					if (-1 == Connect(tcph->targetServiceFd, (struct sockaddr*)&targetServAddr, sizeof(targetServAddr))) {
+						Close_conn(tcph->inConnFd, "Connection to targetservice could not be established");
+						goto out;
+					}
+					tcph->connectedToFinal = 1;
 				}
-			}
+			} 
 			proto_handler = tcph->ph[tcph->connection->app_proto];
+			msg(MSG_DEBUG, "Sending payload to protocol handler ...");
 			proto_handler->handle_payload_cts(proto_handler->handler, tcph->connection, payload, r);
+			msg(MSG_DEBUG, "Sending payload to server...");
 			if (-1 == write(tcph->targetServiceFd, payload, r)) {
-				msg(MSG_FATAL, "Could not write to infected!");
+				msg(MSG_FATAL, "Could not write to target server!");
 				goto out;
 			}
+			msg(MSG_DEBUG, "Finished work on this message...");
 		} else {
 			// We received a timeout. There are know to possiblities:
 			// 1.) We already identified the protocol: There is something wrong, as there should not be any timeout
 			// 2.) We did not identify the payload: We need to perform some 
 			//     actions to enable payload identification
 			if (tcph->connection->app_proto != UNKNOWN) {
+				msg(MSG_ERROR, "Connection timed out!");
 				goto out; // exit function
 			}
 			tcphandler_handle_unknown(tcph, &targetServAddr);
