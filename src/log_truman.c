@@ -264,9 +264,16 @@ int lt_log_text(struct logger_t* logger, connection_t* conn, protocols_app app, 
 
 	semaph_alloc();
 
-	if ( (fd = open(full_path, O_WRONLY | O_CREAT | O_APPEND | O_EXCL | O_SYNC, S_IRUSR | S_IWUSR)) == -1) {
-		msg(MSG_ERROR, "cant open file %s, ", full_path);
-		return -1;
+	if ( (fd = open(full_path, O_WRONLY | O_CREAT | O_EXCL | O_SYNC, S_IRUSR | S_IWUSR)) == -1) {
+		if (errno == EEXIST) {
+			if (-1 == (fd = open(full_path, O_WRONLY | O_APPEND | O_EXCL | O_SYNC))) {
+				msg(MSG_ERROR, "cant open file %s: %s", full_path, strerror(errno));
+				return -1;
+			}
+		}  else {
+			msg(MSG_ERROR, "cant open file %s: %s", full_path, strerror(errno));
+			return -1;
+		}
 	}
 
 	r = strlen(message);
