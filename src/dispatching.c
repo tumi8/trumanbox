@@ -8,9 +8,9 @@
 #include "udp_handler.h"
 #include "tcp_handler.h"
 #include "process_manager.h"
-#include "proto_ident.h"
-#include "proto_handler.h"
 #include "wrapper.h"
+#include "protocols/proto_ident.h"
+#include "protocols/proto_handler.h"
 
 #include <stdlib.h>
 #include <string.h>

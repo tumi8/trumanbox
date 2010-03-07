@@ -2,8 +2,8 @@
 #define _TCP_HANDLER_H_
 
 #include "definitions.h"
-#include "proto_ident.h"
-#include "proto_handler.h"
+#include "protocols/proto_ident.h"
+#include "protocols/proto_handler.h"
 
 struct tcp_handler_t;
 

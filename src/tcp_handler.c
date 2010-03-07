@@ -2,9 +2,10 @@
 #include "definitions.h"
 #include "helper_net.h"
 #include "msg.h"
-#include "proto_handler.h"
 #include "configuration.h"
 #include "wrapper.h"
+
+#include "protocols/proto_handler.h"
 
 #include <sys/types.h>
 #include <sys/uio.h>
