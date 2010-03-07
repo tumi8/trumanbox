@@ -26,9 +26,6 @@
 #define	MAXSOCKADDR  		128	/* max socket address structure size */
 #define IPLENGTH	25
 #define MAX_LINE_LENGTH 1024
-//#define DNS_LISTEN_PORT 53
-//#define DNS_LISTEN_ADDRESS  "127.0.0.1"
-//#define DNS_RESOLVE_ADDRESS "127.0.0.1" // default resoponse for dns requests
 
 #define	SA	struct sockaddr
 
