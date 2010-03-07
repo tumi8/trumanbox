@@ -35,12 +35,12 @@ int ph_http_deinit(void* handler)
 
 int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* payload, size_t len)
 {
-	return logger_get()->log(logger_get(), conn, conn->app_proto, payload);
+	return logger_get()->log(logger_get(), conn, "content-stc", payload);
 }
 
 int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* payload, size_t len)
 {
-	return logger_get()->log(logger_get(), conn, conn->app_proto, payload);
+	return logger_get()->log(logger_get(), conn, "content_cts", payload);
 }
 
 int ph_http_handle_packet(void* handler, const char* packet, size_t len)

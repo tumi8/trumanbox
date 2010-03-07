@@ -225,7 +225,7 @@ int lt_finish_log(struct logger_t* logger)
 	return 0;
 }
 
-int lt_log_text(struct logger_t* logger, connection_t* conn, protocols_app app, const char* message)
+int lt_log_text(struct logger_t* logger, connection_t* conn, const char* tag, const char* message)
 {
 	// returns 1 on success, 0 if file exists, and -1 if something goes totally wrong ;-)
 	char full_path[MAX_FILE_NAME];
@@ -234,7 +234,7 @@ int lt_log_text(struct logger_t* logger, connection_t* conn, protocols_app app, 
 	const char* base_dir;
 	struct lt_data* data = logger->data;
 
-	switch (app) {
+	switch (conn->app_proto) {
 	case SMTP:
 		base_dir = data->smtp;
 		break;
@@ -258,7 +258,7 @@ int lt_log_text(struct logger_t* logger, connection_t* conn, protocols_app app, 
 		break;
 	}
 
-	sprintf(full_path, "%s/%s:%d", base_dir, conn->dest, conn->dport);
+	sprintf(full_path, "%s/%s:%d-%s", base_dir, conn->dest, conn->dport, tag);
 
 	msg(MSG_DEBUG, "now we open %s for appending the string: %s", full_path, message);
 

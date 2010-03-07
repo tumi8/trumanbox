@@ -36,12 +36,12 @@ int ph_irc_deinit(void* handler)
 
 int ph_irc_handle_payload_stc(void* handler, connection_t* conn,  const char* payload, size_t len)
 {
-	return logger_get()->log(logger_get(), conn, conn->app_proto, payload);
+	return logger_get()->log(logger_get(), conn, "content-stc", payload);
 }
 
 int ph_irc_handle_payload_cts(void* handler, connection_t* conn,  const char* payload, size_t len)
 {
-	return logger_get()->log(logger_get(), conn, conn->app_proto, payload);
+	return logger_get()->log(logger_get(), conn, "content-cts", payload);
 }
 
 int ph_irc_handle_packet(void* handler, const char* packet, size_t len)

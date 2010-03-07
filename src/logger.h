@@ -10,7 +10,7 @@ typedef int (lg_init)(struct logger_t*); // initializes the logging module. Retu
 typedef int (lg_deinit)(struct logger_t*);// cleans up the logger module. Returns 0 on sucess, a value < 0 otherwise
 typedef int (lg_create_log)(struct logger_t*);
 typedef int (lg_finish_log)(struct logger_t*);
-typedef int (lg_log_text)(struct logger_t*, connection_t* conn, protocols_app app, const char* message);
+typedef int (lg_log_text)(struct logger_t*, connection_t* conn, const char* tag, const char* message);
 
 enum logger_type { directory };
 
