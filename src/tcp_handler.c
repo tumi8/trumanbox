@@ -65,6 +65,7 @@ void tcphandler_determine_target(struct tcp_handler_t* tcph, protocols_app app_p
 			bzero(tcph->connection->dest, IPLENGTH);
 		} else {
 			tcph->ph[app_proto]->determine_target(tcph->ph[app_proto]->handler, targetServAddr);
+			Inet_ntop(AF_INET, &targetServAddr->sin_addr, tcph->connection->dest, IPLENGTH);
 		}
 		break;
 	case half_proxy:
@@ -76,6 +77,7 @@ void tcphandler_determine_target(struct tcp_handler_t* tcph, protocols_app app_p
 			bzero(tcph->connection->dest, IPLENGTH);
 		} else {
 			tcph->ph[app_proto]->determine_target(tcph->ph[app_proto]->handler, targetServAddr);
+			Inet_ntop(AF_INET, &targetServAddr->sin_addr, tcph->connection->dest, IPLENGTH);
 		}
 		break;
 	case full_proxy:
