@@ -29,7 +29,8 @@ struct dispatcher_t {
 
 enum e_command { restart_analysis };
 
-enum e_command read_command(int fd);
+static enum e_command read_command(int fd);
+static int parse_conntrack(connection_t *conn);
 
 struct dispatcher_t* disp_create(struct configuration_t* c)
 {
@@ -193,7 +194,7 @@ void disp_run(struct dispatcher_t* disp)
 	}
 }
 
-enum e_command read_command(int fd)
+static enum e_command read_command(int fd)
 {
 	// TODO: extend dummy interface
 	char payload[MAXLINE];
@@ -203,5 +204,84 @@ enum e_command read_command(int fd)
 	r = Recvfrom(fd, payload, MAXLINE, 0, (SA *)  &cliaddr, &clilen);
 	Sendto(fd, payload, r, 0, (SA *) &cliaddr, clilen);
 	return restart_analysis;
+}
+
+static int parse_conntrack(connection_t *conn) {
+	FILE *fd;
+	char line[MAX_LINE_LENGTH];
+	char proto[5];
+	char *begin, *end, portnum[10];
+	char tmp[100];
+	char *r;
+
+	memset(line, 0, MAX_LINE_LENGTH);
+
+	if ((fd = fopen("/proc/net/ip_conntrack", "r")) == NULL) {
+		msg(MSG_ERROR, "Can't open ip_conntrack for reading: %s\n", strerror(errno));
+		return -1;
+	}
+
+	if (conn->net_proto == TCP)
+		strcpy(proto, "tcp");
+	else if (conn->net_proto == UDP)
+		strcpy(proto, "udp");
+	else if (conn->net_proto == ICMP)
+		strcpy(proto, "icmp");
+	else
+		proto[0] = 0;
+
+	while ( (NULL != (r = fgets(line, MAX_LINE_LENGTH, fd))) || (line != NULL) ) {
+		//sleep(2);
+
+		msg(MSG_DEBUG, "We got:\n%s", line);
+
+		if (strncmp(line, proto, 3) == 0) {
+
+			begin = strstr(line, "src=") + 4;
+			end = strchr(begin, ' ');
+			
+			snprintf(tmp, (end-begin+1), "%s", begin);
+
+			if (strncmp(conn->source, begin, (end - begin)) == 0) {
+				begin = strstr(end, "sport=") + 6;
+				end = strchr(begin, ' ');
+			
+				snprintf(portnum, end-begin+1, "%s", begin);
+
+				msg(MSG_DEBUG, "Source port string: %s\nSource port int: %d", portnum, atoi(portnum));
+
+				if (conn->sport == atoi(portnum)) {
+					// We have found right conntrack entry
+					begin = strstr(line, "dst=") + 4;
+					end = strchr(begin, ' ');
+
+					strncpy(conn->orig_dest, begin, end-begin);
+
+					begin = strstr(end, "dport=") + 6;
+					end = strchr(begin, ' ');
+
+					snprintf(portnum, end-begin+1, "%s", begin);
+
+					conn->dport = atoi(portnum);
+					
+					return 0;
+				}
+				else {
+					msg(MSG_ERROR, "Source Port does not match\n");
+					continue;
+				}
+			}
+			else {
+				msg(MSG_DEBUG, "The source IP: %s\ndoes not match with the corresponding conntrack entry: %s\n", conn->source, tmp);
+				continue;
+			}
+		}
+		else {
+			msg(MSG_ERROR, "Protocol does not match\n");
+			continue;
+		}
+	}
+
+	return -1;
 }
 
