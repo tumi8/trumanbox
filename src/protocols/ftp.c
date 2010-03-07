@@ -5,6 +5,7 @@
 
 #include "wrapper.h"
 #include "logger.h"
+#include "helper_file.h"
 
 struct ph_ftp {
 	struct configuration_t* config;
@@ -41,6 +42,7 @@ int ph_ftp_handle_payload_stc(void* handler, connection_t* conn, const char* pay
 
 int ph_ftp_handle_payload_cts(void* handler, connection_t* conn, const char* payload, size_t len)
 {
+	build_tree(conn, payload);
 	return logger_get()->log(logger_get(), conn, "content-cts", payload);
 }
 

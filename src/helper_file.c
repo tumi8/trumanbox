@@ -69,7 +69,7 @@ int create_path_tree(char *path, int user_id, int group_id) {
 	return 0;
 }
 
-void build_tree(const connection_t *conn, char *cmd_str) {
+void build_tree(const connection_t *conn, const char *cmd_str) {
 	char base_dir[MAX_PATH_LENGTH];
 	char full_path[MAX_PATH_LENGTH];
 	//char tmp2[MAX_PATH_LENGTH];

@@ -8,7 +8,7 @@
 #define LOCAL_EMAIL_ADDRESS	" christiangorecki@localhost\r\n"   // email address with a leading blank
 
 #define MAX_PATH_LENGTH 	4096
-#define HTTP_BASE_DIR 		"/var/www"
+#define HTTP_BASE_DIR 		"/var/www/localhost/htdocs"
 #define FTP_BASE_DIR 		"/home/ftp"
 #define BUFSIZE 		65535
 #define	BUFFSIZE		20000	/* buffer size for reads and writes */

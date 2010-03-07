@@ -1,6 +1,7 @@
 #include "http.h"
 #include "wrapper.h"
 #include "logger.h"
+#include "helper_file.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -40,6 +41,7 @@ int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 
 int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* payload, size_t len)
 {
+	build_tree(conn, payload);
 	return logger_get()->log(logger_get(), conn, "content_cts", payload);
 }
 
