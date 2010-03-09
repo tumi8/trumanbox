@@ -29,9 +29,9 @@ struct dispatcher_t {
 	struct configuration_t* config;
 };
 
-enum e_command { restart_analysis };
+enum e_command { unknown_command, restart_analysis };
 
-static enum e_command read_command(int fd);
+static enum e_command read_command(struct configuration_t* disp, int fd);
 static int parse_conntrack(connection_t *conn);
 
 struct dispatcher_t* disp_create(struct configuration_t* c)
@@ -185,7 +185,7 @@ void disp_run(struct dispatcher_t* disp)
 			}
 		}
 		else if (connection.net_proto == CONTROL) {
-			enum e_command res = read_command(disp->controlfd);
+			enum e_command res = read_command(disp->config, disp->controlfd);
 			if (res == restart_analysis) {
 				pm_kill_temporary();
 				logger_get()->finish_log(logger_get());
@@ -198,7 +198,7 @@ void disp_run(struct dispatcher_t* disp)
 	}
 }
 
-static enum e_command read_command(int fd)
+static enum e_command read_command(struct configuration_t* config, int fd)
 {
 	// TODO: extend dummy interface
 	char payload[MAXLINE];
@@ -206,8 +206,10 @@ static enum e_command read_command(int fd)
 	socklen_t clilen;
 	struct sockaddr_in cliaddr;
 	r = Recvfrom(fd, payload, MAXLINE, 0, (SA *)  &cliaddr, &clilen);
-	Sendto(fd, payload, r, 0, (SA *) &cliaddr, clilen);
-	return restart_analysis;
+	if (!strncmp(conf_get(config, "main", "magic_string"), payload, r)) {
+		return restart_analysis;
+	} 
+	return unknown_command;
 }
 
 static int parse_conntrack(connection_t *conn) {
