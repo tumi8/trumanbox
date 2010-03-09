@@ -9,6 +9,8 @@
 #include "tcp_handler.h"
 #include "process_manager.h"
 #include "wrapper.h"
+#include "logger.h"
+
 #include "protocols/proto_ident.h"
 #include "protocols/proto_handler.h"
 
@@ -186,6 +188,8 @@ void disp_run(struct dispatcher_t* disp)
 			enum e_command res = read_command(disp->controlfd);
 			if (res == restart_analysis) {
 				pm_kill_temporary();
+				logger_get()->finish_log(logger_get());
+				logger_get()->create_log(logger_get());
 			}
 		} else {
 			msg(MSG_DEBUG, "we got some network protocol which is neither tcp nor udp");
