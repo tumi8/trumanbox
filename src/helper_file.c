@@ -3,7 +3,6 @@
 #include "dispatching.h"
 #include "wrapper.h"
 #include "helper_net.h"
-#include "payload_alter_log.h"
 #include "msg.h"
 
 #include <fcntl.h>

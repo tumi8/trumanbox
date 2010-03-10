@@ -3,7 +3,6 @@
 #include "configuration.h"
 #include "helper_file.h"
 #include "helper_net.h"
-#include "payload_alter_log.h"
 #include "msg.h"
 #include "udp_handler.h"
 #include "tcp_handler.h"
