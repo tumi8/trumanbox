@@ -142,6 +142,7 @@ void pm_kill_temporary(void)
 			kill(ple->pid, SIGINT);
 			pm_del(pm, ple->pid); // TODO: this is stupid. optimize!
 		}
+		ple = ple->next;
 	}
 }
 
