@@ -1,10 +1,11 @@
 #include "smtp.h"
 #include "wrapper.h"
+#include "logger.h"
+#include "msg.h"
 
 #include <stdlib.h>
 #include <string.h>
 
-#include "logger.h"
 
 struct ph_smtp {
 	struct configuration_t* config;
@@ -41,6 +42,14 @@ int ph_smtp_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 
 int ph_smtp_handle_payload_cts(void* handler, connection_t* conn, const char* payload, size_t len)
 {
+	char* ptr;
+	if (strncasecmp(payload, "rcpt to:", 8) == 0) {
+		ptr = strchr(payload, ':');
+		ptr++;
+		sprintf(ptr, LOCAL_EMAIL_ADDRESS);
+		msg(MSG_DEBUG, "changed payload from client:%s", payload);
+			*len = strlen(payload);
+	}
 	return logger_get()->log(logger_get(), conn, "content-stc", payload);
 }
 
