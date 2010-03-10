@@ -142,7 +142,7 @@ static void dns_worker(struct dns_resolver_t* resolver)
 			i += len + 1;
 			len = request[i];
 		} while (len != 0);
-		*(domainname + tmp -1) = 0;
+		*(domainname + tmp - 1) = 0;
 		hent = gethostbyname(domainname);
 
 		if (hent == NULL) {
@@ -150,7 +150,7 @@ static void dns_worker(struct dns_resolver_t* resolver)
 			memcpy(real_addr_str, "0.0.0.0", INET_ADDRSTRLEN);
 		} else {
 			real_addr = *(uint32_t*) hent->h_addr;
-			Inet_ntop(AF_INET, real_addr_str, hent->h_addr, INET_ADDRSTRLEN);
+			Inet_ntop(AF_INET, hent->h_addr, real_addr_str, INET_ADDRSTRLEN);
 		}
 		msg(MSG_DEBUG, "dns_resolver: received request for domain %s", domainname);
 
