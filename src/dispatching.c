@@ -103,7 +103,7 @@ protocols_net wait_for_incomming_connection(int tcpfd, int udpfd, int controlfd)
 	int	maxfdp1, notready;
 
 	FD_ZERO(&read_set);
-	maxfdp1 = max(tcpfd, udpfd) + 1;
+	maxfdp1 = max(controlfd, max(tcpfd, udpfd)) + 1;
 
 	FD_SET(tcpfd, &read_set);
 	FD_SET(udpfd, &read_set);
@@ -187,9 +187,13 @@ void disp_run(struct dispatcher_t* disp)
 		else if (connection.net_proto == CONTROL) {
 			enum e_command res = read_command(disp->config, disp->controlfd);
 			if (res == restart_analysis) {
+				msg(MSG_DEBUG, "Got restart analysis command. Killing Processes.");
 				pm_kill_temporary();
+				msg(MSG_DEBUG, "Finalizing logfiles!");
 				logger_get()->finish_log(logger_get());
+				msg(MSG_DEBUG, "Creating new log!");
 				logger_get()->create_log(logger_get());
+				msg(MSG_DEBUG, "Restarted logging process!");
 			}
 		} else {
 			msg(MSG_DEBUG, "we got some network protocol which is neither tcp nor udp");
@@ -205,8 +209,11 @@ static enum e_command read_command(struct configuration_t* config, int fd)
 	ssize_t r;
 	socklen_t clilen;
 	struct sockaddr_in cliaddr;
+	const char* magic_string = conf_get(config, "main", "magic_string");
 	r = Recvfrom(fd, payload, MAXLINE, 0, (SA *)  &cliaddr, &clilen);
-	if (!strncmp(conf_get(config, "main", "magic_string"), payload, r)) {
+	msg(MSG_DEBUG, "Received %s, magic string: %s", payload, magic_string);
+	// TODO: remove -1. i need this because i'm testing with netcat which adds an additional \n
+	if (!strncmp(payload, magic_string, r - 1)) {
 		return restart_analysis;
 	} 
 	return unknown_command;
