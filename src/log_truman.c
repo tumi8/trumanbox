@@ -39,6 +39,7 @@ static int dump_to_xml_file(xmlTextWriterPtr xml, const char* directory)
 	char file[MAX_FILE_NAME];
 	char text[MAXLINE];
 	struct dirent* ent;
+	char* ptr;
 	if (!dir) {
 		msg(MSG_ERROR, "Cannot open logdir %s: %s", directory, strerror(errno));
 		return -1;
@@ -47,6 +48,7 @@ static int dump_to_xml_file(xmlTextWriterPtr xml, const char* directory)
 		if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..")) {
 			continue;
 		}
+
 		snprintf(file, MAX_FILE_NAME - 1, "%s/%s", directory, ent->d_name);
 
 		f = fopen(file, "r");
@@ -55,8 +57,16 @@ static int dump_to_xml_file(xmlTextWriterPtr xml, const char* directory)
 			continue;
 		}
 
+		ptr = strchr(ent->d_name, '-');
+		ptr++;
+		if (strlen(ptr)) {
+			xmlTextWriterStartElement(xml, BAD_CAST ptr);
+		}
 		while (fgets(text, MAXLINE, f)) {
 			xmlTextWriterWriteElement(xml, BAD_CAST "Line", BAD_CAST text);
+		}
+		if (strlen(ptr)) {
+			xmlTextWriterEndElement(xml);
 		}
 
 		if (!feof(f)) {
