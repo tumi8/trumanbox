@@ -283,6 +283,11 @@ int lt_log_text(struct logger_t* logger, connection_t* conn, const char* tag, co
 		ptr += w;
 		r -= w;
 	}
+	w = write(fd, "\n", strlen("\n"));
+	if (-1 == w) {
+		msg(MSG_ERROR, "Could not write newline to logfile");
+	}
+	
 
 	Close(fd);	
 
