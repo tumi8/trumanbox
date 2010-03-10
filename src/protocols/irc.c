@@ -1,10 +1,11 @@
 #include "irc.h"
 
+#include "wrapper.h"
+#include "logger.h"
+#include "msg.h"
+
 #include <stdlib.h>
 #include <string.h>
-#include "wrapper.h"
-
-#include "logger.h"
 
 struct ph_irc {
 	struct configuration_t* config;
@@ -41,6 +42,51 @@ int ph_irc_handle_payload_stc(void* handler, connection_t* conn,  const char* pa
 
 int ph_irc_handle_payload_cts(void* handler, connection_t* conn,  const char* payload, size_t* len)
 {
+	char	username[50],
+		password[50],
+		catched_data[100];
+	if (strncmp(payload, "USER ", 5) == 0) {
+		msg(MSG_DEBUG, "we catched a USER token");
+		strncpy(username, payload, sizeof(username)-1);
+		msg(MSG_DEBUG, "and username is: %s", username);
+		msg(MSG_DEBUG, "now we append the username: %s to our accountfile", username);
+			//append_to_file(username, conn, IRC_COLLECTING_DIR);
+	} else if (strncmp(payload, "PASS ", 5) == 0) {
+		msg(MSG_DEBUG, "we catched a PASS token");
+		strncpy(password, payload, sizeof(password)-1);
+		msg(MSG_DEBUG, "now we append the pwd: %s to our accountfile", password);
+		//append_to_file(password, conn, IRC_COLLECTING_DIR);
+	} else if (strncmp(payload, "JOIN ", 5) == 0) {
+		msg(MSG_DEBUG, "we catched a JOIN token");
+		strncpy(catched_data, payload, sizeof(catched_data)-1);
+		msg(MSG_DEBUG, "now we append: %s to our accountfile", catched_data);
+		//append_to_file(catched_data, conn, IRC_COLLECTING_DIR);
+	} else if (strncmp(payload, "WHO ", 4) == 0) {
+		msg(MSG_DEBUG, "we catched a WHO token");
+		strncpy(catched_data, payload, sizeof(catched_data)-1);
+		msg(MSG_DEBUG, "now we append: %s to our accountfile", catched_data);
+		//append_to_file(catched_data, conn, IRC_COLLECTING_DIR);
+	} else if (strncmp(payload, "NICK ", 5) == 0) {
+		msg(MSG_DEBUG, "we catched a NICK token");
+		strncpy(catched_data, payload, sizeof(catched_data)-1);
+		msg(MSG_DEBUG, "now we append: %s to our accountfile", catched_data);
+		//append_to_file(catched_data, conn, IRC_COLLECTING_DIR);
+	} else if (strncmp(payload, "PROTOCTL ", 9) == 0) {
+		msg(MSG_DEBUG, "we catched a PROTOCTL token");
+		strncpy(catched_data, payload, sizeof(catched_data)-1);
+		msg(MSG_DEBUG, "now we append: %s to our accountfile\n", catched_data);
+		//append_to_file(catched_data, conn, IRC_COLLECTING_DIR);
+	} else if (strncmp(payload, "PING ", 5) == 0) {
+		msg(MSG_DEBUG, "we catched a PING token\n");
+		strncpy(catched_data, payload, sizeof(catched_data)-1);
+		msg(MSG_DEBUG, "now we append: %s to our accountfile\n", catched_data);
+		//append_to_file(catched_data, conn, IRC_COLLECTING_DIR);
+	} else if (strncmp(payload, "MODE ", 5) == 0) {
+		msg(MSG_DEBUG, "we catched a MODE token\n");
+		strncpy(catched_data, payload, sizeof(catched_data)-1);
+		msg(MSG_DEBUG, "now we append: %s to our accountfile\n", catched_data);
+		//append_to_file(catched_data, conn, IRC_COLLECTING_DIR);
+	}
 	return logger_get()->log(logger_get(), conn, "content-cts", payload);
 }
 
