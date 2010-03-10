@@ -260,7 +260,7 @@ int lt_log_text(struct logger_t* logger, connection_t* conn, const char* tag, co
 
 	sprintf(full_path, "%s/%s:%d-%s", base_dir, conn->dest, conn->dport, tag);
 
-	msg(MSG_DEBUG, "now we open %s for appending the string: %s", full_path, message);
+	//msg(MSG_DEBUG, "now we open %s for appending the string: %s", full_path, message);
 
 	semaph_alloc();
 

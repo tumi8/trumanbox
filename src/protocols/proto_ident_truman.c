@@ -57,7 +57,7 @@ protocols_app pi_buildin_payload(struct proto_identifier_t* pi, connection_t *co
 //		msg(MSG_DEBUG, "the payload we fetched is:\n%s", payload);
 //	}
 
-	msg(MSG_DEBUG, "Received payload: \"%s\"\n", payload);
+	//msg(MSG_DEBUG, "Received payload: \"%s\"\n", payload);
 	if (payload_len > 0) {
 		if (strncmp(payload, "GET /", 5) == 0)
 			conn->app_proto = HTTP;

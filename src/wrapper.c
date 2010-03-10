@@ -1,11 +1,13 @@
 #include "wrapper.h"
 #include "msg.h"
 
+#include <sys/socket.h>
 #include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <unistd.h>
 #include <sys/uio.h>
 #include <stdio.h>
-#include <arpa/inet.h>
 #include <errno.h>
 #include <string.h> 
 #include <stdlib.h>
