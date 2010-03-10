@@ -147,7 +147,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 {
 	int maxfd;
 	struct sockaddr_in targetServAddr;
-	int r;
+	size_t r;
 	fd_set rset;
 	struct timeval tv;
 	char payload[MAXLINE];
@@ -189,7 +189,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 				}
 			}
 			proto_handler = tcph->ph[tcph->connection->app_proto];
-			proto_handler->handle_payload_stc(proto_handler->handler, tcph->connection, payload, r);
+			proto_handler->handle_payload_stc(proto_handler->handler, tcph->connection, payload, &r);
 			if (-1 == write(tcph->inConnFd, payload, r)) {
 				msg(MSG_FATAL, "Could not write to target!");
 				goto out;
@@ -218,7 +218,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 			} 
 			proto_handler = tcph->ph[tcph->connection->app_proto];
 			msg(MSG_DEBUG, "Sending payload to protocol handler ...");
-			proto_handler->handle_payload_cts(proto_handler->handler, tcph->connection, payload, r);
+			proto_handler->handle_payload_cts(proto_handler->handler, tcph->connection, payload, &r);
 			msg(MSG_DEBUG, "Sending payload to server...");
 			if (-1 == write(tcph->targetServiceFd, payload, r)) {
 				msg(MSG_FATAL, "Could not write to target server!");

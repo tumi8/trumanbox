@@ -34,12 +34,12 @@ int ph_irc_deinit(void* handler)
 	return 0;
 }
 
-int ph_irc_handle_payload_stc(void* handler, connection_t* conn,  const char* payload, size_t len)
+int ph_irc_handle_payload_stc(void* handler, connection_t* conn,  const char* payload, size_t* len)
 {
 	return logger_get()->log(logger_get(), conn, "content-stc", payload);
 }
 
-int ph_irc_handle_payload_cts(void* handler, connection_t* conn,  const char* payload, size_t len)
+int ph_irc_handle_payload_cts(void* handler, connection_t* conn,  const char* payload, size_t* len)
 {
 	return logger_get()->log(logger_get(), conn, "content-cts", payload);
 }

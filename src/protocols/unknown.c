@@ -22,12 +22,12 @@ int ph_unknown_deinit(void* handler)
 	return 0;
 }
 
-int ph_unknown_handle_payload_stc(void* handler, connection_t* conn,  const char* payload, size_t len)
+int ph_unknown_handle_payload_stc(void* handler, connection_t* conn,  const char* payload, size_t* len)
 {
 	return 0;
 }
 
-int ph_unknown_handle_payload_cts(void* handler, connection_t* conn,  const char* payload, size_t len)
+int ph_unknown_handle_payload_cts(void* handler, connection_t* conn,  const char* payload, size_t* len)
 {
 	return 0;
 }

@@ -35,12 +35,12 @@ int ph_smtp_deinit(void* handler)
 	return 0;
 }
 
-int ph_smtp_handle_payload_stc(void* handler, connection_t* conn, const char* payload, size_t len)
+int ph_smtp_handle_payload_stc(void* handler, connection_t* conn, const char* payload, size_t* len)
 {
 	return logger_get()->log(logger_get(), conn, "content-stc", payload);
 }
 
-int ph_smtp_handle_payload_cts(void* handler, connection_t* conn, const char* payload, size_t len)
+int ph_smtp_handle_payload_cts(void* handler, connection_t* conn, const char* payload, size_t* len)
 {
 	char* ptr;
 	if (strncasecmp(payload, "rcpt to:", 8) == 0) {
@@ -48,7 +48,7 @@ int ph_smtp_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 		ptr++;
 		sprintf(ptr, LOCAL_EMAIL_ADDRESS);
 		msg(MSG_DEBUG, "changed payload from client:%s", payload);
-			len = strlen(payload);
+			*len = strlen(payload);
 	}
 	return logger_get()->log(logger_get(), conn, "content-stc", payload);
 }

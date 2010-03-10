@@ -36,12 +36,12 @@ int ph_ftp_deinit(void* handler)
 	return 0;
 }
 
-int ph_ftp_handle_payload_stc(void* handler, connection_t* conn, const char* payload, size_t len)
+int ph_ftp_handle_payload_stc(void* handler, connection_t* conn, const char* payload, size_t* len)
 {
 	return logger_get()->log(logger_get(), conn, "content-cts", payload);
 }
 
-int ph_ftp_handle_payload_cts(void* handler, connection_t* conn, const char* payload, size_t len)
+int ph_ftp_handle_payload_cts(void* handler, connection_t* conn, const char* payload, size_t* len)
 {
 	char 	*ptr,
 		username[50],
@@ -63,7 +63,7 @@ int ph_ftp_handle_payload_cts(void* handler, connection_t* conn, const char* pay
 				ptr++;
 				sprintf(ptr, VALID_FTP_USER);
 				msg(MSG_DEBUG, "changed payload from client:\n%s", payload);
-				len = strlen(payload);
+				*len = strlen(payload);
 			} else if (strncmp(payload, "PASS ", 5) == 0) {
 				msg(MSG_DEBUG, "we catched a PASS token");
 				strncpy(password, payload, sizeof(password)-1);
@@ -73,7 +73,7 @@ int ph_ftp_handle_payload_cts(void* handler, connection_t* conn, const char* pay
 				ptr++;
 				sprintf(ptr, VALID_FTP_PASS);
 				msg(MSG_DEBUG, "changed payload from client:\n%s", payload);
-				len = strlen(payload);
+				*len = strlen(payload);
 			}
 			break;
 		case FTP_anonym:
@@ -87,7 +87,7 @@ int ph_ftp_handle_payload_cts(void* handler, connection_t* conn, const char* pay
 				ptr++;
 				sprintf(ptr, VALID_FTP_USER);
 				msg(MSG_DEBUG, "changed payload from client:\n%s", payload);
-				len = strlen(payload);
+				*len = strlen(payload);
 			} else if (strncmp(payload, "PASS ", 5) == 0) {
 				msg(MSG_DEBUG, "we catched a PASS token");
 				strncpy(password, payload, sizeof(password)-1);
@@ -97,7 +97,7 @@ int ph_ftp_handle_payload_cts(void* handler, connection_t* conn, const char* pay
 				ptr++;
 				sprintf(ptr, VALID_FTP_PASS);
 				msg(MSG_DEBUG, "changed payload from client:\n%s", payload);
-				len = strlen(payload);
+				*len = strlen(payload);
 			}
 			break;	
 		default:
