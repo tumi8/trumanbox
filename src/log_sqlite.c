@@ -14,7 +14,7 @@
 #include <sqlite3.h>
 
 #define TABLE_NAME_LENGTH 100
-#define MAX_STATEMENT 1000
+#define MAX_STATEMENT 8000
 
 static char statement[MAX_STATEMENT];
 
@@ -58,7 +58,7 @@ int create_db(struct lsq_data* data)
                 return -1;
         }
 
-	snprintf(statement, MAX_STATEMENT, "CREATE TABLE %s (domain TEXT, query STRING);", data->tables[HTTP]);
+	snprintf(statement, MAX_STATEMENT, "CREATE TABLE %s (domain TEXT, direction STRING, content TEXT);", data->tables[HTTP]);
 	rc = sqlite3_exec(data->db, statement, callback, 0, &err);
 	if (rc != SQLITE_OK) {
 		msg(MSG_ERROR, "Error createing table currenthttp: %s", err);
@@ -170,11 +170,16 @@ int lsq_log_text(struct logger_t* logger, connection_t* conn, const char* tag, c
 {
 	struct lsq_data* data = (struct lsq_data*)logger->data;
 	char* err;
+	int rc;
 
+	// BIG FAT TODO: sql injection ....
 	switch (conn->app_proto) {
 	case SMTP:
-		snprintf(statement, MAX_STATEMENT, "INSERT into %s (%s %s);", data->tables[SMTP], conn->orig_dest, message);
-		sqlite3_exec(data->db, statement, callback, 0, &err);
+		snprintf(statement, MAX_STATEMENT, "INSERT into %s (\"%s\" \"%s\");", data->tables[SMTP], conn->orig_dest, message);
+		rc = sqlite3_exec(data->db, statement, callback, 0, &err);
+		if (rc) {
+			msg(MSG_ERROR, "Error performing '%s': %s", statement, err);
+		}
 		break;
 	case FTP:
 	case FTP_anonym:
@@ -182,7 +187,11 @@ int lsq_log_text(struct logger_t* logger, connection_t* conn, const char* tag, c
 
 		break;
 	case HTTP:
-		
+		snprintf(statement, MAX_STATEMENT, "INSERT into %s (domain, direction, content) values ('%s','%s', '%s');", data->tables[HTTP], conn->orig_dest, tag, message);
+		rc = sqlite3_exec(data->db, statement, callback, 0, &err);
+		if (rc) {
+			msg(MSG_ERROR, "Error performing '%s': %s", statement, err);
+		}		
 		break;
 	case IRC:
 
