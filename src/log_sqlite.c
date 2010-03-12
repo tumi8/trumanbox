@@ -16,8 +16,57 @@ struct lsq_data {
 	sqlite3* db;
 };
 
+static int callback(void *NotUsed, int argc, char **argv, char **azColName){
+  int i;
+  NotUsed=0;
+
+  for(i=0; i<argc; i++){
+    msg(MSG_DEBUG, "%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+  }
+  return 0;
+}
+
+
 int create_db(sqlite3* db)
 {
+	char* err = 0;
+	int rc;
+
+	rc = sqlite3_exec(db, "CREATE TABLE currentdns (domain TEXT, original INTEGER, returned INTEGER);", callback, 0, &err);
+	if (rc != SQLITE_OK) {
+		msg(MSG_ERROR, "Error createing table currentdns: %s", err);
+		return -1;
+	}
+
+	rc = sqlite3_exec(db, "CREATE TABLE currenthttp (domain TEXT, query STRING);", callback, 0, &err);
+	if (rc != SQLITE_OK) {
+		msg(MSG_ERROR, "Error createing table currenthttp: %s", err);
+		return -1;
+	}
+
+	rc = sqlite3_exec(db, "CREATE TABLE currentftp (domain TEXT);", callback, 0, &err);
+	if (rc != SQLITE_OK) {
+		msg(MSG_ERROR, "Error createing table currentftp: %s", err);
+		return -1;
+	}
+
+	rc = sqlite3_exec(db, "CREATE TABLE currentsmtp(server TEXT, rctp TEXT);", callback, 0, &err);
+	if (rc != SQLITE_OK) {
+		msg(MSG_ERROR, "Error createing table currentsmtp: %s", err);
+		return -1;
+	}
+
+	rc = sqlite3_exec(db, "CREATE TABLE currentirc (server TEXT, keyword TEXT, value TEXT);", callback, 0, &err);
+	if (rc != SQLITE_OK) {
+		msg(MSG_ERROR, "Error createing table currentirc: %s", err);
+		return -1;
+	}
+
+	rc = sqlite3_exec(db, "CREATE TABLE currentunknown (content TEXT);", callback, 0, &err);
+	if (rc != SQLITE_OK) {
+		msg(MSG_ERROR, "Error createing table currentunknown: %s", err);
+		return -1;
+	}
 	return 0;
 }
 
@@ -45,6 +94,10 @@ int lsq_init(struct logger_t* logger)
 	if ( sqlite3_open(data->db_file, &data->db)) {
 		msg(MSG_FATAL, "Cannot open sqlite database file %s: %s", data->db_file, sqlite3_errmsg(data->db));
 		goto out2;
+	}
+
+	if (new_db) {
+		create_db(data->db);
 	}
 
 	logger->data = (void*) data;
