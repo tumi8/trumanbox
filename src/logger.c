@@ -22,6 +22,10 @@ int logger_create(struct configuration_t* config)
 
 	// check with logger to instantiate
 	const char* logger = conf_get(config, "logging", "type");
+	if (!logger) {
+		msg(MSG_FATAL, "No logger type given in configuration file!");
+		return -1;
+	}
 	
 	if (!strcmp(logger, "truman")) {
 		global_logger->init = lt_init;
