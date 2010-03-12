@@ -10,6 +10,7 @@ AC_CHECK_HEADERS(sys/sem.h sys/socket.h sys/stat.h sys/time.h sys/types.h)
 AC_CHECK_HEADERS(sys/wait.h time.h unistd.h dirent.h)
 
 AM_PATH_XML2(2.4.0,,AC_MSG_ERROR([*** LibXML version $XML_VERSION not found!]))
+AX_LIB_SQLITE3(3.0)
 
 # new argument --with-opendpi:
 #	if used: use opendpi for protocol payload identification
