@@ -140,6 +140,7 @@ void disp_run(struct dispatcher_t* disp)
 	Signal(SIGCHLD, sig_chld);
 	tries_pars_ct = 0;
 
+	logger_get()->create_log(logger_get());
 	for ( ; ; ) {
 	start:
 		connection.net_proto = wait_for_incomming_connection(disp->tcpfd, disp->udpfd, disp->controlfd);
