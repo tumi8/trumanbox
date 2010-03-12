@@ -3,6 +3,7 @@
 #include "msg.h"
 
 #include "log_truman.h"
+#include "log_sqlite.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -28,6 +29,12 @@ int logger_create(struct configuration_t* config)
 		global_logger->create_log = lt_create_log;
 		global_logger->finish_log = lt_finish_log;
 		global_logger->log = lt_log_text;
+	} else if (!strcmp(logger, "sqlite")) {
+		global_logger->init = lsq_init;
+		global_logger->deinit = lsq_deinit;
+		global_logger->create_log = lsq_create_log;
+		global_logger->finish_log = lsq_finish_log;
+		global_logger->log = lsq_log_text;
 	} else {
 		msg(MSG_FATAL, "Unknown or not logging subsystem defined in configuration");
 		goto out;
