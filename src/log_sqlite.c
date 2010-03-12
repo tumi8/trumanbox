@@ -16,17 +16,22 @@ int lsq_init(struct logger_t* logger)
 	struct lsq_data* data = (struct lsq_data*)malloc(sizeof(struct lsq_data));
 
 	data->db_file = conf_get(logger->config, "logging", "db_file");
+	if (!data->db_file) {
+		msg(MSG_FATAL, "No db_file given in configuration file!");
+		goto out1;
+	}
 
 	if ( sqlite3_open(data->db_file, &data->db)) {
 		msg(MSG_FATAL, "Cannot open sqlite database file %s: %s", data->db_file, sqlite3_errmsg(data->db));
-		goto out;
+		goto out2;
 	}
 
 	logger->data = (void*) data;
 	return 0;
 
-out:
+out2:
 	sqlite3_close(data->db);
+out1:
 	free(data);
 	return -1;
 }

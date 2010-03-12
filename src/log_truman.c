@@ -156,20 +156,69 @@ int lt_init(struct logger_t* logger)
 	int ret = 0;
 	struct lt_data* data = (struct lt_data*)malloc(sizeof(struct lt_data));
 	data->basedir = conf_get(logger->config, "logging", "log_base");
+	if (!data->basedir) {
+		msg(MSG_FATAL, "No basedir given in configuration file!");
+		goto out;
+	}
+
 	data->serv_response = conf_get(logger->config, "logging", "server_responses");
+	if (!data->basedir) {
+		msg(MSG_FATAL, "No server_responses dir given in configuration file!");
+		goto out;
+	}
+
 	data->ftp = conf_get(logger->config, "logging", "ftp");
+	if (!data->basedir) {
+		msg(MSG_FATAL, "No ftp dir given in configuration file!");
+		goto out;
+	}
+
 	data->irc = conf_get(logger->config, "logging", "irc");
+	if (!data->basedir) {
+		msg(MSG_FATAL, "No logging dir given in configuration file!");
+		goto out;
+	}
+
 	data->smtp = conf_get(logger->config, "logging", "smtp");
+	if (!data->basedir) {
+		msg(MSG_FATAL, "No smtp dir given in configuration file!");
+		goto out;
+	}
 	data->http = conf_get(logger->config, "logging", "http");
+	if (!data->basedir) {
+		msg(MSG_FATAL, "No http dir given in configuration file!");
+		goto out;
+	}
+	
 	data->dump = conf_get(logger->config, "logging", "dump");
+	if (!data->basedir) {
+		msg(MSG_FATAL, "No dump dir given in configuration file!");
+		goto out;
+	}
+
 	data->dns = conf_get(logger->config, "logging", "dns");
+	if (!data->basedir) {
+		msg(MSG_FATAL, "No dns dir given in configuration file!");
+		goto out;
+	}
+
 	data->xml = conf_get(logger->config, "logging", "xml");
+	if (!data->basedir) {
+		msg(MSG_FATAL, "No xml result file given in configuration file!");
+		goto out;
+	}
 
 	ret = init_directories(data);
+	if (ret < 0)
+		goto out;
 
 	logger->data = (void*)data;
 
-       	return ret;
+       	return 0;
+
+out:
+	free(data);
+	return -1;
 }
 
 int lt_deinit(struct logger_t* logger)
