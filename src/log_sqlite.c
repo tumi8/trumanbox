@@ -51,7 +51,7 @@ int create_db(struct lsq_data* data)
 		//}
 	}
 
-	snprintf(statement, MAX_STATEMENT, "CREATE TABLE %s (domain TEXT, original INTEGER, returned INTEGER);", data->tables[DNS]);
+	snprintf(statement, MAX_STATEMENT, "CREATE TABLE %s (domain TEXT, original TEXT, returned TEXT);", data->tables[DNS]);
 	rc = sqlite3_exec(data->db, statement, callback, 0, &err);
         if (rc != SQLITE_OK) {
                 msg(MSG_ERROR, "Error createing table currentdns: %s", err);
@@ -197,7 +197,11 @@ int lsq_log_text(struct logger_t* logger, connection_t* conn, const char* tag, c
 
 		break;
 	case DNS:
-
+		snprintf(statement, MAX_STATEMENT, "INSERT into %s (domain, original, returned) values ('%s', '%s', '%s');", data->tables[DNS], message, conn->orig_dest, conn->dest);
+		rc = sqlite3_exec(data->db, statement, callback, 0, &err);
+		if (rc) {
+			msg(MSG_ERROR, "Error performing '%s': %s", statement, err);
+		}		
 		break;
 
 	case UNKNOWN:
