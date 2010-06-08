@@ -110,6 +110,7 @@ int tcphandler_handle_unknown(struct tcp_handler_t* tcph, struct sockaddr_in* ta
 			return -1;
 		}
 		tcphandler_determine_target(tcph, app_proto, targetServAddr);
+		break;
 	case  half_proxy:
 		// TODO: fetch banner
 		// try to identify using fetched banner
