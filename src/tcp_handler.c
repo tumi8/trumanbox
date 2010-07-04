@@ -87,7 +87,7 @@ void tcphandler_determine_target(struct tcp_handler_t* tcph, protocols_app app_p
 		bzero(&targetServAddr, sizeof(targetServAddr));
 		targetServAddr->sin_family = AF_INET;
 		targetServAddr->sin_port = htons((uint16_t)tcph->connection->dport);
-		memcpy(tcph->connection->dest, tcph->connection->orig_dest, IPLENGTH);
+		memcpy(tcph->connection->dest, tcph->connection->orig_dest, strlen(tcph->connection->dest));
 		Inet_pton(AF_INET, tcph->connection->dest, &targetServAddr->sin_addr);
 	default:
 		msg(MSG_FATAL, "Unknown mode: This is an internal programming error!!!! Exiting!");
@@ -171,12 +171,14 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 	// payload from the client.
 	tv.tv_sec = 3;
 	tv.tv_usec = 0; 
-
+	
 	while (-1 != select(maxfd, &rset, NULL, NULL, &tv)) {
 		if (FD_ISSET(tcph->targetServiceFd, &rset)) {
 			// we received data from the internet server
+			bzero(payload,MAXLINE); // clean the old payload string, because we want to save new data
 			msg(MSG_DEBUG, "Received data from target server!");
 			r = read(tcph->targetServiceFd, payload, MAXLINE - 1);
+			msg(MSG_DEBUG,"payload received: \n%s",payload);
 			if (!r) {
 				msg(MSG_DEBUG, "Target closed the connection...");
 				goto out;
@@ -196,9 +198,11 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 				goto out;
 			}
 		} else if (FD_ISSET(tcph->inConnFd, &rset)) {
+			bzero(payload,MAXLINE); // clean the old payload string, because we want to save new data
 			msg(MSG_DEBUG, "Received data from infected machine!");
 			// we received data from the infected machine
 			r = read(tcph->inConnFd, payload, MAXLINE - 1);
+			msg(MSG_DEBUG, "Received %d bytes of data: \n\"%s\"",r, payload);
 			if (!r) {
 				msg(MSG_DEBUG, "Source closed the connection...");
 				goto out;
@@ -217,9 +221,12 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 					tcph->connectedToFinal = 1;
 				}
 			} 
+			msg(MSG_DEBUG,"protocol: %d",tcph->connection->app_proto);
+			
 			proto_handler = tcph->ph[tcph->connection->app_proto];
-			msg(MSG_DEBUG, "Sending payload to protocol handler ...");
+			msg(MSG_DEBUG, "Sending payload to protocol handler ...\n %s\n",payload);
 			proto_handler->handle_payload_cts(proto_handler->handler, tcph->connection, payload, &r);
+			
 			msg(MSG_DEBUG, "Sending payload to server...");
 			if (-1 == write(tcph->targetServiceFd, payload, r)) {
 				msg(MSG_FATAL, "Could not write to target server!");
@@ -227,10 +234,9 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 			}
 			msg(MSG_DEBUG, "Finished work on this message...");
 		} else {
-			// We received a timeout. There are know to possiblities:
+			// We received a timeout. There are now two possiblities:
 			// 1.) We already identified the protocol: There is something wrong, as there should not be any timeout
-			// 2.) We did not identify the payload: We need to perform some 
-			//     actions to enable payload identification
+			// 2.) We did not identify the payload: We need to perform some  actions to enable payload identification
 			if (tcph->connection->app_proto != UNKNOWN) {
 				msg(MSG_ERROR, "Connection timed out!");
 				goto out; // exit function
@@ -246,7 +252,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 	}
 
 out:
-	Close_conn(tcph->inConnFd, "incomming connection, because we are done with this connection");
+	Close_conn(tcph->inConnFd, "incoming connection, because we are done with this connection");
 	Close_conn(tcph->targetServiceFd, "connection to targetservice, because we are done with this connection");
 }
 

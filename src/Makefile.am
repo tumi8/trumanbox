@@ -10,11 +10,13 @@ trumanbox_SOURCES=config.h definitions.h dns_resolver.c helper_file.h iniparser.
 	protocols/proto_ident.h protocols/proto_ident.c protocols/proto_handler.h \
 	protocols/proto_handler.c protocols/proto_ident_truman.c \
 	protocols/proto_ident_truman.h protocols/proto_ident_opendpi.h protocols/proto_ident_opendpi.c \
-	protocols/ftp.h protocols/ftp.c protocols/http.h protocols/http.c \
+	protocols/ftp.h protocols/ftp.c protocols/http_get.h protocols/http_get.c \
+	protocols/http_post.c protocols/http_post.h \
+	protocols/http_put.c protocols/http_put.h  \
 	protocols/smtp.h protocols/smtp.c protocols/irc.h protocols/irc.c \
 	protocols/unknown.h protocols/unknown.c
 
 
-AM_CFLAGS=`xml2-config --cflags` $(OPENDPI_CFLAGS) -Wall -Werror -g -pg -O0
+AM_CFLAGS=`xml2-config --cflags` $(OPENDPI_CFLAGS) -Wall -Werror -g -O0
 AM_LDFLAGS=`xml2-config --libs` -lsqlite3
 LDADD=$(OPENDPI_LIBRARY)

@@ -302,7 +302,7 @@ int lt_log_text(struct logger_t* logger, connection_t* conn, const char* tag, co
 	case FTP_data:
 		base_dir = data->ftp;
 		break;
-	case HTTP:
+	case HTTP_GET:
 		base_dir = data->http;
 		break;
 	case IRC:

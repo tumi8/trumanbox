@@ -50,7 +50,7 @@ int ph_ftp_handle_payload_cts(void* handler, connection_t* conn, const char* pay
 	switch(conn->app_proto) {
 		case FTP:
 			if (strncmp(payload, "USER ", 5) == 0) {
-				msg(MSG_DEBUG, "we catched a USER token");
+				msg(MSG_DEBUG, "we caught a USER token");
 				strncpy(username, payload, sizeof(username)-1);
 				msg(MSG_DEBUG, "and username is: %s", username);
 				msg(MSG_DEBUG, "now we append the username: %s to our accountfile", username);
@@ -65,7 +65,7 @@ int ph_ftp_handle_payload_cts(void* handler, connection_t* conn, const char* pay
 				msg(MSG_DEBUG, "changed payload from client:\n%s", payload);
 				*len = strlen(payload);
 			} else if (strncmp(payload, "PASS ", 5) == 0) {
-				msg(MSG_DEBUG, "we catched a PASS token");
+				msg(MSG_DEBUG, "we caught a PASS token");
 				strncpy(password, payload, sizeof(password)-1);
 				msg(MSG_DEBUG, "now we append the pwd: %s to our accountfile", password);
 				//append_to_file(password, conn, FTP_COLLECTING_DIR);
@@ -78,7 +78,7 @@ int ph_ftp_handle_payload_cts(void* handler, connection_t* conn, const char* pay
 			break;
 		case FTP_anonym:
 			if (strncmp(payload, "USER ", 5) == 0) {
-				msg(MSG_DEBUG, "we catched a USER token");
+				msg(MSG_DEBUG, "we caught a USER token");
 				strncpy(username, payload, sizeof(username)-1);
 				msg(MSG_DEBUG, "and username is: %s", username);
 				msg(MSG_DEBUG, "now we append the username: %s to our accountfile", username);
@@ -89,7 +89,7 @@ int ph_ftp_handle_payload_cts(void* handler, connection_t* conn, const char* pay
 				msg(MSG_DEBUG, "changed payload from client:\n%s", payload);
 				*len = strlen(payload);
 			} else if (strncmp(payload, "PASS ", 5) == 0) {
-				msg(MSG_DEBUG, "we catched a PASS token");
+				msg(MSG_DEBUG, "we caught a PASS token");
 				strncpy(password, payload, sizeof(password)-1);
 				msg(MSG_DEBUG, "now we append the pwd: %s to our accountfile", password);
 				//append_to_file(password, conn, FTP_COLLECTING_DIR);

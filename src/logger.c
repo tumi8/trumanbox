@@ -40,16 +40,14 @@ int logger_create(struct configuration_t* config)
 		global_logger->finish_log = lsq_finish_log;
 		global_logger->log = lsq_log_text;
 	} else {
-		msg(MSG_FATAL, "Unknown or not logging subsystem defined in configuration");
-		goto out;
+		msg(MSG_FATAL, "Unknown subsystem defined in configuration. Maybe even undefined!");
+		free(global_logger);
+		global_logger= NULL;
+		return -1;
 	}
 
 	return global_logger->init(global_logger);
 
-out:
-	free(global_logger);
-	global_logger = NULL;
-	return -1;
 }
 
 inline struct logger_t* logger_get()

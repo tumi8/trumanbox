@@ -124,6 +124,7 @@ static void dns_worker(struct dns_resolver_t* resolver)
 			// definately malformed DNS request
 			msg(MSG_ERROR, "dns_resolver: received malformed request");
 		}
+	
 
 		// only handle A requests
 		opcode = (request[2] >> 3) & 15;
@@ -171,6 +172,7 @@ static void dns_worker(struct dns_resolver_t* resolver)
 			memcpy(returned_addr_str, resolver->fake_addr, INET_ADDRSTRLEN);
 		}
 		Sendto(socket, response, tmp, 0, (struct sockaddr *)&cliaddr, clilen);
+
 
 		snprintf(logline, 1000, "%s:%s:%s", domainname, real_addr_str, returned_addr_str);
 		logger_get()->log(logger_get(), &resolver->conn, "", logline);

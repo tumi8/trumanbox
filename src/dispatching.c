@@ -95,9 +95,9 @@ int disp_destroy(struct dispatcher_t* d)
 }
 
 /*
-wait for incomming connection and return the protocol (tcp, udp, unknown)
+wait for incoming connection and return the protocol (tcp, udp, unknown)
 */
-protocols_net wait_for_incomming_connection(int tcpfd, int udpfd, int controlfd) {
+protocols_net wait_for_incoming_connection(int tcpfd, int udpfd, int controlfd) {
 	fd_set	read_set;
 	int	maxfdp1, notready;
 
@@ -143,7 +143,7 @@ void disp_run(struct dispatcher_t* disp)
 	logger_get()->create_log(logger_get());
 	for ( ; ; ) {
 	start:
-		connection.net_proto = wait_for_incomming_connection(disp->tcpfd, disp->udpfd, disp->controlfd);
+		connection.net_proto = wait_for_incoming_connection(disp->tcpfd, disp->udpfd, disp->controlfd);
 		connection.app_proto = UNKNOWN;
 
 		if (connection.net_proto == ERROR)
@@ -161,7 +161,7 @@ void disp_run(struct dispatcher_t* disp)
 				sleep(2);
 				tries_pars_ct++;
 				if (tries_pars_ct > 5) {
-					Close_conn(inconnfd, "incomming connection, because conntrack table could not be parsed\n");
+					Close_conn(inconnfd, "incoming connection, because conntrack table could not be parsed\n");
 					goto start;
 				}
 			}
@@ -269,7 +269,7 @@ static int parse_conntrack(connection_t *conn) {
 					end = strchr(begin, ' ');
 
 					strncpy(conn->orig_dest, begin, end-begin);
-
+					conn->orig_dest[end-begin] = '\0';
 					begin = strstr(end, "dport=") + 6;
 					end = strchr(begin, ' ');
 

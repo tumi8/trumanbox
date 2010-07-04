@@ -21,7 +21,7 @@
 //		msg(MSG_ERROR, "failed!\nthe protocol could not be identified, so we stop handling this connection.\n "
 //				"the dumped payload can be found in %s/%s:%d", DUMP_FOLDER, conn->dest, conn->dport);
 //		append_to_file(payload, conn, DUMP_FOLDER);
-//		Close_conn(connfd, "incomming connection, because of unknown protocol");
+//		Close_conn(connfd, "incoming connection, because of unknown protocol");
 //		return UNKNOWN;
 //	}
 //
