@@ -59,7 +59,7 @@ int create_db(struct lsq_data* data)
                 return -1;
         }
 
-	snprintf(statement, MAX_STATEMENT, "CREATE TABLE %s (RequestedHost TEXT, RequestedLocation TEXT, UserAgent TEXT, Header TEXT, Body TEXT, RequesterIP TEXT, DestinationIP TEXT, TrueDestinationIP TEXT, Date TEXT, Method TEXT);", data->tables[HTTP_GET]);
+	snprintf(statement, MAX_STATEMENT, "CREATE TABLE %s (RequestedHost TEXT, RequestedLocation TEXT, UserAgent TEXT, RequestHeader TEXT, RequestBody TEXT, RequesterIP TEXT, DestinationIP TEXT, TrueDestinationIP TEXT, Date TEXT, Method TEXT, ResponseHeader TEXT, ResponseBody TEXT, ResponseLastModified TEXT, ServerType TEXT, Timestamp TEXT);", data->tables[HTTP_GET]);
 	rc = sqlite3_exec(data->db, statement, callback, 0, &err);
 	if (rc != SQLITE_OK) {
 		msg(MSG_ERROR, "Error createing table currenthttp: %s", err);
@@ -80,12 +80,20 @@ int create_db(struct lsq_data* data)
 		return -1;
 	}
 
-	snprintf(statement, MAX_STATEMENT, "CREATE TABLE %s (server TEXT, keyword TEXT, value TEXT);", data->tables[IRC]);
+	snprintf(statement, MAX_STATEMENT, "CREATE TABLE IRC_CLIENT_MSGS (ClientIP TEXT, ServerIP TEXT, RealServerIP TEXT, Command TEXT, Arguments TEXT, Date TEXT, Timestamp TEXT);");
 	rc = sqlite3_exec(data->db, statement, callback, 0, &err);
 	if (rc != SQLITE_OK) {
 		msg(MSG_ERROR, "Error createing table currentirc: %s", err);
 		return -1;
 	}
+
+	snprintf(statement, MAX_STATEMENT, "CREATE TABLE IRC_SERVER_MSGS (ClientIP TEXT, ServerIP TEXT, RealServerIP TEXT, ServerName TEXT, NumericReply TEXT, RecipientNickname TEXT, Message TEXT, Date TEXT, Timestamp TEXT);");
+	rc = sqlite3_exec(data->db, statement, callback, 0, &err);
+	if (rc != SQLITE_OK) {
+		msg(MSG_ERROR, "Error createing table currentirc: %s", err);
+		return -1;
+	}
+
 
 	snprintf(statement, MAX_STATEMENT, "CREATE TABLE %s (content TEXT);", data->tables[UNKNOWN]);
 	rc = sqlite3_exec(data->db, statement, callback, 0, &err);
@@ -201,7 +209,6 @@ int lsq_log_text(struct logger_t* logger, connection_t* conn, const char* tag, c
 		char requestedHost[1000];
 		char requestedLocation[1000];
 		char method[20];
-		char timestamp[100];
 		char* ptrToBody = NULL; //this pointer contains the address of the body of the POST-Request
 		char* ptrToHeader = header;
 		char* ptrToRequestedLocation = NULL;
@@ -211,11 +218,7 @@ int lsq_log_text(struct logger_t* logger, connection_t* conn, const char* tag, c
 		int completeLength = strlen(message);
 		int headerLength = completeLength - bodyLength;
 		
-		// TIMESTAMP Calculation
 		
-		struct timeval currentStart;
-		gettimeofday(&currentStart,0);
-	 	sprintf(timestamp,"%ld:%ld",currentStart.tv_sec,currentStart.tv_usec);	
 		
 
 		// HEADER extractor
@@ -241,8 +244,8 @@ int lsq_log_text(struct logger_t* logger, connection_t* conn, const char* tag, c
 		extract_header_field(requestedHost,"Host:",header);
 		extract_header_field(userAgent,"User-Agent:",header);
 
-		snprintf(statement,MAX_STATEMENT, "INSERT into %s (RequesterIP, DestinationIP, TrueDestinationIP, Header, Date, RequestedHost, RequestedLocation, UserAgent, Method) VALUES ('%s','%s','%s','%s',(select current_timestamp),'%s','%s','%s','%s');",data->tables[HTTP_GET],conn->source,conn->orig_dest,conn->dest,header,requestedHost,requestedLocation,userAgent,method);
-		
+		snprintf(statement,MAX_STATEMENT, "INSERT into %s (RequesterIP, DestinationIP, TrueDestinationIP, RequestHeader, Date, RequestedHost, RequestedLocation, UserAgent, Method,timestamp) VALUES ('%s','%s','%s','%s',(select current_timestamp),'%s','%s','%s','%s','%s');",data->tables[HTTP_GET],conn->source,conn->orig_dest,conn->dest,header,requestedHost,requestedLocation,userAgent,method,conn->timestamp);
+
 		
 		}
 		else {
@@ -273,21 +276,26 @@ int lsq_log_text(struct logger_t* logger, connection_t* conn, const char* tag, c
 
 		// now check if the server response has content-type of kind text/*
 		tmpPtr = strstr(contentType,"text");
+		char bodyText[100];
+		
 		if (tmpPtr == NULL) {
-		//  we have to copy the binary data into the response body field 
+			char* dummyMsg = "body contains no plain text data";
+			strcpy(bodyText,dummyMsg);
+
+			//  we have to copy the binary data into the response body field 
 		}
 		else {
-		//  we got text data, thus we can save the response as a string into the body field
-		char bodyText[bodyLength+1];
-		strncpy(bodyText,ptrToBody,bodyLength);
-		bodyText[bodyLength] = '\0';
-		msg(MSG_DEBUG,"Body: '%s'",bodyText);
+			//  we got text data, thus we can save the response as a string into the body field
+			char bodyText[bodyLength+1];
+			strncpy(bodyText,ptrToBody,bodyLength);
+			bodyText[bodyLength] = '\0';
+			msg(MSG_DEBUG,"Body: '%s'",bodyText);
 		}
 
-		snprintf(statement,MAX_STATEMENT, "INSERT into %s (Header) VALUES ('%s');",data->tables[HTTP_GET],header);
-		
-	
+		snprintf(statement,MAX_STATEMENT, "update %s set ResponseHeader = '%s' , ResponseBody = '%s' , ResponseLastModified = '%s' , ServerType = '%s' where timestamp = '%s';",data->tables[HTTP_GET],header,bodyText,lastModified,serverType,conn->timestamp);
 
+		
+		msg(MSG_DEBUG,"try to execute: \n %s",statement);
 		}
 /*
  
@@ -300,7 +308,6 @@ int lsq_log_text(struct logger_t* logger, connection_t* conn, const char* tag, c
 		}		
 		break;
 	case IRC:
-		msg(MSG_DEBUG,"Type of IRC log: '%s'",tag);
 		char msgCopy[MAXLINE];
 		char* currentLinePtr = NULL;
 		strcpy(msgCopy,message);
@@ -329,6 +336,7 @@ int lsq_log_text(struct logger_t* logger, connection_t* conn, const char* tag, c
 				// now check if we got additional arguments for this client IRC command
 				
 				argPtr = strstr(currentLinePtr," "); // pointer to the first space character
+				char arguments[20];
 
 				if (argPtr != NULL) {
 					argPtr ++;
@@ -337,16 +345,26 @@ int lsq_log_text(struct logger_t* logger, connection_t* conn, const char* tag, c
 					char arguments[argsLength+1]; // allocate char array (string) with sufficient space
 					strncpy(arguments,argPtr,argsLength);
 					arguments[argsLength] = '\0';
-					msg(MSG_DEBUG,"Extracted IRC arguments: '%s'",arguments);
 				}
-
+				else {
+					char arguments[20];
+					strcpy(arguments,"N/A");
+				}
 				currentLinePtr = strtok(NULL,"\r");
+				snprintf(statement, MAX_STATEMENT, "INSERT into IRC_CLIENT_MSGS (ClientIP, ServerIP, RealServerIP, Command, Arguments, Date, Timestamp) values ('%s', '%s', '%s','%s','%s',(select current_timestamp),'%s');", conn->source, conn->orig_dest,  conn->dest, command, arguments, conn->timestamp);
+					
+				rc = sqlite3_exec(data->db, statement, callback, 0, &err);
+				if (rc) {
+				msg(MSG_ERROR, "Error performing '%s': %s", statement, err);
+				}
 			
-			}// end of while	
+			}// end of while (Finished the current line)
+
 		
 
-		} // end of  if
+		} // end of  if (client msg handling)
 		else {
+
 			msg(MSG_DEBUG,"We have an IRC server response log");
 	
 	
@@ -425,33 +443,23 @@ int lsq_log_text(struct logger_t* logger, connection_t* conn, const char* tag, c
 
 			
 					// finally, we extract the actual server message
-					/*char* endOfLinePtr = NULL;
-					int msgLength  =0;
-					endOfLinePtr = strstr(msgPtr,"\r"); 
-
-					if (endOfLinePtr == NULL) {
-						msg(MSG_DEBUG,"Aborted! %s",msgPtr);	
-						break;
-					}
-
-
-
-
-					msgLength = strcspn(msgPtr,"\r\n"); 
-					char msg[msgLength+1]; // allocate array with sufficient space
-					strncpy(msg,msgPtr,msgLength);
-					msg[msgLength] = '\0';
-					*/
 					char msg[MAXLINE];
 					strcpy(msg,msgPtr);
 
-					msg(MSG_DEBUG,"Successfully separated: '%s'-'%s'-'%s'-'%s'",serverName,code,nick,msg);	
-				} // end of if	
-				currentLinePtr = strtok(NULL,"\r");
-			
-			}// end of while
+					snprintf(statement, MAX_STATEMENT, "INSERT into IRC_SERVER_MSGS (ClientIP, ServerIP, RealServerIP, ServerName, NumericReply, RecipientNickname, Message, Date, Timestamp) values ('%s', '%s','%s', '%s','%s','%s','%s',(select current_timestamp),'%s');", conn->source, conn->orig_dest,  conn->dest, serverName, code, nick, msg, conn->timestamp);
+					
+					rc = sqlite3_exec(data->db, statement, callback, 0, &err);
+						if (rc) {
+							msg(MSG_ERROR, "Error performing '%s': %s", statement, err);
+						}
+					
 
-		}// end of else
+				} // end of if (valid server msg)	
+				currentLinePtr = strtok(NULL,"\r");
+			}// end of while(finished the line)
+
+	
+		}	// end of else (finished server msg handling)
 		// end of case IRC
 		break;
 	case DNS:
