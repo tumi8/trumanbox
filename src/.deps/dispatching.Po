@@ -9,10 +9,11 @@ dispatching.o: dispatching.c dispatching.h definitions.h \
   /usr/include/bits/byteswap.h /usr/include/sys/select.h \
   /usr/include/bits/select.h /usr/include/bits/sigset.h \
   /usr/include/bits/time.h /usr/include/sys/sysmacros.h \
-  /usr/include/bits/pthreadtypes.h signals.h configuration.h \
-  /usr/include/stdint.h /usr/include/bits/wchar.h helper_file.h \
-  helper_net.h msg.h udp_handler.h tcp_handler.h protocols/proto_ident.h \
-  definitions.h protocols/proto_handler.h /usr/include/netinet/in.h \
+  /usr/include/bits/pthreadtypes.h signals.h /usr/include/sys/time.h \
+  /usr/include/xlocale.h configuration.h /usr/include/stdint.h \
+  /usr/include/bits/wchar.h helper_file.h helper_net.h msg.h \
+  udp_handler.h tcp_handler.h protocols/proto_ident.h definitions.h \
+  protocols/proto_handler.h /usr/include/netinet/in.h \
   /usr/include/sys/socket.h /usr/include/sys/uio.h \
   /usr/include/bits/uio.h /usr/include/bits/socket.h \
   /usr/include/bits/sockaddr.h /usr/include/asm/socket.h \
@@ -26,7 +27,7 @@ dispatching.o: dispatching.c dispatching.h definitions.h \
   /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h \
   /usr/include/bits/stdio.h /usr/include/bits/stdio2.h logger.h \
   /usr/include/stdlib.h /usr/include/alloca.h /usr/include/bits/stdlib.h \
-  /usr/include/string.h /usr/include/xlocale.h /usr/include/bits/string.h \
+  /usr/include/string.h /usr/include/bits/string.h \
   /usr/include/bits/string2.h /usr/include/bits/string3.h \
   /usr/include/errno.h /usr/include/bits/errno.h \
   /usr/include/linux/errno.h /usr/include/asm/errno.h \
@@ -83,6 +84,10 @@ definitions.h:
 /usr/include/bits/pthreadtypes.h:
 
 signals.h:
+
+/usr/include/sys/time.h:
+
+/usr/include/xlocale.h:
 
 configuration.h:
 
@@ -167,8 +172,6 @@ logger.h:
 /usr/include/bits/stdlib.h:
 
 /usr/include/string.h:
-
-/usr/include/xlocale.h:
 
 /usr/include/bits/string.h:
 

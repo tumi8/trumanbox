@@ -1,5 +1,7 @@
 #include "dispatching.h"
 #include "signals.h"
+#include <sys/time.h>
+#include <time.h>
 #include "configuration.h"
 #include "helper_file.h"
 #include "helper_net.h"
@@ -145,6 +147,13 @@ void disp_run(struct dispatcher_t* disp)
 	start:
 		connection.net_proto = wait_for_incoming_connection(disp->tcpfd, disp->udpfd, disp->controlfd);
 		connection.app_proto = UNKNOWN;
+
+		// generate timestamp for the connection
+		struct timeval currentStart;
+		gettimeofday(&currentStart,0);
+		sprintf(connection.timestamp,"%ld:%ld",currentStart.tv_sec,currentStart.tv_usec);	
+		msg(MSG_DEBUG,"Timestamp: %s",connection.timestamp);
+
 
 		if (connection.net_proto == ERROR)
 			continue;

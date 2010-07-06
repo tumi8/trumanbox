@@ -352,20 +352,16 @@ int lsq_log_text(struct logger_t* logger, connection_t* conn, const char* tag, c
 	
 			while(currentLinePtr != NULL) {
 			// we have to iterate throughout the whole received IRC message (which may contain several lines)
-			/*	int ca = 0;
-				if (strncmp(currentLinePtr,"\n:",2)==0) 
-					ca = 1;
-				else if (strncmp(currentLinePtr,"\r\n:",3)==0) 
-					ca = 3;
-*/
 				
 				// check if we have a server reply of the type [:host] [code] [nickname] [message]
-				if (strncmp(currentLinePtr,":xxx",1) == 0 || strncmp(currentLinePtr,"\n:",2) == 0) {
+				if (strncmp(currentLinePtr,":xxx",1) == 0 || strncmp(currentLinePtr,"\n:xxx",2) == 0) {
 					// ok everything's fine
 					
 					if (strncmp(currentLinePtr,"\n:",2) == 0)
 					 currentLinePtr++; // we have a leading '\n' character, skip it
 
+					//char* tmpPtr = NULL;
+					//int tmpLength = 0;
 
 					char* codePtr = NULL; 
 					int nameLength = 0;
