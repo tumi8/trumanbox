@@ -33,12 +33,14 @@ int logger_create(struct configuration_t* config)
 		global_logger->create_log = lt_create_log;
 		global_logger->finish_log = lt_finish_log;
 		global_logger->log = lt_log_text;
+		global_logger->log_struct = lt_log_struct;
 	} else if (!strcmp(logger, "sqlite")) {
 		global_logger->init = lsq_init;
 		global_logger->deinit = lsq_deinit;
 		global_logger->create_log = lsq_create_log;
 		global_logger->finish_log = lsq_finish_log;
 		global_logger->log = lsq_log_text;
+		global_logger->log_struct = lsq_log_struct;
 	} else {
 		msg(MSG_FATAL, "Unknown subsystem defined in configuration. Maybe even undefined!");
 		free(global_logger);

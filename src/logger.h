@@ -11,6 +11,7 @@ typedef int (lg_deinit)(struct logger_t*);// cleans up the logger module. Return
 typedef int (lg_create_log)(struct logger_t*);
 typedef int (lg_finish_log)(struct logger_t*);
 typedef int (lg_log_text)(struct logger_t*, connection_t* conn, const char* tag, const char* message);
+typedef int (lg_log_struct)(struct logger_t*, connection_t* conn, void* data);
 
 enum logger_type { directory };
 
@@ -28,6 +29,7 @@ struct logger_t {
 	lg_create_log* create_log;
 	lg_finish_log* finish_log;
 	lg_log_text* log;
+	lg_log_struct* log_struct;
 };
 
 

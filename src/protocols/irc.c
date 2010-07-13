@@ -37,6 +37,7 @@ int ph_irc_deinit(void* handler)
 
 int ph_irc_handle_payload_stc(void* handler, connection_t* conn,  const char* payload, size_t* len)
 {
+	logger_get()->log_struct(logger_get(), conn, NULL);
 	return logger_get()->log(logger_get(), conn, "server", payload);
 }
 

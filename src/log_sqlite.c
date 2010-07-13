@@ -308,10 +308,10 @@ int lsq_log_text(struct logger_t* logger, connection_t* conn, const char* tag, c
 		}		
 		break;
 	case IRC:
+		{
 		char msgCopy[MAXLINE];
 		char* currentLinePtr = NULL;
 		strcpy(msgCopy,message);
-
 		currentLinePtr = strtok (msgCopy,"\n");
 
 
@@ -331,25 +331,24 @@ int lsq_log_text(struct logger_t* logger, connection_t* conn, const char* tag, c
 				strncpy(command,currentLinePtr,commandNameLength);
 				command[commandNameLength] = '\0';
 
-				msg(MSG_DEBUG,"Extracted IRC Command: '%s'",command);
 
 				// now check if we got additional arguments for this client IRC command
 				
 				argPtr = strstr(currentLinePtr," "); // pointer to the first space character
-				char arguments[20];
-
+				char arguments[MAXLINE];
 				if (argPtr != NULL) {
 					argPtr ++;
 					int argsLength = 0;
 					argsLength = strcspn(argPtr,"\r\n");
-					char arguments[argsLength+1]; // allocate char array (string) with sufficient space
+					//char arguments[argsLength+1]; // allocate char array (string) with sufficient space
 					strncpy(arguments,argPtr,argsLength);
 					arguments[argsLength] = '\0';
 				}
 				else {
-					char arguments[20];
+					//char arguments[20];
 					strcpy(arguments,"N/A");
 				}
+				msg(MSG_DEBUG,"arguments extracted: '%s'",arguments);
 				currentLinePtr = strtok(NULL,"\r");
 				snprintf(statement, MAX_STATEMENT, "INSERT into IRC_CLIENT_MSGS (ClientIP, ServerIP, RealServerIP, Command, Arguments, Date, Timestamp) values ('%s', '%s', '%s','%s','%s',(select current_timestamp),'%s');", conn->source, conn->orig_dest,  conn->dest, command, arguments, conn->timestamp);
 					
@@ -440,12 +439,12 @@ int lsq_log_text(struct logger_t* logger, connection_t* conn, const char* tag, c
 					strncpy(nick,nickPtr,nickLength);
 					nick[nickLength] = '\0';
 
-
 			
 					// finally, we extract the actual server message
 					char msg[MAXLINE];
 					strcpy(msg,msgPtr);
 
+					msg(MSG_DEBUG,"check: '%s' and ptr: '%s'",msg,msgPtr);
 					snprintf(statement, MAX_STATEMENT, "INSERT into IRC_SERVER_MSGS (ClientIP, ServerIP, RealServerIP, ServerName, NumericReply, RecipientNickname, Message, Date, Timestamp) values ('%s', '%s','%s', '%s','%s','%s','%s',(select current_timestamp),'%s');", conn->source, conn->orig_dest,  conn->dest, serverName, code, nick, msg, conn->timestamp);
 					
 					rc = sqlite3_exec(data->db, statement, callback, 0, &err);
@@ -461,6 +460,7 @@ int lsq_log_text(struct logger_t* logger, connection_t* conn, const char* tag, c
 	
 		}	// end of else (finished server msg handling)
 		// end of case IRC
+		}
 		break;
 	case DNS:
 		snprintf(statement, MAX_STATEMENT, "INSERT into %s (domain, original, returned) values ('%s', '%s', '%s');", data->tables[DNS], message, conn->orig_dest, conn->dest);
@@ -503,3 +503,10 @@ else {
 
 
 }
+
+int lsq_log_struct(struct logger_t* log, connection_t* conn, void* data)
+{
+	msg(MSG_FATAL, "Das hier wird aufgerufen!");
+	return 0;
+}
+

@@ -10,6 +10,7 @@ int lsq_deinit(struct logger_t*);
 int lsq_create_log(struct logger_t*);
 int lsq_finish_log(struct logger_t*);
 int lsq_log_text(struct logger_t*, connection_t* conn, const char* tag, const char* message);
+int lsq_log_struct(struct logger_t*, connection_t* conn, void* data);
 void extract_header_field(char* destination, char* headername, char* header);
 
 #endif
