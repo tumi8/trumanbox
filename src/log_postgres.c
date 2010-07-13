@@ -11,112 +11,105 @@
 #include <errno.h>
 #include <string.h>
 #include <stdio.h>
+#include <string.h>
+#include <stdarg.h>
+#include </usr/include/postgresql/libpq-fe.h>
 
-#define TABLE_NAME_LENGTH 100
 #define MAX_STATEMENT 8000
 
 static char statement[MAX_STATEMENT];
+PGconn *psql;
 
-
-
-  
-int create_db()
-{
-
-	snprintf(statement, MAX_STATEMENT, "CREATE TABLE %s (domain TEXT, original TEXT, returned TEXT);", data->tables[DNS]);
-	rc = sqlite3_exec(data->db, statement, callback, 0, &err);
-        if (rc != SQLITE_OK) {
-                msg(MSG_ERROR, "Error createing table currentdns: %s", err);
-                return -1;
-        }
-
-	snprintf(statement, MAX_STATEMENT, "CREATE TABLE %s (RequestedHost TEXT, RequestedLocation TEXT, UserAgent TEXT, RequestHeader TEXT, RequestBody TEXT, RequesterIP TEXT, DestinationIP TEXT, TrueDestinationIP TEXT, Date TEXT, Method TEXT, ResponseHeader TEXT, ResponseBody TEXT, ResponseLastModified TEXT, ServerType TEXT, Timestamp TEXT);", data->tables[HTTP_GET]);
-	rc = sqlite3_exec(data->db, statement, callback, 0, &err);
-	if (rc != SQLITE_OK) {
-		msg(MSG_ERROR, "Error createing table currenthttp: %s", err);
-		return -1;
+// checks at first whether the connection is already established, before it tries to connect
+int connect_to_db() {
+	
+	
+	if (!psql || PQstatus(psql) != CONNECTION_OK) {
+		*psql = PQconnectdb("hostaddr = '127.0.0.1' port = '5432' dbname = 'trumanlogs' user = 'trumanbox' password = 'das$)13x!#+23' connect_timeout = '10'");
 	}
-
-	snprintf(statement, MAX_STATEMENT, "CREATE TABLE %s (domain TEXT);", data->tables[FTP]);
-	rc = sqlite3_exec(data->db, statement, callback, 0, &err);
-	if (rc != SQLITE_OK) {
-		msg(MSG_ERROR, "Error createing table currentftp: %s", err);
-		return -1;
-	}
-
-	snprintf(statement, MAX_STATEMENT, "CREATE TABLE %s (server TEXT, rctp TEXT);", data->tables[SMTP]);
-	rc = sqlite3_exec(data->db, statement, callback, 0, &err);
-	if (rc != SQLITE_OK) {
-		msg(MSG_ERROR, "Error createing table currentsmtp: %s", err);
-		return -1;
-	}
-
-	snprintf(statement, MAX_STATEMENT, "CREATE TABLE IRC_CLIENT_MSGS (ClientIP TEXT, ServerIP TEXT, RealServerIP TEXT, Command TEXT, Arguments TEXT, Date TEXT, Timestamp TEXT);");
-	rc = sqlite3_exec(data->db, statement, callback, 0, &err);
-	if (rc != SQLITE_OK) {
-		msg(MSG_ERROR, "Error createing table currentirc: %s", err);
-		return -1;
-	}
-
-	snprintf(statement, MAX_STATEMENT, "CREATE TABLE IRC_SERVER_MSGS (ClientIP TEXT, ServerIP TEXT, RealServerIP TEXT, ServerName TEXT, NumericReply TEXT, RecipientNickname TEXT, Message TEXT, Date TEXT, Timestamp TEXT);");
-	rc = sqlite3_exec(data->db, statement, callback, 0, &err);
-	if (rc != SQLITE_OK) {
-		msg(MSG_ERROR, "Error createing table currentirc: %s", err);
-		return -1;
+	else {
+		// connection is already established...
+		return 1;
 	}
 
 
-	snprintf(statement, MAX_STATEMENT, "CREATE TABLE %s (content TEXT);", data->tables[UNKNOWN]);
-	rc = sqlite3_exec(data->db, statement, callback, 0, &err);
-	if (rc != SQLITE_OK) {
-		msg(MSG_ERROR, "Error createing table currentunknown: %s", err);
-		return -1;
+	if (!psql) {
+		msg(MSG_FATAL,"libpq error : PQconnectdb returned NULL.\n\n");
+		return 0;
 	}
-	return 0;
+
+	if (PQstatus(psql) != CONNECTION_OK) {
+		msg(MSG_FATAL,"libpq error: PQstatus(psql) != CONNECTION_OK\n\n");
+		return 0;
+	}
+	return 1;
 }
+
+
+int execute_statement(char* stmt) {
+	if (connect_to_db) {
+		PGresult *res = PQexec(psql, stmt);
+	    	if (PQresultStatus(res) != PGRES_COMMAND_OK)
+		{
+			msg(MSG_FATAL,"ERROR: %s",PQresultErrorMessage(res));
+			return 0;
+		}
+		else 
+		{ 
+			return 1;
+		}
+	}
+	else {
+	//connection error
+	return 0;
+	}
+}
+
 
 // Returns: Whether connection is successful AND if tables are already present
 int lpg_init(struct logger_t* logger)
 {
 	// TODO:
-	// Check connection to database
 	// Check if tables are already created
-	//
+	
+	
+	return connect_to_db();
+
 }
 
 
 // returns:
 int lpg_deinit(struct logger_t* logger)
 {
-	return 0;
+	return 1;
 }
 
 
 // returns: 1 if creation was successful, 0 if not
 int lpg_create_log(struct logger_t* logger)
 {
-
-	return create_db();
+	// todo: create tables if they don't exist yet
+	return 1; // by default, all tables are already created
 }
 
 // returns: 1 if everything was fine, 0 if error
 int lpg_finish_log(struct logger_t* logger)
 {
-	//TODO: Cleanup the connection and remove everything necessary
-	return 0;
+	PQfinish(psql);
+	return 1;
 }
 
 int lpg_log_text(struct logger_t* logger, connection_t* conn, const char* tag, const char* message)
 {
+	
 
 	// BIG FAT TODO: sql injection ....
 	switch (conn->app_proto) {
 	// log depening on the protocol	
 	case SMTP:
-		snprintf(statement, MAX_STATEMENT, "INSERT into %s (\"%s\" \"%s\");", data->tables[SMTP], conn->orig_dest, message);
-		rc = sqlite3_exec(data->db, statement, callback, 0, &err);
-		if (rc) {
-			msg(MSG_ERROR, "Error performing '%s': %s", statement, err);
+		snprintf(statement, MAX_STATEMENT, "INSERT into SMTP_LOGS () values ('%s','%s');",  conn->orig_dest, message);
+		if (execute_stmt(statement)) {
+			msg(MSG_ERROR, "Could not execute: \n %s", statement);
 		}
 		break;
 	case FTP:

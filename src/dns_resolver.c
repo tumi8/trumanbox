@@ -173,7 +173,7 @@ static void dns_worker(struct dns_resolver_t* resolver)
 		}
 		Sendto(socket, response, tmp, 0, (struct sockaddr *)&cliaddr, clilen);
 
-
+		// OK , DNS name resolved - now enter the logging function
 		snprintf(logline, 1000, "%s:%s:%s", domainname, real_addr_str, returned_addr_str);
 		logger_get()->log(logger_get(), &resolver->conn, "", logline);
 		}
