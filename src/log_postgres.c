@@ -25,7 +25,7 @@ int connect_to_db() {
 	
 	
 	if (!psql || PQstatus(psql) != CONNECTION_OK) {
-		*psql = PQconnectdb("hostaddr = '127.0.0.1' port = '5432' dbname = 'trumanlogs' user = 'trumanbox' password = 'das$)13x!#+23' connect_timeout = '10'");
+		psql = PQconnectdb("hostaddr = '127.0.0.1' port = '5432' dbname = 'trumanlogs' user = 'trumanbox' password = 'das$)13x!#+23' connect_timeout = '10'");
 	}
 	else {
 		// connection is already established...
@@ -47,7 +47,7 @@ int connect_to_db() {
 
 
 int execute_statement(char* stmt) {
-	if (connect_to_db) {
+	if (connect_to_db()) {
 		PGresult *res = PQexec(psql, stmt);
 	    	if (PQresultStatus(res) != PGRES_COMMAND_OK)
 		{
@@ -102,27 +102,32 @@ int lpg_finish_log(struct logger_t* logger)
 int lpg_log_text(struct logger_t* logger, connection_t* conn, const char* tag, const char* message)
 {
 	
-
+	snprintf(statement, MAX_STATEMENT, "INSERT into SMTP_LOGS () values vlqa");
+	
 	// BIG FAT TODO: sql injection ....
 	switch (conn->app_proto) {
 	// log depening on the protocol	
 	case SMTP:
-		snprintf(statement, MAX_STATEMENT, "INSERT into SMTP_LOGS () values ('%s','%s');",  conn->orig_dest, message);
-		if (execute_stmt(statement)) {
-			msg(MSG_ERROR, "Could not execute: \n %s", statement);
-		}
+	//	if (execute_stmt(statement)) {
+	//		msg(MSG_ERROR, "Could not execute: \n %s", statement);
+	//	}
+		msg(MSG_DEBUG,"SMTP Logging attempt");
 		break;
 	case FTP:
+		msg(MSG_DEBUG,"FTP Logging attempt");
 		break;
 	case FTP_anonym:
+		msg(MSG_DEBUG,"FTP anonym Logging attempt");
 		break;
 	case FTP_data:
-
+		msg(MSG_DEBUG,"FTP data Logging attempt");
 		break;
 	case HTTP_PUT:
 	case HTTP_POST:
 	case HTTP_GET:
-		if (strcmp(tag,"client") == 0) {
+	
+		msg(MSG_DEBUG,"HTTP Logging attempt");
+		/*if (strcmp(tag,"client") == 0) {
 			msg(MSG_DEBUG,"We have a client request log");
 		// we perform a log operation for a client request
 		// try to extract host, url, user-agent
@@ -196,7 +201,7 @@ int lpg_log_text(struct logger_t* logger, connection_t* conn, const char* tag, c
 		extract_header_field(lastModified,"Last-Modified:",header);
 
 
-		// now check if the server response has content-type of kind text/*
+		// now check if the server response has content-type of kind text
 		tmpPtr = strstr(contentType,"text");
 		char bodyText[100];
 		
@@ -219,18 +224,20 @@ int lpg_log_text(struct logger_t* logger, connection_t* conn, const char* tag, c
 		
 		msg(MSG_DEBUG,"try to execute: \n %s",statement);
 		}
-/*
+
  
 		snprintf(statement,MAX_STATEMENT, "INSERT into %s (RequesterIP, DestinationIP, TrueDestinationIP, Header, Date) VALUES ('%s','%s','%s','%s',(select current_timestamp));",data->tables[HTTP_GET],conn->source,conn->orig_dest,conn->dest,message);
 		msg(MSG_DEBUG,"INSERT into %s (RequesterIP, DestinationIP, TrueDestinationIP, Header, Date) VALUES ('%s','%s','%s','%s',(select current_timestamp));",data->tables[HTTP_GET],conn->source,conn->orig_dest,conn->dest,message);
 */		//snprintf(statement, MAX_STATEMENT, "INSERT into %s (domain, direction, content) values ('%s','%s', '%s');", data->tables[HTTP_GET], conn->orig_dest, tag, message);
-		rc = sqlite3_exec(data->db, statement, callback, 0, &err);
+	/*	rc = sqlite3_exec(data->db, statement, callback, 0, &err);
 		if (rc) {
 			msg(MSG_ERROR, "Error performing '%s': %s", statement, err);
-		}		
+		}*/		
 		break;
 	case IRC:
 		{
+		msg(MSG_DEBUG,"IRC logging attempt");
+		/*
 		char msgCopy[MAXLINE];
 		char* currentLinePtr = NULL;
 		strcpy(msgCopy,message);
@@ -382,23 +389,22 @@ int lpg_log_text(struct logger_t* logger, connection_t* conn, const char* tag, c
 	
 		}	// end of else (finished server msg handling)
 		// end of case IRC
-		}
+	*/	}
 		break;
 	case DNS:
-		snprintf(statement, MAX_STATEMENT, "INSERT into %s (domain, original, returned) values ('%s', '%s', '%s');", data->tables[DNS], message, conn->orig_dest, conn->dest);
-		rc = sqlite3_exec(data->db, statement, callback, 0, &err);
-		if (rc) {
-			msg(MSG_ERROR, "Error performing '%s': %s", statement, err);
-		}		
+		//snprintf(statement, MAX_STATEMENT, "INSERT into %s (domain, original, returned) values ('%s', '%s', '%s');", data->tables[DNS], message, conn->orig_dest, conn->dest);
+		//rc = sqlite3_exec(data->db, statement, callback, 0, &err);
+		//if (rc) {
+		//	msg(MSG_ERROR, "Error performing '%s': %s", statement, err);
+		//	}		
 		break;
-
 	case UNKNOWN:
 		
 		break;
-	};
+	}
+
 	return 0;
 }
-
 
 int lpg_log_struct(struct logger_t* log, connection_t* conn, void* data)
 {

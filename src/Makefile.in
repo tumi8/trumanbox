@@ -52,11 +52,11 @@ am_trumanbox_OBJECTS = dns_resolver.$(OBJEXT) iniparser.$(OBJEXT) \
 	helper_file.$(OBJEXT) main.$(OBJEXT) tcp_handler.$(OBJEXT) \
 	process_manager.$(OBJEXT) logger.$(OBJEXT) \
 	log_truman.$(OBJEXT) log_sqlite.$(OBJEXT) \
-	proto_ident.$(OBJEXT) proto_handler.$(OBJEXT) \
-	proto_ident_truman.$(OBJEXT) proto_ident_opendpi.$(OBJEXT) \
-	ftp.$(OBJEXT) http_get.$(OBJEXT) http_post.$(OBJEXT) \
-	http_put.$(OBJEXT) smtp.$(OBJEXT) irc.$(OBJEXT) \
-	unknown.$(OBJEXT)
+	log_postgres.$(OBJEXT) proto_ident.$(OBJEXT) \
+	proto_handler.$(OBJEXT) proto_ident_truman.$(OBJEXT) \
+	proto_ident_opendpi.$(OBJEXT) ftp.$(OBJEXT) http_get.$(OBJEXT) \
+	http_post.$(OBJEXT) http_put.$(OBJEXT) smtp.$(OBJEXT) \
+	irc.$(OBJEXT) unknown.$(OBJEXT)
 trumanbox_OBJECTS = $(am_trumanbox_OBJECTS)
 trumanbox_LDADD = $(LDADD)
 am__DEPENDENCIES_1 =
@@ -179,6 +179,7 @@ trumanbox_SOURCES = config.h definitions.h dns_resolver.c helper_file.h iniparse
 	configuration.h dispatching.h helper_file.c helper_net.h main.c msg.h \
 	semaphore.h tcp_handler.c udp_handler.h process_manager.h process_manager.c \
 	logger.h logger.c log_truman.h log_truman.c log_sqlite.h log_sqlite.c \
+	log_postgres.h log_postgres.c \
 	protocols/proto_ident.h protocols/proto_ident.c protocols/proto_handler.h \
 	protocols/proto_handler.c protocols/proto_ident_truman.c \
 	protocols/proto_ident_truman.h protocols/proto_ident_opendpi.h protocols/proto_ident_opendpi.c \
@@ -188,8 +189,8 @@ trumanbox_SOURCES = config.h definitions.h dns_resolver.c helper_file.h iniparse
 	protocols/smtp.h protocols/smtp.c protocols/irc.h protocols/irc.c \
 	protocols/unknown.h protocols/unknown.c
 
-AM_CFLAGS = `xml2-config --cflags` $(OPENDPI_CFLAGS) -Wall -Werror -g -O0
-AM_LDFLAGS = `xml2-config --libs` -lsqlite3
+AM_CFLAGS = -I/usr/local/include -L/usr/local/lib `xml2-config --cflags` $(OPENDPI_CFLAGS) -Wall -Werror -g -O0
+AM_LDFLAGS = `xml2-config --libs` -lsqlite3 -lpq
 LDADD = $(OPENDPI_LIBRARY)
 all: all-am
 
@@ -283,6 +284,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http_put.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/iniparser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/irc.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log_postgres.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log_sqlite.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log_truman.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logger.Po@am__quote@

@@ -4,7 +4,7 @@
 
 #include "log_truman.h"
 #include "log_sqlite.h"
-
+#include "log_postgres.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -41,7 +41,16 @@ int logger_create(struct configuration_t* config)
 		global_logger->finish_log = lsq_finish_log;
 		global_logger->log = lsq_log_text;
 		global_logger->log_struct = lsq_log_struct;
-	} else {
+	} 
+	 else if (!strcmp(logger,"postgresql")) {
+		global_logger->init = lpg_init;
+		global_logger->deinit = lpg_deinit;
+		global_logger->create_log = lpg_create_log;
+		global_logger->finish_log = lpg_finish_log;
+		global_logger->log = lpg_log_text;
+		global_logger->log_struct = lpg_log_struct;
+	} 
+	else {
 		msg(MSG_FATAL, "Unknown subsystem defined in configuration. Maybe even undefined!");
 		free(global_logger);
 		global_logger= NULL;
