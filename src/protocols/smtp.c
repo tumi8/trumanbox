@@ -37,11 +37,40 @@ int ph_smtp_deinit(void* handler)
 
 int ph_smtp_handle_payload_stc(void* handler, connection_t* conn, const char* payload, size_t* len)
 {
+	char msgCopy[MAXLINE];
+	char* linePtr = NULL;
+	strcpy(msgCopy,payload);
+	linePtr = strtok (msgCopy,"\n");
+
+	while (linePtr!= NULL) {
+		// parse all response lines from server
+		struct smtp_server_struct* data = (struct smtp_server_struct*) malloc(sizeof(struct smtp_server_struct));
+	
+		//extract status code (3 numbers)
+		strncpy(data->statusCode,linePtr,3);
+		data->statusCode[3] = '\0';
+		linePtr = linePtr + 4;
+
+		//extract server message (arbitrary length possible)
+		int Msglength = strcspn(linePtr,"\r\n");
+		strncpy(data->serverMsg,linePtr,Msglength);
+		msg(MSG_DEBUG,"we have code '%s':'%s'",data->statusCode,data->serverMsg);
+		linePtr = strtok(NULL,"\n");
+		logger_get()->log_struct(logger_get(), conn, "server", data);
+	}
+
 	return logger_get()->log(logger_get(), conn, "content-stc", payload);
 }
 
 int ph_smtp_handle_payload_cts(void* handler, connection_t* conn, const char* payload, size_t* len)
 {
+	struct smtp_client_struct* data = (struct smtp_client_struct*) malloc(sizeof(struct smtp_client_struct));
+	
+	strncpy(data->clientMsg,payload,strlen(payload)); 
+	int lengthMsg= strlen(data->clientMsg);
+	data->clientMsg[lengthMsg-2] = '\0'; // we want to discard the last two characters : \r\n
+
+	// change payload in order to avoid spam attacks
 	char* ptr;
 	if (strncasecmp(payload, "rcpt to:", 8) == 0) {
 		ptr = strchr(payload, ':');
@@ -50,6 +79,7 @@ int ph_smtp_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 		msg(MSG_DEBUG, "changed payload from client:%s", payload);
 			*len = strlen(payload);
 	}
+	logger_get()->log_struct(logger_get(), conn, "client", data);
 	return logger_get()->log(logger_get(), conn, "content-stc", payload);
 }
 

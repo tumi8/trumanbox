@@ -506,7 +506,7 @@ else {
 
 }
 
-int lsq_log_struct(struct logger_t* log, connection_t* conn, void* data)
+int lsq_log_struct(struct logger_t* log, connection_t* conn, const char* tag, void* data)
 {
 	msg(MSG_FATAL, "Das hier wird aufgerufen!");
 	return 0;

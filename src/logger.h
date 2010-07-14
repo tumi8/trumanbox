@@ -11,7 +11,7 @@ typedef int (lg_deinit)(struct logger_t*);// cleans up the logger module. Return
 typedef int (lg_create_log)(struct logger_t*);
 typedef int (lg_finish_log)(struct logger_t*);
 typedef int (lg_log_text)(struct logger_t*, connection_t* conn, const char* tag, const char* message);
-typedef int (lg_log_struct)(struct logger_t*, connection_t* conn, void* data);
+typedef int (lg_log_struct)(struct logger_t*, connection_t* conn, const char* tag, void* data);
 
 enum logger_type { directory };
 
@@ -32,6 +32,27 @@ struct logger_t {
 	lg_log_struct* log_struct;
 };
 
+
+struct smtp_client_struct {
+	char clientMsg[MAXLINE];
+};
+
+struct smtp_server_struct {
+	char statusCode[20];
+	char serverMsg[MAXLINE];
+};
+
+struct irc_client_struct {
+	char command[MAXLINE];
+	char arguments[MAXLINE];
+};
+
+struct irc_server_struct {
+	char serverName[1000];
+	char numericReply[1000];
+	char recipientNickname[1000];
+	char message[MAXLINE];
+};
 
 /**
  * This creates the logging object. There may be an arbitrary number of logging objets

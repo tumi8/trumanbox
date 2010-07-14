@@ -2,6 +2,7 @@
 #include "configuration.h"
 #include "msg.h"
 #include "definitions.h"
+#include "logger.h"
 #include <sys/time.h>
 #include <time.h>
 #include <stdlib.h>
@@ -235,161 +236,6 @@ int lpg_log_text(struct logger_t* logger, connection_t* conn, const char* tag, c
 		}*/		
 		break;
 	case IRC:
-		{
-		msg(MSG_DEBUG,"IRC logging attempt");
-		/*
-		char msgCopy[MAXLINE];
-		char* currentLinePtr = NULL;
-		strcpy(msgCopy,message);
-		currentLinePtr = strtok (msgCopy,"\n");
-
-
-		if (strcmp(tag,"client") == 0) {
-
-			msg(MSG_DEBUG,"We have an IRC client request log");
-			
-
-			while(currentLinePtr != NULL) {
-			// we have to iterate throughout the whole received IRC message (which may contain several lines)
-	
-				char* argPtr; // pointer to the argument(s) of the IRC command
-				int commandNameLength = 0;
-
-				commandNameLength = strcspn(currentLinePtr," "); 
-				char command[commandNameLength+1]; // allocate array with sufficient space
-				strncpy(command,currentLinePtr,commandNameLength);
-				command[commandNameLength] = '\0';
-
-
-				// now check if we got additional arguments for this client IRC command
-				
-				argPtr = strstr(currentLinePtr," "); // pointer to the first space character
-				char arguments[MAXLINE];
-				if (argPtr != NULL) {
-					argPtr ++;
-					int argsLength = 0;
-					argsLength = strcspn(argPtr,"\r\n");
-					//char arguments[argsLength+1]; // allocate char array (string) with sufficient space
-					strncpy(arguments,argPtr,argsLength);
-					arguments[argsLength] = '\0';
-				}
-				else {
-					//char arguments[20];
-					strcpy(arguments,"N/A");
-				}
-				msg(MSG_DEBUG,"arguments extracted: '%s'",arguments);
-				currentLinePtr = strtok(NULL,"\r");
-				snprintf(statement, MAX_STATEMENT, "INSERT into IRC_CLIENT_MSGS (ClientIP, ServerIP, RealServerIP, Command, Arguments, Date, Timestamp) values ('%s', '%s', '%s','%s','%s',(select current_timestamp),'%s');", conn->source, conn->orig_dest,  conn->dest, command, arguments, conn->timestamp);
-					
-				rc = sqlite3_exec(data->db, statement, callback, 0, &err);
-				if (rc) {
-				msg(MSG_ERROR, "Error performing '%s': %s", statement, err);
-				}
-			
-			}// end of while (Finished the current line)
-
-		
-
-		} // end of  if (client msg handling)
-		else {
-
-			msg(MSG_DEBUG,"We have an IRC server response log");
-	
-	
-			while(currentLinePtr != NULL) {
-			// we have to iterate throughout the whole received IRC message (which may contain several lines)
-				
-				// check if we have a server reply of the type [:host] [code] [nickname] [message]
-				if (strncmp(currentLinePtr,":xxx",1) == 0 || strncmp(currentLinePtr,"\n:xxx",2) == 0) {
-					// ok everything's fine
-					
-					if (strncmp(currentLinePtr,"\n:",2) == 0)
-					 currentLinePtr++; // we have a leading '\n' character, skip it
-
-					//char* tmpPtr = NULL;
-					//int tmpLength = 0;
-
-					char* codePtr = NULL; 
-					int nameLength = 0;
-
-
-					
-					// first we extract the server name
-					codePtr = strstr(currentLinePtr," ");
-					if (codePtr == NULL)
-						{
-						msg(MSG_DEBUG,"Abort: %s",currentLinePtr);
-						break;
-						}
-
-					codePtr ++;
-					nameLength = strcspn(currentLinePtr," "); 
-					char serverName[nameLength+1]; // allocate array with sufficient space
-					strncpy(serverName,currentLinePtr,nameLength);
-					serverName[nameLength] = '\0';
-
-
-					// second, we extract the numeric raw event
-					char* nickPtr  = NULL;
-					nickPtr = strstr(codePtr," "); 
-					if (nickPtr == NULL) {
-
-						msg(MSG_DEBUG,"Aborted! %s",codePtr);	
-						break;
-					}
-					nickPtr++;
-
-					int codeLength = strcspn(codePtr," "); 
-					 
-					 // as specified in rfc1459 / 2.4 only numeric replies / codes with 3 digits are allowed
-					if (codeLength != 3) {
-						msg(MSG_DEBUG,"invalid numeric reply");
-						break;
-					}
-					char code[codeLength+1]; // allocate array with sufficient space
-					strncpy(code,codePtr,codeLength);
-					code[codeLength] = '\0';
-
-
-		
-					// third, we extract the nickname of the recipient
-					char* msgPtr = NULL;
-					int nickLength = 0;
-					msgPtr = strstr(nickPtr," "); 
-					if (msgPtr == NULL) {
-						msg(MSG_DEBUG,"Aborted! %s",nickPtr);	
-						break;
-					}
-					msgPtr++;
-
-
-					nickLength = strcspn(nickPtr," "); 
-					char nick[nickLength+1]; // allocate array with sufficient space
-					strncpy(nick,nickPtr,nickLength);
-					nick[nickLength] = '\0';
-
-			
-					// finally, we extract the actual server message
-					char msg[MAXLINE];
-					strcpy(msg,msgPtr);
-
-					msg(MSG_DEBUG,"check: '%s' and ptr: '%s'",msg,msgPtr);
-					snprintf(statement, MAX_STATEMENT, "INSERT into IRC_SERVER_MSGS (ClientIP, ServerIP, RealServerIP, ServerName, NumericReply, RecipientNickname, Message, Date, Timestamp) values ('%s', '%s','%s', '%s','%s','%s','%s',(select current_timestamp),'%s');", conn->source, conn->orig_dest,  conn->dest, serverName, code, nick, msg, conn->timestamp);
-					
-					rc = sqlite3_exec(data->db, statement, callback, 0, &err);
-						if (rc) {
-							msg(MSG_ERROR, "Error performing '%s': %s", statement, err);
-						}
-					
-
-				} // end of if (valid server msg)	
-				currentLinePtr = strtok(NULL,"\r");
-			}// end of while(finished the line)
-
-	
-		}	// end of else (finished server msg handling)
-		// end of case IRC
-	*/	}
 		break;
 	case DNS:
 		//snprintf(statement, MAX_STATEMENT, "INSERT into %s (domain, original, returned) values ('%s', '%s', '%s');", data->tables[DNS], message, conn->orig_dest, conn->dest);
@@ -406,9 +252,60 @@ int lpg_log_text(struct logger_t* logger, connection_t* conn, const char* tag, c
 	return 0;
 }
 
-int lpg_log_struct(struct logger_t* log, connection_t* conn, void* data)
+int lpg_log_struct(struct logger_t* log, connection_t* conn, const char* tag, void* data)
 {
-	msg(MSG_FATAL, "Testcall!");
+	
+	switch (conn->app_proto) {
+	     // log depening on the protoco
+	case SMTP:
+	{	
+		if (strcmp(tag,"client") == 0) {
+			struct smtp_client_struct* logdata =  (struct smtp_client_struct *) data;
+			snprintf(statement, MAX_STATEMENT, "insert into SMTP_CLIENT_LOGS (ClientIP,ClientPort,ServerIP,RealServerIP,ServerPort,ClientMessage,date,TrumanTimestamp) Values (inet('%s'),%d,inet('%s'),inet('%s'),%d, '%s', (select current_timestamp),'%s')",
+			conn->source,conn->sport,conn->orig_dest,conn->dest,conn->dport,logdata->clientMsg,conn->timestamp
+			);
+			execute_statement(statement);
+
+		}
+		else {
+			struct smtp_server_struct* logdata =  (struct smtp_server_struct *) data;
+			snprintf(statement, MAX_STATEMENT, "insert into SMTP_SERVER_LOGS (ClientIP,ClientPort,ServerIP,RealServerIP,ServerPort,StatusCode,ServerMessage,date,TrumanTimestamp) Values (inet('%s'),%d,inet('%s'),inet('%s'),%d, '%s','%s', (select current_timestamp),'%s')",
+			conn->source,conn->sport,conn->orig_dest,conn->dest,conn->dport,logdata->statusCode,logdata->serverMsg,conn->timestamp
+			);
+			execute_statement(statement);
+
+
+		}
+	}
+	break;
+
+	case IRC:
+	{	
+		if (strcmp(tag,"client") == 0) {
+			struct irc_client_struct* logdata =  (struct irc_client_struct *) data;
+			snprintf(statement, MAX_STATEMENT, "insert into IRC_CLIENT_LOGS (ClientIP,ClientPort,ServerIP,RealServerIP,ServerPort,Command,Arguments,date,TrumanTimestamp) Values (inet('%s'),%d,inet('%s'),inet('%s'),%d, '%s', '%s', (select current_timestamp),'%s')",
+			conn->source,conn->sport,conn->orig_dest,conn->dest,conn->dport,logdata->command,logdata->arguments,conn->timestamp
+			);
+			execute_statement(statement);
+
+		}
+		else {
+			struct irc_server_struct* logdata =  (struct irc_server_struct *) data;
+			snprintf(statement, MAX_STATEMENT, "insert into IRC_SERVER_LOGS (ClientIP,ClientPort,ServerIP,RealServerIP,ServerPort,ServerName,NumericReply,RecipientNickname,Message,date,TrumanTimestamp) Values (inet('%s'),%d,inet('%s'),inet('%s'),%d, '%s','%s','%s','%s', (select current_timestamp),'%s')",
+			conn->source,conn->sport,conn->orig_dest,conn->dest,conn->dport,logdata->serverName,logdata->numericReply,logdata->recipientNickname,logdata->message,conn->timestamp
+			);
+			execute_statement(statement);
+
+		
+		}
+	}
+	default:
+		{
+		msg(MSG_DEBUG, "Protocol not yet handled, abort...");
+		}
+
+
+ 	} // end of switch
 	return 0;
-}
+} // end of lpg_log_struct
 

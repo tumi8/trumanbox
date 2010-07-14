@@ -355,7 +355,7 @@ int lt_log_text(struct logger_t* logger, connection_t* conn, const char* tag, co
 	return 0;
 }
 
-int lt_log_struct(struct logger_t* log, connection_t* conn, void* data)
+int lt_log_struct(struct logger_t* log, connection_t* conn, const char* tag, void* data)
 {
 	return 0;
 }
