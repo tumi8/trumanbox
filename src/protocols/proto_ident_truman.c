@@ -82,7 +82,7 @@ protocols_app pi_buildin_payload(struct proto_identifier_t* pi, connection_t *co
 				conn->app_proto = SMTP;
 			}
 			else {
-				conn->app_proto = FTP;
+				conn->app_proto = SMTP;
 				//conn->app_proto = UNKNOWN;
 			}
 		}

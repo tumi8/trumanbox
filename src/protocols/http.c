@@ -47,6 +47,7 @@ int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 	int completeLength = strlen(payload); //TODO: compare len parameter and strlen(payload)
 	int headerLength = completeLength - bodyLength;
 
+	msg(MSG_DEBUG,"Length comparison: %d to %d",*len,completeLength);
 	// HEADER extractor
 	strncpy(data->responseHeader,payload,headerLength);
 	*(ptrToHeader+headerLength+1) = '\0';
@@ -95,6 +96,7 @@ int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 	int completeLength = strlen(payload);
 	int headerLength = completeLength - bodyLength;
 
+	msg(MSG_DEBUG,"Length comparison: %d to %d",*len,completeLength);
 
 	// HEADER extractor
 	strncpy(data->requestHeader,payload,headerLength);
