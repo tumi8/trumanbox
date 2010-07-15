@@ -123,9 +123,7 @@ int lpg_log_text(struct logger_t* logger, connection_t* conn, const char* tag, c
 	case FTP_data:
 		msg(MSG_DEBUG,"FTP data Logging attempt");
 		break;
-	case HTTP_PUT:
-	case HTTP_POST:
-	case HTTP_GET:
+	case HTTP:
 	
 		msg(MSG_DEBUG,"HTTP Logging attempt");
 		/*if (strcmp(tag,"client") == 0) {
@@ -279,9 +277,28 @@ int lpg_log_struct(struct logger_t* log, connection_t* conn, const char* tag, vo
 	}
 	break;
 
-	case HTTP_GET:
-	case HTTP_POST:
-	case HTTP_PUT:
+	case HTTP:
+	{	
+		if (strcmp(tag,"client") == 0) {
+			struct http_client_struct* logdata =  (struct http_client_struct *) data;
+			snprintf(statement, MAX_STATEMENT, "insert into HTTP_LOGS (ClientIP,ClientPort,ServerIP,RealServerIP,ServerPort,requestedhost,requestedlocation,useragent,method,requestheader,requestbodytext,date,TrumanTimestamp) Values (inet('%s'),%d,inet('%s'),inet('%s'),%d, '%s', '%s', '%s', '%s', '%s', '%s', (select current_timestamp),'%s')",
+			conn->source,conn->sport,conn->orig_dest,conn->dest,conn->dport,logdata->requestedHost,logdata->requestedLocation,logdata->userAgent,logdata->method,logdata->requestHeader,logdata->requestBodyText,conn->timestamp
+			);
+			execute_statement(statement);
+
+		}
+		else {
+			struct http_server_struct* logdata =  (struct http_server_struct *) data;
+			snprintf(statement, MAX_STATEMENT, "update HTTP_LOGS set servertype = '%s', responsecontenttype = '%s', responselastmodified = '%s', responseheader = '%s', responsebodytext = '%s' where trumantimestamp = '%s'",
+			logdata->serverType,logdata->responseContentType,logdata->responseLastModified,logdata->responseHeader,logdata->responseBodyText,conn->timestamp
+			);
+			execute_statement(statement);
+
+		
+		}
+	 break;
+	}
+
 	break;
 	case IRC:
 	{	
@@ -302,6 +319,7 @@ int lpg_log_struct(struct logger_t* log, connection_t* conn, const char* tag, vo
 
 		
 		}
+	 break;
 	}
 	default:
 		{

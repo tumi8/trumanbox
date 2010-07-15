@@ -59,7 +59,7 @@ int create_db(struct lsq_data* data)
                 return -1;
         }
 
-	snprintf(statement, MAX_STATEMENT, "CREATE TABLE %s (RequestedHost TEXT, RequestedLocation TEXT, UserAgent TEXT, RequestHeader TEXT, RequestBody TEXT, RequesterIP TEXT, DestinationIP TEXT, TrueDestinationIP TEXT, Date TEXT, Method TEXT, ResponseHeader TEXT, ResponseBody TEXT, ResponseLastModified TEXT, ServerType TEXT, Timestamp TEXT);", data->tables[HTTP_GET]);
+	snprintf(statement, MAX_STATEMENT, "CREATE TABLE %s (RequestedHost TEXT, RequestedLocation TEXT, UserAgent TEXT, RequestHeader TEXT, RequestBody TEXT, RequesterIP TEXT, DestinationIP TEXT, TrueDestinationIP TEXT, Date TEXT, Method TEXT, ResponseHeader TEXT, ResponseBody TEXT, ResponseLastModified TEXT, ServerType TEXT, Timestamp TEXT);", data->tables[HTTP]);
 	rc = sqlite3_exec(data->db, statement, callback, 0, &err);
 	if (rc != SQLITE_OK) {
 		msg(MSG_ERROR, "Error createing table currenthttp: %s", err);
@@ -114,7 +114,7 @@ int lsq_init(struct logger_t* logger)
 	strncpy(data->tables[FTP], "currentftp", TABLE_NAME_LENGTH);
 	strncpy(data->tables[FTP_anonym], "currentftp", TABLE_NAME_LENGTH);
 	strncpy(data->tables[FTP_data], "currentftp", TABLE_NAME_LENGTH);
-	strncpy(data->tables[HTTP_GET], "currenthttp", TABLE_NAME_LENGTH);
+	strncpy(data->tables[HTTP], "currenthttp", TABLE_NAME_LENGTH);
 	strncpy(data->tables[IRC], "currentirc", TABLE_NAME_LENGTH);
 	strncpy(data->tables[DNS], "currentdns", TABLE_NAME_LENGTH);
 	strncpy(data->tables[UNKNOWN], "currentunknown", TABLE_NAME_LENGTH);
@@ -197,9 +197,7 @@ int lsq_log_text(struct logger_t* logger, connection_t* conn, const char* tag, c
 	case FTP_data:
 
 		break;
-	case HTTP_PUT:
-	case HTTP_POST:
-	case HTTP_GET:
+	case HTTP:
 		if (strcmp(tag,"client") == 0) {
 			msg(MSG_DEBUG,"We have a client request log");
 		// we perform a log operation for a client request
@@ -244,7 +242,7 @@ int lsq_log_text(struct logger_t* logger, connection_t* conn, const char* tag, c
 		extract_header_field(requestedHost,"Host:",header);
 		extract_header_field(userAgent,"User-Agent:",header);
 
-		snprintf(statement,MAX_STATEMENT, "INSERT into %s (RequesterIP, DestinationIP, TrueDestinationIP, RequestHeader, Date, RequestedHost, RequestedLocation, UserAgent, Method,timestamp) VALUES ('%s','%s','%s','%s',(select current_timestamp),'%s','%s','%s','%s','%s');",data->tables[HTTP_GET],conn->source,conn->orig_dest,conn->dest,header,requestedHost,requestedLocation,userAgent,method,conn->timestamp);
+		snprintf(statement,MAX_STATEMENT, "INSERT into %s (RequesterIP, DestinationIP, TrueDestinationIP, RequestHeader, Date, RequestedHost, RequestedLocation, UserAgent, Method,timestamp) VALUES ('%s','%s','%s','%s',(select current_timestamp),'%s','%s','%s','%s','%s');",data->tables[HTTP],conn->source,conn->orig_dest,conn->dest,header,requestedHost,requestedLocation,userAgent,method,conn->timestamp);
 
 		
 		}
@@ -292,7 +290,7 @@ int lsq_log_text(struct logger_t* logger, connection_t* conn, const char* tag, c
 			msg(MSG_DEBUG,"Body: '%s'",bodyText);
 		}
 
-		snprintf(statement,MAX_STATEMENT, "update %s set ResponseHeader = '%s' , ResponseBody = '%s' , ResponseLastModified = '%s' , ServerType = '%s' where timestamp = '%s';",data->tables[HTTP_GET],header,bodyText,lastModified,serverType,conn->timestamp);
+		snprintf(statement,MAX_STATEMENT, "update %s set ResponseHeader = '%s' , ResponseBody = '%s' , ResponseLastModified = '%s' , ServerType = '%s' where timestamp = '%s';",data->tables[HTTP],header,bodyText,lastModified,serverType,conn->timestamp);
 
 		
 		msg(MSG_DEBUG,"try to execute: \n %s",statement);

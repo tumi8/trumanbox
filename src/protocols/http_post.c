@@ -73,7 +73,7 @@ int ph_http_post_determine_target(void* handler, struct sockaddr_in* addr)
 	return 0;
 }
 
-
+/*
 void save_request(const connection_t *conn, const char *cmd_str) {
 		char* ptrToBody = NULL; //this pointer contains the address of the body of the POST-Request
 
@@ -106,4 +106,4 @@ void save_request(const connection_t *conn, const char *cmd_str) {
 
 
 }
-
+*/

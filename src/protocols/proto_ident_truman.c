@@ -26,7 +26,7 @@ protocols_app pi_buildin_port(struct proto_identifier_t* pi, connection_t *conn)
 			conn->app_proto = SMTP;
 			break;
 		case 80:
-			conn->app_proto = HTTP_GET;
+			conn->app_proto = HTTP;
 			break;
 		case 6667:
 			conn->app_proto = IRC;
@@ -59,12 +59,9 @@ protocols_app pi_buildin_payload(struct proto_identifier_t* pi, connection_t *co
 
 	msg(MSG_DEBUG, "Received payload: \"%s\"\n", payload);
 	if (payload_len > 0) {
-		if (strncmp(payload, "GET /", 5) == 0)
-			conn->app_proto = HTTP_GET;
-		else if (strncmp(payload, "POST /",6) == 0)
-			conn->app_proto = HTTP_POST;
-		else if (strncmp(payload, "PUT /",5)  == 0)  
-			conn->app_proto = HTTP_PUT;
+		if (strstr(payload,"HTTP/")!=0) {
+			conn->app_proto = HTTP;
+		}
 		else if (strncmp(payload, "NICK ", 5) == 0)
 			conn->app_proto = IRC;
 		else if (strncmp(payload, "FTP_data", 8) == 0) {
@@ -85,7 +82,8 @@ protocols_app pi_buildin_payload(struct proto_identifier_t* pi, connection_t *co
 				conn->app_proto = SMTP;
 			}
 			else {
-				conn->app_proto = UNKNOWN;
+				conn->app_proto = FTP;
+				//conn->app_proto = UNKNOWN;
 			}
 		}
 		else {

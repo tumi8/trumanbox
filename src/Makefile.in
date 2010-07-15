@@ -54,9 +54,8 @@ am_trumanbox_OBJECTS = dns_resolver.$(OBJEXT) iniparser.$(OBJEXT) \
 	log_truman.$(OBJEXT) log_sqlite.$(OBJEXT) \
 	log_postgres.$(OBJEXT) proto_ident.$(OBJEXT) \
 	proto_handler.$(OBJEXT) proto_ident_truman.$(OBJEXT) \
-	proto_ident_opendpi.$(OBJEXT) ftp.$(OBJEXT) http_get.$(OBJEXT) \
-	http_post.$(OBJEXT) http_put.$(OBJEXT) smtp.$(OBJEXT) \
-	irc.$(OBJEXT) unknown.$(OBJEXT)
+	proto_ident_opendpi.$(OBJEXT) ftp.$(OBJEXT) http.$(OBJEXT) \
+	smtp.$(OBJEXT) irc.$(OBJEXT) unknown.$(OBJEXT)
 trumanbox_OBJECTS = $(am_trumanbox_OBJECTS)
 trumanbox_LDADD = $(LDADD)
 am__DEPENDENCIES_1 =
@@ -183,9 +182,7 @@ trumanbox_SOURCES = config.h definitions.h dns_resolver.c helper_file.h iniparse
 	protocols/proto_ident.h protocols/proto_ident.c protocols/proto_handler.h \
 	protocols/proto_handler.c protocols/proto_ident_truman.c \
 	protocols/proto_ident_truman.h protocols/proto_ident_opendpi.h protocols/proto_ident_opendpi.c \
-	protocols/ftp.h protocols/ftp.c protocols/http_get.h protocols/http_get.c \
-	protocols/http_post.c protocols/http_post.h \
-	protocols/http_put.c protocols/http_put.h  \
+	protocols/ftp.h protocols/ftp.c protocols/http.h protocols/http.c \
 	protocols/smtp.h protocols/smtp.c protocols/irc.h protocols/irc.c \
 	protocols/unknown.h protocols/unknown.c
 
@@ -279,9 +276,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ftp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/helper_file.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/helper_net.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http_get.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http_post.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http_put.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/iniparser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/irc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log_postgres.Po@am__quote@
@@ -387,47 +382,19 @@ ftp.obj: protocols/ftp.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ftp.obj `if test -f 'protocols/ftp.c'; then $(CYGPATH_W) 'protocols/ftp.c'; else $(CYGPATH_W) '$(srcdir)/protocols/ftp.c'; fi`
 
-http_get.o: protocols/http_get.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT http_get.o -MD -MP -MF $(DEPDIR)/http_get.Tpo -c -o http_get.o `test -f 'protocols/http_get.c' || echo '$(srcdir)/'`protocols/http_get.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/http_get.Tpo $(DEPDIR)/http_get.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='protocols/http_get.c' object='http_get.o' libtool=no @AMDEPBACKSLASH@
+http.o: protocols/http.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT http.o -MD -MP -MF $(DEPDIR)/http.Tpo -c -o http.o `test -f 'protocols/http.c' || echo '$(srcdir)/'`protocols/http.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/http.Tpo $(DEPDIR)/http.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='protocols/http.c' object='http.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o http_get.o `test -f 'protocols/http_get.c' || echo '$(srcdir)/'`protocols/http_get.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o http.o `test -f 'protocols/http.c' || echo '$(srcdir)/'`protocols/http.c
 
-http_get.obj: protocols/http_get.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT http_get.obj -MD -MP -MF $(DEPDIR)/http_get.Tpo -c -o http_get.obj `if test -f 'protocols/http_get.c'; then $(CYGPATH_W) 'protocols/http_get.c'; else $(CYGPATH_W) '$(srcdir)/protocols/http_get.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/http_get.Tpo $(DEPDIR)/http_get.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='protocols/http_get.c' object='http_get.obj' libtool=no @AMDEPBACKSLASH@
+http.obj: protocols/http.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT http.obj -MD -MP -MF $(DEPDIR)/http.Tpo -c -o http.obj `if test -f 'protocols/http.c'; then $(CYGPATH_W) 'protocols/http.c'; else $(CYGPATH_W) '$(srcdir)/protocols/http.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/http.Tpo $(DEPDIR)/http.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='protocols/http.c' object='http.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o http_get.obj `if test -f 'protocols/http_get.c'; then $(CYGPATH_W) 'protocols/http_get.c'; else $(CYGPATH_W) '$(srcdir)/protocols/http_get.c'; fi`
-
-http_post.o: protocols/http_post.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT http_post.o -MD -MP -MF $(DEPDIR)/http_post.Tpo -c -o http_post.o `test -f 'protocols/http_post.c' || echo '$(srcdir)/'`protocols/http_post.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/http_post.Tpo $(DEPDIR)/http_post.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='protocols/http_post.c' object='http_post.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o http_post.o `test -f 'protocols/http_post.c' || echo '$(srcdir)/'`protocols/http_post.c
-
-http_post.obj: protocols/http_post.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT http_post.obj -MD -MP -MF $(DEPDIR)/http_post.Tpo -c -o http_post.obj `if test -f 'protocols/http_post.c'; then $(CYGPATH_W) 'protocols/http_post.c'; else $(CYGPATH_W) '$(srcdir)/protocols/http_post.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/http_post.Tpo $(DEPDIR)/http_post.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='protocols/http_post.c' object='http_post.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o http_post.obj `if test -f 'protocols/http_post.c'; then $(CYGPATH_W) 'protocols/http_post.c'; else $(CYGPATH_W) '$(srcdir)/protocols/http_post.c'; fi`
-
-http_put.o: protocols/http_put.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT http_put.o -MD -MP -MF $(DEPDIR)/http_put.Tpo -c -o http_put.o `test -f 'protocols/http_put.c' || echo '$(srcdir)/'`protocols/http_put.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/http_put.Tpo $(DEPDIR)/http_put.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='protocols/http_put.c' object='http_put.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o http_put.o `test -f 'protocols/http_put.c' || echo '$(srcdir)/'`protocols/http_put.c
-
-http_put.obj: protocols/http_put.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT http_put.obj -MD -MP -MF $(DEPDIR)/http_put.Tpo -c -o http_put.obj `if test -f 'protocols/http_put.c'; then $(CYGPATH_W) 'protocols/http_put.c'; else $(CYGPATH_W) '$(srcdir)/protocols/http_put.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/http_put.Tpo $(DEPDIR)/http_put.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='protocols/http_put.c' object='http_put.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o http_put.obj `if test -f 'protocols/http_put.c'; then $(CYGPATH_W) 'protocols/http_put.c'; else $(CYGPATH_W) '$(srcdir)/protocols/http_put.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o http.obj `if test -f 'protocols/http.c'; then $(CYGPATH_W) 'protocols/http.c'; else $(CYGPATH_W) '$(srcdir)/protocols/http.c'; fi`
 
 smtp.o: protocols/smtp.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT smtp.o -MD -MP -MF $(DEPDIR)/smtp.Tpo -c -o smtp.o `test -f 'protocols/smtp.c' || echo '$(srcdir)/'`protocols/smtp.c

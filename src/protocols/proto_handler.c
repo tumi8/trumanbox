@@ -4,9 +4,7 @@
 
 #include "protocols/irc.h"
 #include "protocols/smtp.h"
-#include "protocols/http_get.h"
-#include "protocols/http_post.h"
-#include "protocols/http_put.h"
+#include "protocols/http.h"
 #include "protocols/ftp.h"
 #include "protocols/unknown.h"
 
@@ -36,32 +34,14 @@ static struct proto_handler_t* create_handler(protocols_app app)
 		ret->handle_packet = ph_smtp_handle_packet;
 		ret->determine_target = ph_smtp_determine_target;
 		break;
-	case HTTP_POST:
-		ret->handler = ph_http_post_create();
-		ret->init = ph_http_post_init;
-		ret->deinit = ph_http_post_deinit;
-		ret->handle_payload_stc = ph_http_post_handle_payload_stc;
-		ret->handle_payload_cts = ph_http_post_handle_payload_cts;
-		ret->handle_packet = ph_http_post_handle_packet;
-		ret->determine_target = ph_http_post_determine_target;
-		break;
-	case HTTP_PUT:
-		ret->handler = ph_http_put_create();
-		ret->init = ph_http_put_init;
-		ret->deinit = ph_http_put_deinit;
-		ret->handle_payload_stc = ph_http_put_handle_payload_stc;
-		ret->handle_payload_cts = ph_http_put_handle_payload_cts;
-		ret->handle_packet = ph_http_put_handle_packet;
-		ret->determine_target = ph_http_put_determine_target;
-		break;
-	case HTTP_GET:
-		ret->handler = ph_http_get_create();
-		ret->init = ph_http_get_init;
-		ret->deinit = ph_http_get_deinit;
-		ret->handle_payload_stc = ph_http_get_handle_payload_stc;
-		ret->handle_payload_cts = ph_http_get_handle_payload_cts;
-		ret->handle_packet = ph_http_get_handle_packet;
-		ret->determine_target = ph_http_get_determine_target;
+	case HTTP:
+		ret->handler = ph_http_create();
+		ret->init = ph_http_init;
+		ret->deinit = ph_http_deinit;
+		ret->handle_payload_stc = ph_http_handle_payload_stc;
+		ret->handle_payload_cts = ph_http_handle_payload_cts;
+		ret->handle_packet = ph_http_handle_packet;
+		ret->determine_target = ph_http_determine_target;
 		break;
 	case IRC:
 		ret->handler = ph_irc_create();

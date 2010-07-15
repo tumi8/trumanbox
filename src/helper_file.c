@@ -88,7 +88,7 @@ void build_tree(const connection_t *conn, const char *cmd_str) {
 	
 	full_path[MAX_PATH_LENGTH-1] = 0;
 
-	if (conn->app_proto == HTTP_GET || conn->app_proto == HTTP_POST) {    // if we are in a http connection
+	if (conn->app_proto == HTTP) {    // if we are in a http connection
 		strncpy(base_dir, HTTP_BASE_DIR, sizeof(base_dir)-1);
 		user_id = 0;	//FIXME
 		group_id = 0;		
@@ -242,7 +242,7 @@ void build_tree(const connection_t *conn, const char *cmd_str) {
 		return;
 	}
 
-	if (conn->app_proto == HTTP_GET || conn->app_proto == HTTP_POST)
+	if (conn->app_proto == HTTP)
 		create_index_file(filename);
 
 	if (chdir(saved_cwd) == -1) {
