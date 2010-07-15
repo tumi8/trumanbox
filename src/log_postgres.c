@@ -279,6 +279,10 @@ int lpg_log_struct(struct logger_t* log, connection_t* conn, const char* tag, vo
 	}
 	break;
 
+	case HTTP_GET:
+	case HTTP_POST:
+	case HTTP_PUT:
+	break;
 	case IRC:
 	{	
 		if (strcmp(tag,"client") == 0) {

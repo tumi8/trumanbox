@@ -33,6 +33,23 @@ struct logger_t {
 };
 
 
+struct http_client_struct {
+	char requestedHost[1000];
+	char requestedLocation[1000];
+	char userAgent[1000];
+	char method[20];
+	char requestHeader[MAXLINE];
+	char requestBodyText[MAXLINE];
+};
+
+struct http_server_struct {
+	char responseHeader[MAXLINE];
+	char responseBodyText[MAXLINE];
+	char responseLastModified[MAXLINE];
+	char responseContentType[1000];
+	char serverType[1000];
+};
+
 struct smtp_client_struct {
 	char clientMsg[MAXLINE];
 };

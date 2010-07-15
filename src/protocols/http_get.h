@@ -13,6 +13,7 @@ int ph_http_get_handle_payload_stc(void* handler, connection_t* conn, const char
 int ph_http_get_handle_payload_cts(void* handler, connection_t* conn, const char* payload, size_t* len);
 int ph_http_get_handle_packet(void* handler, const char* packet, size_t len);
 int ph_http_get_determine_target(void* handler, struct sockaddr_in*);
+void extract_http_header_field(char* destination, char* headername, char* header);
 
 
 #endif
