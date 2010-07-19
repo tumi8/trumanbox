@@ -40,14 +40,18 @@ struct http_client_struct {
 	char method[20];
 	char requestHeader[MAXLINE];
 	char requestBodyText[MAXLINE];
+	char requestBodyBinary[MAXLINE];
 };
 
 struct http_server_struct {
 	char responseHeader[MAXLINE];
 	char responseBodyText[MAXLINE];
+	char responseBodyBinary[MAXLINE];
 	char responseLastModified[MAXLINE];
 	char responseContentType[1000];
 	char serverType[1000];
+	int bodyIsBinary;
+	int responseBodyBinaryLength;
 };
 
 struct smtp_client_struct {

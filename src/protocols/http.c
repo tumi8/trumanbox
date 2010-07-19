@@ -42,12 +42,12 @@ int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 	char* ptrToHeader = data->responseHeader;
 	char* ptrToBody = NULL; //this pointer contains the address of the body 
 	char* tmpPtr = NULL; // used for miscellaneous purposes
-	ptrToBody  = strstr(payload, "\r\n\r\n") + 4; // skip the new lines/ carriage returns ; we have to add + 4 because of the 4 characters \r\n\r\n
-	int bodyLength = strlen(ptrToBody);
-	int completeLength = strlen(payload); //TODO: compare len parameter and strlen(payload)
-	int headerLength = completeLength - bodyLength;
+	char* ptrToHeaderEnd = strstr(payload,"\r\n\r\n");
+	ptrToBody  = ptrToHeaderEnd + 4; // skip the new lines/ carriage returns ; we have to add + 4 because of the 4 characters \r\n\r\n
 
-	msg(MSG_DEBUG,"Length comparison: %d to %d",*len,completeLength);
+	int headerLength = ptrToHeaderEnd - payload;
+	int bodyLength = *len - headerLength - 4; // -4 because we have \r\n\r\n after the header
+	
 	// HEADER extractor
 	strncpy(data->responseHeader,payload,headerLength);
 	*(ptrToHeader+headerLength+1) = '\0';
@@ -66,7 +66,9 @@ int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 	if (tmpPtr == NULL) {
 		char* dummyMsg = "body contains no plain text data";
 		strcpy(data->responseBodyText,dummyMsg);
-
+		data->bodyIsBinary = 1;
+		data->responseBodyBinaryLength = bodyLength;
+		memcpy(data->responseBodyBinary,ptrToBody,bodyLength);
 		//  we have to copy the binary data into the response body field 
 	}
 	else {

@@ -67,6 +67,7 @@ int execute_statement(char* stmt) {
 }
 
 
+
 // Returns: Whether connection is successful AND if tables are already present
 int lpg_init(struct logger_t* logger)
 {
@@ -285,7 +286,7 @@ int lpg_log_struct(struct logger_t* log, connection_t* conn, const char* tag, vo
 			conn->source,conn->sport,conn->orig_dest,conn->dest,conn->dport,logdata->requestedHost,logdata->requestedLocation,logdata->userAgent,logdata->method,logdata->requestHeader,logdata->requestBodyText,conn->timestamp
 			);
 			execute_statement(statement);
-
+			
 		}
 		else {
 			struct http_server_struct* logdata =  (struct http_server_struct *) data;
@@ -293,6 +294,37 @@ int lpg_log_struct(struct logger_t* log, connection_t* conn, const char* tag, vo
 			logdata->serverType,logdata->responseContentType,logdata->responseLastModified,logdata->responseHeader,logdata->responseBodyText,conn->timestamp
 			);
 			execute_statement(statement);
+
+			// save body as binary data:
+			if (logdata->bodyIsBinary) {
+			snprintf(statement,MAX_STATEMENT,"update http_logs set responsebodybinary = $1 where trumantimestamp = '%s'",conn->timestamp);
+			int nParams = 1;
+			const Oid paramTypes[] = {17};      // 17, for bytea type's OID.
+			const char * const paramValues[] = {logdata->responseBodyBinary}; // "ABC"
+			int length = logdata->responseBodyBinaryLength;
+			msg(MSG_DEBUG,"test length: %d",length);
+			const int *paramLengths = &length;     // Letting the backend to
+
+
+
+			const int *paramFormats = NULL;     // deduce these params.
+			int resultFormat = 0;               // Result will be in text format.
+
+			PGresult *res;
+			printf("Command: \"%s\",\n", statement);
+			printf("Param. : \"%s\".\n", paramValues[0]);
+			res = PQexecParams(psql, statement, nParams, paramTypes, paramValues,
+					   paramLengths, paramFormats, resultFormat);
+
+			if ( PQresultStatus(res) != PGRES_COMMAND_OK ) {
+			    fprintf(stderr, "Insert failed!\n%s", PQresultErrorMessage(res));
+			    PQclear(res);
+			} else {
+			    printf("Insert succeeded.\n");
+			    PQclear(res);
+			}
+			}
+
 
 		
 		}
