@@ -14,8 +14,15 @@ unknown.o: protocols/unknown.c protocols/unknown.h configuration.h \
   /usr/include/bits/uio.h /usr/include/bits/socket.h \
   /usr/include/bits/sockaddr.h /usr/include/asm/socket.h \
   /usr/include/asm/sockios.h /usr/include/bits/socket2.h \
-  /usr/include/bits/in.h /usr/include/stdlib.h /usr/include/alloca.h \
-  /usr/include/bits/stdlib.h
+  /usr/include/bits/in.h wrapper.h /usr/include/stdio.h \
+  /usr/include/libio.h /usr/include/_G_config.h /usr/include/wchar.h \
+  /usr/lib/gcc/i686-pc-linux-gnu/4.3.4/include/stdarg.h \
+  /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h \
+  /usr/include/bits/stdio.h /usr/include/bits/stdio2.h helper_file.h \
+  msg.h logger.h /usr/include/stdlib.h /usr/include/alloca.h \
+  /usr/include/bits/stdlib.h /usr/include/string.h /usr/include/xlocale.h \
+  /usr/include/bits/string.h /usr/include/bits/string2.h \
+  /usr/include/bits/string3.h
 
 protocols/unknown.h:
 
@@ -85,8 +92,44 @@ definitions.h:
 
 /usr/include/bits/in.h:
 
+wrapper.h:
+
+/usr/include/stdio.h:
+
+/usr/include/libio.h:
+
+/usr/include/_G_config.h:
+
+/usr/include/wchar.h:
+
+/usr/lib/gcc/i686-pc-linux-gnu/4.3.4/include/stdarg.h:
+
+/usr/include/bits/stdio_lim.h:
+
+/usr/include/bits/sys_errlist.h:
+
+/usr/include/bits/stdio.h:
+
+/usr/include/bits/stdio2.h:
+
+helper_file.h:
+
+msg.h:
+
+logger.h:
+
 /usr/include/stdlib.h:
 
 /usr/include/alloca.h:
 
 /usr/include/bits/stdlib.h:
+
+/usr/include/string.h:
+
+/usr/include/xlocale.h:
+
+/usr/include/bits/string.h:
+
+/usr/include/bits/string2.h:
+
+/usr/include/bits/string3.h:

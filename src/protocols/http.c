@@ -41,7 +41,6 @@ int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 
 	char* ptrToHeader = data->responseHeader;
 	char* ptrToBody = NULL; //this pointer contains the address of the body 
-	char* tmpPtr = NULL; // used for miscellaneous purposes
 	char* ptrToHeaderEnd = strstr(payload,"\r\n\r\n");
 	ptrToBody  = ptrToHeaderEnd + 4; // skip the new lines/ carriage returns ; we have to add + 4 because of the 4 characters \r\n\r\n
 
@@ -51,7 +50,6 @@ int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 	// HEADER extractor
 	strncpy(data->responseHeader,payload,headerLength);
 	*(ptrToHeader+headerLength+1) = '\0';
-	//msg(MSG_DEBUG,"Response Header: %s",header);
 	
 	
 	// extract header fields
@@ -60,16 +58,11 @@ int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 	extract_http_header_field(data->responseLastModified,"Last-Modified:",data->responseHeader);
 
 
-	// now check if the server response has content-type of kind text/*
-	tmpPtr = strstr(data->responseContentType,"text");
+	char* tmpPtr = strstr(data->responseContentType,"text");
 	
 	if (tmpPtr == NULL) {
 		char* dummyMsg = "body contains no plain text data";
 		strcpy(data->responseBodyText,dummyMsg);
-		data->bodyIsBinary = 1;
-		data->responseBodyBinaryLength = bodyLength;
-		memcpy(data->responseBodyBinary,ptrToBody,bodyLength);
-		//  we have to copy the binary data into the response body field 
 	}
 	else {
 		//  we got text data, thus we can save the response as a string into the body field
@@ -77,6 +70,27 @@ int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 		data->responseBodyText[bodyLength] = '\0';
 	}
 
+	msg(MSG_DEBUG,"body length %d",bodyLength);
+	if (bodyLength > 0) {
+		save_binarydata_to_file(data->responseBodyBinaryLocation,"http/received",ptrToBody,bodyLength);
+		/*
+		size_t count; 
+		char timestamp[100];
+		create_timestamp(timestamp);
+		snprintf(data->responseBodyBinaryLocation,1000,"http/downloaded-files/%s",timestamp); 
+		FILE * pFile; 
+		pFile = fopen ( data->responseBodyBinaryLocation , "wb" ); 
+		if(pFile == NULL) { 
+			msg(MSG_FATAL,"Error opening %s",data->responseBodyBinaryLocation); 
+		} 
+		else  { 
+			count = fwrite (ptrToBody , 1 , bodyLength , pFile ); 
+			msg(MSG_DEBUG,"wrote %zu bytes to %s",count,data->responseBodyBinaryLocation); 
+			fclose (pFile); 
+			 
+		}
+		*/
+	}
 
 	logger_get()->log_struct(logger_get(), conn, "server", data);
 	return logger_get()->log(logger_get(), conn, "server", payload);
@@ -84,7 +98,6 @@ int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 
 int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* payload, size_t* len)
 {
-
 	struct http_client_struct* data = (struct http_client_struct*) malloc(sizeof(struct http_client_struct));
 	
 	// we perform a log operation for a client request
@@ -93,12 +106,18 @@ int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 	char* ptrToHeader = data->requestHeader;
 	char* ptrToRequestedLocation = NULL;
 
-	ptrToBody  = strstr(payload, "\r\n\r\n")+4; // skip the new lines/ carriage returns
+	/*ptrToBody  = strstr(payload, "\r\n\r\n")+4; // skip the new lines/ carriage returns
 	int bodyLength = strlen(ptrToBody); // TODO: difference between len and strlen(ptrtobody)
 	int completeLength = strlen(payload);
 	int headerLength = completeLength - bodyLength;
+*/
+	char* ptrToHeaderEnd = strstr(payload,"\r\n\r\n");
+	ptrToBody  = ptrToHeaderEnd + 4; // skip the new lines/ carriage returns ; we have to add + 4 because of the 4 characters \r\n\r\n
 
-	msg(MSG_DEBUG,"Length comparison: %d to %d",*len,completeLength);
+	int headerLength = ptrToHeaderEnd - payload;
+	int bodyLength = *len - headerLength - 4; // -4 because we have \r\n\r\n after the header
+	
+
 
 	// HEADER extractor
 	strncpy(data->requestHeader,payload,headerLength);
@@ -123,9 +142,31 @@ int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 	extract_http_header_field(data->requestedHost,"Host:",data->requestHeader);
 	extract_http_header_field(data->userAgent,"User-Agent:",data->requestHeader);
 	
-	msg(MSG_DEBUG,"we extracted: '%s' \n '%s' \n '%s' \n '%s' \n '%s' \n '%s'",data->requestedHost,data->requestedLocation,data->userAgent,data->method,data->requestHeader,data->requestBodyText);
 
- 
+ 	msg(MSG_DEBUG,"body length: %d",bodyLength);	
+	if (bodyLength > 0) {
+		save_binarydata_to_file(data->requestBodyBinaryLocation,"http/sent",ptrToBody,bodyLength);
+
+		/*
+		int save_binarydata_to_file(char* destFile, char* folderOfFile, char* dataToWrite, int dataLength)
+		size_t count; 
+		char timestamp[100];
+		create_timestamp(timestamp);
+		snprintf(data->requestBodyBinaryLocation,1000,"http/uploaded-files/%s",timestamp); 
+		FILE * pFile; 
+		pFile = fopen ( data->requestBodyBinaryLocation , "wb" ); 
+		if(pFile == NULL) { 
+			msg(MSG_FATAL,"Error opening %s",data->requestBodyBinaryLocation); 
+		} 
+		else  { 
+			count = fwrite (ptrToBody , 1 , bodyLength , pFile ); 
+			msg(MSG_DEBUG,"wrote %zu bytes to %s",count,data->requestBodyBinaryLocation);
+			fclose (pFile); 
+			 
+		}*/
+	
+	}
+
 
 	build_tree(conn, payload);
 

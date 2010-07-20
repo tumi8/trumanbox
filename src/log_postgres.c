@@ -282,53 +282,22 @@ int lpg_log_struct(struct logger_t* log, connection_t* conn, const char* tag, vo
 	{	
 		if (strcmp(tag,"client") == 0) {
 			struct http_client_struct* logdata =  (struct http_client_struct *) data;
-			snprintf(statement, MAX_STATEMENT, "insert into HTTP_LOGS (ClientIP,ClientPort,ServerIP,RealServerIP,ServerPort,requestedhost,requestedlocation,useragent,method,requestheader,requestbodytext,date,TrumanTimestamp) Values (inet('%s'),%d,inet('%s'),inet('%s'),%d, '%s', '%s', '%s', '%s', '%s', '%s', (select current_timestamp),'%s')",
-			conn->source,conn->sport,conn->orig_dest,conn->dest,conn->dport,logdata->requestedHost,logdata->requestedLocation,logdata->userAgent,logdata->method,logdata->requestHeader,logdata->requestBodyText,conn->timestamp
+			snprintf(statement, MAX_STATEMENT, "insert into HTTP_LOGS (ClientIP,ClientPort,ServerIP,RealServerIP,ServerPort,requestedhost,requestedlocation,useragent,method,requestheader,requestbodytext,requestbodybinarylocation,date,TrumanTimestamp) Values (inet('%s'),%d,inet('%s'),inet('%s'),%d, '%s', '%s', '%s', '%s', '%s', '%s','%s', (select current_timestamp),'%s')",
+			conn->source,conn->sport,conn->orig_dest,conn->dest,conn->dport,logdata->requestedHost,logdata->requestedLocation,logdata->userAgent,logdata->method,logdata->requestHeader,logdata->requestBodyText,logdata->requestBodyBinaryLocation,conn->timestamp
 			);
 			execute_statement(statement);
 			
 		}
 		else {
 			struct http_server_struct* logdata =  (struct http_server_struct *) data;
-			snprintf(statement, MAX_STATEMENT, "update HTTP_LOGS set servertype = '%s', responsecontenttype = '%s', responselastmodified = '%s', responseheader = '%s', responsebodytext = '%s' where trumantimestamp = '%s'",
-			logdata->serverType,logdata->responseContentType,logdata->responseLastModified,logdata->responseHeader,logdata->responseBodyText,conn->timestamp
+			snprintf(statement, MAX_STATEMENT, "update HTTP_LOGS set servertype = '%s', responsecontenttype = '%s', responselastmodified = '%s', responseheader = '%s', responsebodytext = '%s', responsebodybinarylocation = '%s' where trumantimestamp = '%s'",
+			logdata->serverType,logdata->responseContentType,logdata->responseLastModified,logdata->responseHeader,logdata->responseBodyText,logdata->responseBodyBinaryLocation,conn->timestamp
 			);
-			execute_statement(statement);
-
-			// save body as binary data:
-			if (logdata->bodyIsBinary) {
-			snprintf(statement,MAX_STATEMENT,"update http_logs set responsebodybinary = $1 where trumantimestamp = '%s'",conn->timestamp);
-			int nParams = 1;
-			const Oid paramTypes[] = {17};      // 17, for bytea type's OID.
-			const char * const paramValues[] = {logdata->responseBodyBinary}; // "ABC"
-			int length = logdata->responseBodyBinaryLength;
-			msg(MSG_DEBUG,"test length: %d",length);
-			const int *paramLengths = &length;     // Letting the backend to
-
-
-
-			const int *paramFormats = NULL;     // deduce these params.
-			int resultFormat = 0;               // Result will be in text format.
-
-			PGresult *res;
-			printf("Command: \"%s\",\n", statement);
-			printf("Param. : \"%s\".\n", paramValues[0]);
-			res = PQexecParams(psql, statement, nParams, paramTypes, paramValues,
-					   paramLengths, paramFormats, resultFormat);
-
-			if ( PQresultStatus(res) != PGRES_COMMAND_OK ) {
-			    fprintf(stderr, "Insert failed!\n%s", PQresultErrorMessage(res));
-			    PQclear(res);
-			} else {
-			    printf("Insert succeeded.\n");
-			    PQclear(res);
-			}
-			}
-
+			execute_statement(statement);				    
 
 		
 		}
-	 break;
+	 	break;
 	}
 
 	break;
@@ -352,6 +321,31 @@ int lpg_log_struct(struct logger_t* log, connection_t* conn, const char* tag, vo
 		
 		}
 	 break;
+	}
+	case UNKNOWN:
+	{
+		if (strcmp(conn->dest,"") == 0) {
+			snprintf(conn->dest,IPLENGTH,"0.0.0.0");
+		}
+		msg(MSG_DEBUG,"Unknown Logging: %s, %d, %s, %s, %d",conn->source,conn->sport,conn->orig_dest,conn->dest,conn->dport);
+		if (strcmp(tag,"client") == 0) {
+			struct unknown_client_struct* logdata =  (struct unknown_client_struct *) data;
+			snprintf(statement, MAX_STATEMENT, "insert into UNKNOWN_CLIENT_LOGS (ClientIP,ClientPort,ServerIP,RealServerIP,ServerPort,ClientMessage,ClientMessageBinaryLocation,date,TrumanTimestamp) Values (inet('%s'),%d,inet('%s'),inet('%s'),%d, '%s', '%s', (select current_timestamp),'%s')",
+			conn->source,conn->sport,conn->orig_dest,conn->dest,conn->dport,logdata->clientMsg,logdata->clientMsgBinaryLocation,conn->timestamp
+			);
+			execute_statement(statement);
+
+		}
+		else {
+			struct unknown_server_struct* logdata =  (struct unknown_server_struct *) data;
+			snprintf(statement, MAX_STATEMENT, "insert into UNKNOWN_SERVER_LOGS (ClientIP,ClientPort,ServerIP,RealServerIP,ServerPort,ServerName,serverMessage,serverMessageBinaryLocation,date,TrumanTimestamp) Values (inet('%s'),%d,inet('%s'),inet('%s'),%d, '%s','%s', (select current_timestamp),'%s')",
+			conn->source,conn->sport,conn->orig_dest,conn->dest,conn->dport,logdata->serverMsg,logdata->serverMsgBinaryLocation,conn->timestamp
+			);
+			execute_statement(statement);
+
+	
+		}
+	 	break;	
 	}
 	default:
 		{

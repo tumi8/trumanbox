@@ -58,7 +58,7 @@ struct s_connection {
 	u_int16_t dport;
 	protocols_net net_proto;
 	protocols_app app_proto;
-	char timestamp[100]; // form of timestamp: "[secs:msecs]"  (since epoch - 1.1.1970)
+	char timestamp[100]; // form of timestamp: "[secs-msecs]"  (since epoch - 1.1.1970)
 };
 typedef struct s_connection connection_t;
 #endif

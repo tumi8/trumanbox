@@ -151,7 +151,7 @@ void disp_run(struct dispatcher_t* disp)
 		// generate timestamp for the connection
 		struct timeval currentStart;
 		gettimeofday(&currentStart,0);
-		sprintf(connection.timestamp,"%ld:%ld",currentStart.tv_sec,currentStart.tv_usec);	
+		sprintf(connection.timestamp,"%ld-%ld",currentStart.tv_sec,currentStart.tv_usec);	
 		msg(MSG_DEBUG,"Timestamp: %s",connection.timestamp);
 
 

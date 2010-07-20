@@ -4,7 +4,8 @@
 #include "wrapper.h"
 #include "helper_net.h"
 #include "msg.h"
-
+#include <sys/time.h>
+#include <time.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
@@ -13,6 +14,46 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 
+
+
+int create_timestamp(char* destination) {
+        
+	struct timeval currentStart;
+	gettimeofday(&currentStart,0);
+	if (sprintf(destination,"%ld-%ld",currentStart.tv_sec,currentStart.tv_usec) < 0) 
+		return 0;
+
+	return 1;
+		
+}
+
+
+/* Saves the data given as second argument into a file with an unique filename in the folder specified in the first argument.
+ * returns 0 on failure, 1 on success
+ * */
+int save_binarydata_to_file(char* destFile, char* folderOfFile, const char* dataToWrite, int dataLength) {
+	size_t count;
+	char timestamp[100];
+	create_timestamp(timestamp);
+	snprintf(destFile,1000,"%s/%s",folderOfFile,timestamp);
+	FILE * pFile;
+	pFile = fopen ( destFile , "wb" );
+	
+
+	
+	if(pFile == NULL) {
+		msg(MSG_FATAL,"Error opening %s",destFile);
+		return 0;
+	}
+	else  {
+		count = fwrite (dataToWrite , 1 , dataLength , pFile );
+		msg(MSG_DEBUG,"wrote %zu bytes to %s",count,destFile);
+		fclose (pFile);
+
+	}
+	return 1;
+
+}
 
 int create_index_file(char* filename) {
 	FILE *fd;

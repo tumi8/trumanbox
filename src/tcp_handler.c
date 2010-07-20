@@ -187,8 +187,8 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 				app_proto = tcph->pi->bypayload(tcph->pi, tcph->connection, payload, r);
 				if (app_proto == UNKNOWN) {
 					// TODO: handle this one! can we manage this?
-					msg(MSG_FATAL, "We could not determine protocol after reading from source and taget!");
-					goto out;
+					msg(MSG_FATAL, "We could not determine protocol after reading from source and target! But proceed anyway...");
+					//goto out;
 				}
 			}
 			proto_handler = tcph->ph[tcph->connection->app_proto];
@@ -202,7 +202,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 			msg(MSG_DEBUG, "Received data from infected machine!");
 			// we received data from the infected machine
 			r = read(tcph->inConnFd, payload, MAXLINE - 1);
-			msg(MSG_DEBUG, "Received %d bytes of data: \n\"%s\"",r, payload);
+			msg(MSG_DEBUG, "Received %d bytes of data:",r);
 			if (!r) {
 				msg(MSG_DEBUG, "Source closed the connection...");
 				goto out;
@@ -224,7 +224,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 			msg(MSG_DEBUG,"protocol: %d",tcph->connection->app_proto);
 			
 			proto_handler = tcph->ph[tcph->connection->app_proto];
-			msg(MSG_DEBUG, "Sending payload to protocol handler ...\n %s\n",payload);
+			msg(MSG_DEBUG, "Sending payload to protocol handler ...");
 			proto_handler->handle_payload_cts(proto_handler->handler, tcph->connection, payload, &r);
 			
 			msg(MSG_DEBUG, "Sending payload to server...");

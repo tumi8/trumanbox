@@ -1,19 +1,31 @@
 #include "unknown.h"
-
+#include "wrapper.h"
+#include "helper_file.h"
+#include "msg.h"
+#include "logger.h"
 #include <stdlib.h>
+#include <string.h>
+
+struct ph_unknown {
+	struct configuration_t* config;
+};
 
 void* ph_unknown_create()
 {
-	return NULL;
+	void* ret = malloc(sizeof(struct ph_unknown));
+	return ret;
 }
 
 int ph_unknown_destroy(void* handler)
 {
+	free(handler);
 	return 0;
 }
 
 int ph_unknown_init(void* handler, struct configuration_t* c)
 {
+	struct ph_unknown* unknown = (struct ph_unknown*)handler;
+	unknown->config = c;
 	return 0;
 }
 
@@ -24,12 +36,36 @@ int ph_unknown_deinit(void* handler)
 
 int ph_unknown_handle_payload_stc(void* handler, connection_t* conn,  const char* payload, size_t* len)
 {
+	struct unknown_server_struct* data = (struct unknown_server_struct*) malloc(sizeof(struct unknown_server_struct));
+	msg(MSG_DEBUG,"esults: %d",sizeof(payload));
+
+
+	if (*len > 0) 
+	{
+		
+		save_binarydata_to_file(data->serverMsgBinaryLocation,"unknown/received",payload,*len);
+		memcpy(data->serverMsg,payload,*len);
+	}        
+	logger_get()->log_struct(logger_get(), conn, "server", data);
+
 	return 0;
 }
 
-int ph_unknown_handle_payload_cts(void* handler, connection_t* conn,  const char* payload, size_t* len)
+int ph_unknown_handle_payload_cts(void* handler, connection_t* conn, const char* payload, size_t* len)
 {
-	return 0;
+        struct unknown_client_struct* data = (struct unknown_client_struct*) malloc(sizeof(struct unknown_client_struct));
+	int length = *len;
+
+	msg(MSG_DEBUG,"esults: %d",sizeof(payload));
+	if (length > 0) {
+		save_binarydata_to_file(data->clientMsgBinaryLocation,"unknown/sent",payload,*len);
+        	memcpy(data->clientMsg,payload,*len);
+	}
+
+        logger_get()->log_struct(logger_get(), conn, "client", data);
+
+        return 0;
+
 }
 
 int ph_unknown_handle_packet(void* handler, const char* packet, size_t len)
@@ -39,6 +75,15 @@ int ph_unknown_handle_packet(void* handler, const char* packet, size_t len)
 
 int ph_unknown_determine_target(void* handler, struct sockaddr_in* addr)
 {
+	/*If necessary any time in the future to change the destination on-the-fly (like redirecting packets to 135/139/445 to special windows machines... etc)
+	 *
+	 * struct ph_unknown* unknown = (struct ph_unknown*)handler;
+	if (conf_get_mode(unknown->config) < full_proxy) {
+                bzero(addr, sizeof(struct sockaddr_in));
+                addr->sin_family = AF_INET;
+                Inet_pton(AF_INET, conf_get(unknown->config, "http", "http_redirect"), &addr->sin_addr);
+		addr->sin_port = htons((uint16_t)80);
+	}*/
 	return 0;
 }
 

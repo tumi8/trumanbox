@@ -40,18 +40,16 @@ struct http_client_struct {
 	char method[20];
 	char requestHeader[MAXLINE];
 	char requestBodyText[MAXLINE];
-	char requestBodyBinary[MAXLINE];
+	char requestBodyBinaryLocation[1000];
 };
 
 struct http_server_struct {
 	char responseHeader[MAXLINE];
 	char responseBodyText[MAXLINE];
-	char responseBodyBinary[MAXLINE];
+	char responseBodyBinaryLocation[1000];
 	char responseLastModified[MAXLINE];
 	char responseContentType[1000];
 	char serverType[1000];
-	int bodyIsBinary;
-	int responseBodyBinaryLength;
 };
 
 struct smtp_client_struct {
@@ -74,6 +72,17 @@ struct irc_server_struct {
 	char recipientNickname[1000];
 	char message[MAXLINE];
 };
+
+struct unknown_client_struct {
+	char clientMsg[MAXLINE];
+	char clientMsgBinaryLocation[1000];
+};
+
+struct unknown_server_struct {
+	char serverMsg[MAXLINE];
+	char serverMsgBinaryLocation[1000];
+};
+
 
 /**
  * This creates the logging object. There may be an arbitrary number of logging objets
