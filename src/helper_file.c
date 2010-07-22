@@ -1,11 +1,11 @@
+#include <sys/time.h>
+#include <time.h>
 #include "helper_file.h"
 #include "semaphore.h"
 #include "dispatching.h"
 #include "wrapper.h"
 #include "helper_net.h"
 #include "msg.h"
-#include <sys/time.h>
-#include <time.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
@@ -31,23 +31,20 @@ int create_timestamp(char* destination) {
 /* Saves the data given as second argument into a file with an unique filename in the folder specified in the first argument.
  * returns 0 on failure, 1 on success
  * */
-int save_binarydata_to_file(char* destFile, char* folderOfFile, const char* dataToWrite, int dataLength) {
+int save_binarydata_to_file(char* fileLocation, const char* dataToWrite, int dataLength) {
 	size_t count;
-	char timestamp[100];
-	create_timestamp(timestamp);
-	snprintf(destFile,1000,"%s/%s",folderOfFile,timestamp);
 	FILE * pFile;
-	pFile = fopen ( destFile , "wb" );
+	pFile = fopen ( fileLocation , "wb" );
 	
 	msg(MSG_DEBUG,"LengthToWrite: %d, is > 0: %d",dataLength,dataLength>0);
 	
 	if(pFile == NULL) {
-		msg(MSG_FATAL,"Error opening %s",destFile);
+		msg(MSG_FATAL,"Error opening %s",fileLocation);
 		return 0;
 	}
 	else  {
 		count = fwrite (dataToWrite , 1 , dataLength , pFile );
-		msg(MSG_DEBUG,"wrote %zu bytes to %s",count,destFile);
+		msg(MSG_DEBUG,"wrote %zu bytes to %s",count,fileLocation);
 		fclose (pFile);
 
 	}

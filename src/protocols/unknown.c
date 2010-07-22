@@ -42,8 +42,10 @@ int ph_unknown_handle_payload_stc(void* handler, connection_t* conn,  const char
 
 	if (*len > 0) 
 	{
-		
-		save_binarydata_to_file(data->serverMsgBinaryLocation,"unknown/received",payload,*len);
+		char timestamp[100];
+		create_timestamp(timestamp);
+		snprintf(data->serverMsgBinaryLocation,1000,"unknown/received/%s",timestamp);
+		save_binarydata_to_file(data->serverMsgBinaryLocation,payload,*len);
 		memcpy(data->serverMsg,payload,*len);
 	}        
 	logger_get()->log_struct(logger_get(), conn, "server", data);
@@ -58,7 +60,10 @@ int ph_unknown_handle_payload_cts(void* handler, connection_t* conn, const char*
 	msg(MSG_DEBUG,"Len (%d) is > 0:  %d",*len,*len>0);
 
 	if (*len > 0) {
-		save_binarydata_to_file(data->clientMsgBinaryLocation,"unknown/sent",payload,*len);
+		char timestamp[100];
+		create_timestamp(timestamp);
+		snprintf(data->clientMsgBinaryLocation,1000,"unknown/sent/%s",timestamp);
+		save_binarydata_to_file(data->clientMsgBinaryLocation,payload,*len);
         	memcpy(data->clientMsg,payload,*len);
 	}
 

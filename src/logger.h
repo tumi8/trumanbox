@@ -39,17 +39,21 @@ struct http_client_struct {
 	char userAgent[1000];
 	char method[20];
 	char requestHeader[MAXLINE];
-	char requestBodyText[MAXLINE];
 	char requestBodyBinaryLocation[1000];
+        u_int64_t sent_content_length; // the conteht length of the whole chunk of data we expect to send
+	u_int64_t sent_content_done;
+	char* sent_content_done_ptr; // pointer to memory where we store the already sent data
 };
 
 struct http_server_struct {
 	char responseHeader[MAXLINE];
-	char responseBodyText[MAXLINE];
 	char responseBodyBinaryLocation[1000];
 	char responseLastModified[MAXLINE];
 	char responseContentType[1000];
 	char serverType[1000];
+	u_int64_t rcvd_content_length; // the content length of the whole chunk of data we expect to receive 
+	u_int64_t rcvd_content_done;
+	char* rcvd_content_done_ptr; // pointer to memory where we store the already received data
 };
 
 struct smtp_client_struct {

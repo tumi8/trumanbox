@@ -59,15 +59,11 @@ struct s_connection {
 	protocols_net net_proto;
 	protocols_app app_proto;
 	char timestamp[100]; // form of timestamp: "[secs-msecs]"  (since epoch - 1.1.1970)
-	u_int64_t rcvd_content_length; // the content length of the whole chunk of data we expect to receive 
-	u_int64_t rcvd_content_done;
-	u_int64_t sent_content_length; // the conteht length of the whole chunk of data we expect to send
-	u_int64_t sent_content_done;
-	char* rcvd_content_done_ptr; // pointer to memory where we store the already received data
-	char* sent_content_done_ptr; // pointer to memory where we store the already sent data
+	void* log_struct_ptr; //pointer to logging structure
 };
 typedef struct s_connection connection_t;
 #endif
+
 
 #ifndef OPERATION_MODE_H_
 #define OPERATION_MODE_H_

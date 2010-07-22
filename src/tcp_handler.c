@@ -89,6 +89,7 @@ void tcphandler_determine_target(struct tcp_handler_t* tcph, protocols_app app_p
 		targetServAddr->sin_port = htons((uint16_t)tcph->connection->dport);
 		memcpy(tcph->connection->dest, tcph->connection->orig_dest, strlen(tcph->connection->dest));
 		Inet_pton(AF_INET, tcph->connection->dest, &targetServAddr->sin_addr);
+	
 	default:
 		msg(MSG_FATAL, "Unknown mode: This is an internal programming error!!!! Exiting!");
 		exit(-1);

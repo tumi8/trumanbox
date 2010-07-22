@@ -3,7 +3,7 @@
 
 #include "definitions.h"
 
-int save_binarydata_to_file(char* destFile, char* folderOfFile, const char* dataToWrite, int dataLength);
+int save_binarydata_to_file(char* fileLocation, const char* dataToWrite, int dataLength);
 int create_timestamp(char* destination);
 int create_index_file();
 int create_path_tree(char *path, int user_id, int group_id);
