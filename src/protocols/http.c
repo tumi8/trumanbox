@@ -3,7 +3,6 @@
 #include "logger.h"
 #include "helper_file.h"
 #include "msg.h"
-
 #include <stdlib.h>
 #include <string.h>
 
@@ -37,6 +36,7 @@ int ph_http_deinit(void* handler)
 
 int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* payload, size_t* len)
 {
+	msg(MSG_DEBUG,"Received: %d bytes",*len);
 	struct http_server_struct* data = (struct http_server_struct*) malloc(sizeof(struct http_server_struct));
 
 	char* ptrToHeader = data->responseHeader;
@@ -98,80 +98,86 @@ int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 
 int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* payload, size_t* len)
 {
+	
 	struct http_client_struct* data = (struct http_client_struct*) malloc(sizeof(struct http_client_struct));
 	
 	// we perform a log operation for a client request
 	// try to extract host, url, user-agent
-	char* ptrToBody = NULL; //this pointer contains the address of the body of the POST-Request
 	char* ptrToHeader = data->requestHeader;
 	char* ptrToRequestedLocation = NULL;
 
-	/*ptrToBody  = strstr(payload, "\r\n\r\n")+4; // skip the new lines/ carriage returns
-	int bodyLength = strlen(ptrToBody); // TODO: difference between len and strlen(ptrtobody)
-	int completeLength = strlen(payload);
-	int headerLength = completeLength - bodyLength;
-*/
+
 	char* ptrToHeaderEnd = strstr(payload,"\r\n\r\n");
-	ptrToBody  = ptrToHeaderEnd + 4; // skip the new lines/ carriage returns ; we have to add + 4 because of the 4 characters \r\n\r\n
-
-	int headerLength = ptrToHeaderEnd - payload;
-	int bodyLength = *len - headerLength - 4; // -4 because we have \r\n\r\n after the header
 	
+	if (ptrToHeaderEnd != NULL) {
+
+		ptrToHeaderEnd = ptrToHeaderEnd + 4; // skip the new lines/ carriage returns ; we have to add + 4 because of the 4 characters \r\n\r\n
+		
+		int headerLength = ptrToHeaderEnd - payload;
+		int bodyLength = *len - headerLength; // -4 because we have \r\n\r\n after the header
+		
 
 
-	// HEADER extractor
-	strncpy(data->requestHeader,payload,headerLength);
-	*(ptrToHeader+headerLength+1) = '\0';
+		// HEADER extractor
+		strncpy(data->requestHeader,payload,headerLength);
+		*(ptrToHeader+headerLength+1) = '\0';
 
-	// BODY extractor
-	strncpy(data->requestBodyText,ptrToBody,bodyLength);
+		// BODY extractor
+		strncpy(data->requestBodyText,ptrToHeaderEnd,bodyLength);
 
 
-	// METHOD extractor
-	int methodLength = strcspn(data->requestHeader," ");
-	strncpy(data->method,data->requestHeader,methodLength);
-	data->method[methodLength] = '\0';
+		// METHOD extractor
+		int methodLength = strcspn(data->requestHeader," ");
+		strncpy(data->method,data->requestHeader,methodLength);
+		data->method[methodLength] = '\0';
 
-	// LOCATION extractor 
+		// LOCATION extractor 
+		
+		ptrToRequestedLocation = strstr(data->requestHeader,"/");
+		int locationLength = strcspn(ptrToRequestedLocation," ");
+		strncpy(data->requestedLocation,ptrToRequestedLocation,locationLength);
+		data->requestedLocation[locationLength] = '\0';
+		
+		// CONTENT-LENGTH extractor
+		char contentLengthStr[100];
+		extract_http_header_field(contentLengthStr,"Content-Length:",data->requestHeader);
+		int contentLength = atoi(contentLengthStr);
+		if (contentLength != 0) {
+			//parse was successful
+			conn->content_length = contentLength;
+			conn->content_done = bodyLength;
+		}
+
+		extract_http_header_field(data->requestedHost,"Host:",data->requestHeader);
+		extract_http_header_field(data->userAgent,"User-Agent:",data->requestHeader);
+		
+		msg(MSG_DEBUG,"length comparison: complete: %d header: %d body: %d",*len,headerLength, bodyLength);
 	
-	ptrToRequestedLocation = strstr(data->requestHeader,"/");
-	int locationLength = strcspn(ptrToRequestedLocation," ");
-	strncpy(data->requestedLocation,ptrToRequestedLocation,locationLength);
-	data->requestedLocation[locationLength] = '\0';
-	
-	extract_http_header_field(data->requestedHost,"Host:",data->requestHeader);
-	extract_http_header_field(data->userAgent,"User-Agent:",data->requestHeader);
-	
-
- 	msg(MSG_DEBUG,"body length: %d",bodyLength);	
-	if (bodyLength > 0) {
-		save_binarydata_to_file(data->requestBodyBinaryLocation,"http/sent",ptrToBody,bodyLength);
-
-		/*
-		int save_binarydata_to_file(char* destFile, char* folderOfFile, char* dataToWrite, int dataLength)
-		size_t count; 
-		char timestamp[100];
-		create_timestamp(timestamp);
-		snprintf(data->requestBodyBinaryLocation,1000,"http/uploaded-files/%s",timestamp); 
-		FILE * pFile; 
-		pFile = fopen ( data->requestBodyBinaryLocation , "wb" ); 
-		if(pFile == NULL) { 
-			msg(MSG_FATAL,"Error opening %s",data->requestBodyBinaryLocation); 
-		} 
-		else  { 
-			count = fwrite (ptrToBody , 1 , bodyLength , pFile ); 
-			msg(MSG_DEBUG,"wrote %zu bytes to %s",count,data->requestBodyBinaryLocation);
-			fclose (pFile); 
-			 
+		build_tree(conn, payload);
+		logger_get()->log_struct(logger_get(), conn, "client", data);
+	/*msg(MSG_DEBUG,"body length: %d",bodyLength);	
+		if (bodyLength > 0) {
+			save_binarydata_to_file(data->requestBodyBinaryLocation,"http/sent",ptrToBody,bodyLength);	
 		}*/
-	
+	}
+	else if ((conn->content_done+*len) < conn->content_length) {
+		
+		msg(MSG_DEBUG,"we still have to collect some data...!");
+		conn->content_done += *len;
+
+		msg(MSG_DEBUG,"added: %d and now we have: %d",*len,conn->content_done);
+
+	}
+	else if ((conn->content_done+*len) == conn->content_length && conn->content_length != 0) {
+		msg(MSG_DEBUG,"we are finished reading the body!");
+		conn->content_done += *len;
+	}
+	else {
+		msg(MSG_DEBUG,"Malformed http request! Nothing is done here");
 	}
 
 
-	build_tree(conn, payload);
-
-	logger_get()->log_struct(logger_get(), conn, "client", data);
-	return logger_get()->log(logger_get(), conn, "client", payload);
+	return 0;
 }
 
 int ph_http_handle_packet(void* handler, const char* packet, size_t len)

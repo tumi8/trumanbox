@@ -39,7 +39,7 @@ int save_binarydata_to_file(char* destFile, char* folderOfFile, const char* data
 	FILE * pFile;
 	pFile = fopen ( destFile , "wb" );
 	
-
+	msg(MSG_DEBUG,"LengthToWrite: %d, is > 0: %d",dataLength,dataLength>0);
 	
 	if(pFile == NULL) {
 		msg(MSG_FATAL,"Error opening %s",destFile);

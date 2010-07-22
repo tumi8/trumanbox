@@ -37,7 +37,7 @@ int ph_unknown_deinit(void* handler)
 int ph_unknown_handle_payload_stc(void* handler, connection_t* conn,  const char* payload, size_t* len)
 {
 	struct unknown_server_struct* data = (struct unknown_server_struct*) malloc(sizeof(struct unknown_server_struct));
-	msg(MSG_DEBUG,"esults: %d",sizeof(payload));
+	msg(MSG_DEBUG,"Len (%d) is > 0:  %d",*len,*len>0);
 
 
 	if (*len > 0) 
@@ -54,10 +54,10 @@ int ph_unknown_handle_payload_stc(void* handler, connection_t* conn,  const char
 int ph_unknown_handle_payload_cts(void* handler, connection_t* conn, const char* payload, size_t* len)
 {
         struct unknown_client_struct* data = (struct unknown_client_struct*) malloc(sizeof(struct unknown_client_struct));
-	int length = *len;
 
-	msg(MSG_DEBUG,"esults: %d",sizeof(payload));
-	if (length > 0) {
+	msg(MSG_DEBUG,"Len (%d) is > 0:  %d",*len,*len>0);
+
+	if (*len > 0) {
 		save_binarydata_to_file(data->clientMsgBinaryLocation,"unknown/sent",payload,*len);
         	memcpy(data->clientMsg,payload,*len);
 	}
