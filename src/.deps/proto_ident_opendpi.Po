@@ -1,1 +1,0 @@
-proto_ident_opendpi.o: protocols/proto_ident_opendpi.c
