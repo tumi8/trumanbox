@@ -17,8 +17,8 @@ proto_handler.o: protocols/proto_handler.c protocols/proto_handler.h \
   /usr/include/asm/sockios.h /usr/include/bits/socket2.h \
   /usr/include/bits/in.h msg.h protocols/irc.h configuration.h \
   definitions.h protocols/smtp.h protocols/http.h protocols/ftp.h \
-  protocols/unknown.h /usr/include/stdlib.h /usr/include/alloca.h \
-  /usr/include/bits/stdlib.h
+  protocols/unknown.h protocols/unknown_udp.h /usr/include/stdlib.h \
+  /usr/include/alloca.h /usr/include/bits/stdlib.h
 
 protocols/proto_handler.h:
 
@@ -101,6 +101,8 @@ protocols/http.h:
 protocols/ftp.h:
 
 protocols/unknown.h:
+
+protocols/unknown_udp.h:
 
 /usr/include/stdlib.h:
 

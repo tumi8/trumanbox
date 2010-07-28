@@ -471,9 +471,14 @@ int lsq_log_text(struct logger_t* logger, connection_t* conn, const char* tag, c
 		break;
 
 	case UNKNOWN:
-		
+	{	
 		break;
 	};
+	case UNKNOWN_UDP:
+	{
+	break;
+	}
+	}
 	return 0;
 }
 

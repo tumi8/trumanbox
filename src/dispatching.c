@@ -185,13 +185,24 @@ void disp_run(struct dispatcher_t* disp)
 
 		}
 		else if (connection.net_proto == UDP) {
-			if ( (childpid = pm_fork_temporary()) == 0) {	/* child process */
+			/*Inet_ntop(AF_INET, &cliaddr.sin_addr, connection.source, sizeof(connection.source));
+			connection.sport = ntohs(cliaddr.sin_port);
+			// parse_conntrack fills in the remaining variables of connection
+			while ( parse_conntrack(&connection) != 0 ) {
+				msg(MSG_DEBUG, "could not parse conntrack table, trying again in 2sec...");
+				sleep(2);
+				tries_pars_ct++;
+				if (tries_pars_ct > 5) {
+					goto start;
+				}
+			}*/
+			//if ( (childpid = pm_fork_temporary()) == 0) {
 				msg(MSG_DEBUG, "Forked UDP handler with pid %d", getpid());
-				struct udp_handler_t* u = udphandler_create(disp->udpfd);
+				struct udp_handler_t* u = udphandler_create(disp->udpfd,disp->config,&connection,disp->pi,disp->ph);
 				udphandler_run(u);
 				udphandler_destroy(u);
-				Exit(0);
-			}
+			//	Exit(0);
+			//}
 		}
 		else if (connection.net_proto == CONTROL) {
 			enum e_command res = read_command(disp->config, disp->controlfd);
@@ -255,7 +266,7 @@ static int parse_conntrack(connection_t *conn) {
 	while ( (NULL != (r = fgets(line, MAX_LINE_LENGTH, fd))) || (line != NULL) ) {
 		//sleep(2);
 
-		//msg(MSG_DEBUG, "We got:\n%s", line);
+	//	msg(MSG_DEBUG, "We got:\n%s", line);
 
 		if (strncmp(line, proto, 3) == 0) {
 

@@ -55,7 +55,8 @@ am_trumanbox_OBJECTS = dns_resolver.$(OBJEXT) iniparser.$(OBJEXT) \
 	log_postgres.$(OBJEXT) proto_ident.$(OBJEXT) \
 	proto_handler.$(OBJEXT) proto_ident_truman.$(OBJEXT) \
 	proto_ident_opendpi.$(OBJEXT) ftp.$(OBJEXT) http.$(OBJEXT) \
-	smtp.$(OBJEXT) irc.$(OBJEXT) unknown.$(OBJEXT)
+	smtp.$(OBJEXT) irc.$(OBJEXT) unknown.$(OBJEXT) \
+	unknown_udp.$(OBJEXT)
 trumanbox_OBJECTS = $(am_trumanbox_OBJECTS)
 trumanbox_LDADD = $(LDADD)
 am__DEPENDENCIES_1 =
@@ -184,9 +185,9 @@ trumanbox_SOURCES = config.h definitions.h dns_resolver.c helper_file.h iniparse
 	protocols/proto_ident_truman.h protocols/proto_ident_opendpi.h protocols/proto_ident_opendpi.c \
 	protocols/ftp.h protocols/ftp.c protocols/http.h protocols/http.c \
 	protocols/smtp.h protocols/smtp.c protocols/irc.h protocols/irc.c \
-	protocols/unknown.h protocols/unknown.c
+	protocols/unknown.h protocols/unknown.c protocols/unknown_udp.h protocols/unknown_udp.c
 
-AM_CFLAGS = -I/usr/local/include -L/usr/local/lib `xml2-config --cflags` $(OPENDPI_CFLAGS) -Wall -Werror -g -O0
+AM_CFLAGS = `xml2-config --cflags` $(OPENDPI_CFLAGS) -Wall -Werror -g -O0
 AM_LDFLAGS = `xml2-config --libs` -lsqlite3 -lpq
 LDADD = $(OPENDPI_LIBRARY)
 all: all-am
@@ -296,6 +297,7 @@ include ./$(DEPDIR)/smtp.Po
 include ./$(DEPDIR)/tcp_handler.Po
 include ./$(DEPDIR)/udp_handler.Po
 include ./$(DEPDIR)/unknown.Po
+include ./$(DEPDIR)/unknown_udp.Po
 include ./$(DEPDIR)/wrapper.Po
 
 .c.o:
@@ -437,6 +439,20 @@ unknown.obj: protocols/unknown.c
 #	source='protocols/unknown.c' object='unknown.obj' libtool=no \
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
 #	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unknown.obj `if test -f 'protocols/unknown.c'; then $(CYGPATH_W) 'protocols/unknown.c'; else $(CYGPATH_W) '$(srcdir)/protocols/unknown.c'; fi`
+
+unknown_udp.o: protocols/unknown_udp.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unknown_udp.o -MD -MP -MF $(DEPDIR)/unknown_udp.Tpo -c -o unknown_udp.o `test -f 'protocols/unknown_udp.c' || echo '$(srcdir)/'`protocols/unknown_udp.c
+	$(am__mv) $(DEPDIR)/unknown_udp.Tpo $(DEPDIR)/unknown_udp.Po
+#	source='protocols/unknown_udp.c' object='unknown_udp.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unknown_udp.o `test -f 'protocols/unknown_udp.c' || echo '$(srcdir)/'`protocols/unknown_udp.c
+
+unknown_udp.obj: protocols/unknown_udp.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unknown_udp.obj -MD -MP -MF $(DEPDIR)/unknown_udp.Tpo -c -o unknown_udp.obj `if test -f 'protocols/unknown_udp.c'; then $(CYGPATH_W) 'protocols/unknown_udp.c'; else $(CYGPATH_W) '$(srcdir)/protocols/unknown_udp.c'; fi`
+	$(am__mv) $(DEPDIR)/unknown_udp.Tpo $(DEPDIR)/unknown_udp.Po
+#	source='protocols/unknown_udp.c' object='unknown_udp.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unknown_udp.obj `if test -f 'protocols/unknown_udp.c'; then $(CYGPATH_W) 'protocols/unknown_udp.c'; else $(CYGPATH_W) '$(srcdir)/protocols/unknown_udp.c'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \

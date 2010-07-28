@@ -12,17 +12,17 @@ dispatching.o: dispatching.c dispatching.h definitions.h \
   /usr/include/bits/pthreadtypes.h signals.h /usr/include/sys/time.h \
   /usr/include/xlocale.h configuration.h /usr/include/stdint.h \
   /usr/include/bits/wchar.h helper_file.h helper_net.h msg.h \
-  udp_handler.h tcp_handler.h protocols/proto_ident.h definitions.h \
+  udp_handler.h protocols/proto_ident.h definitions.h \
   protocols/proto_handler.h /usr/include/netinet/in.h \
   /usr/include/sys/socket.h /usr/include/sys/uio.h \
   /usr/include/bits/uio.h /usr/include/bits/socket.h \
   /usr/include/bits/sockaddr.h /usr/include/asm/socket.h \
   /usr/include/asm/sockios.h /usr/include/bits/socket2.h \
-  /usr/include/bits/in.h process_manager.h /usr/include/unistd.h \
-  /usr/include/bits/posix_opt.h /usr/include/bits/confname.h \
-  /usr/include/getopt.h /usr/include/bits/unistd.h wrapper.h \
-  /usr/include/stdio.h /usr/include/libio.h /usr/include/_G_config.h \
-  /usr/include/wchar.h \
+  /usr/include/bits/in.h tcp_handler.h process_manager.h \
+  /usr/include/unistd.h /usr/include/bits/posix_opt.h \
+  /usr/include/bits/confname.h /usr/include/getopt.h \
+  /usr/include/bits/unistd.h wrapper.h /usr/include/stdio.h \
+  /usr/include/libio.h /usr/include/_G_config.h /usr/include/wchar.h \
   /usr/lib/gcc/i686-pc-linux-gnu/4.3.4/include/stdarg.h \
   /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h \
   /usr/include/bits/stdio.h /usr/include/bits/stdio2.h logger.h \
@@ -103,8 +103,6 @@ msg.h:
 
 udp_handler.h:
 
-tcp_handler.h:
-
 protocols/proto_ident.h:
 
 definitions.h:
@@ -130,6 +128,8 @@ protocols/proto_handler.h:
 /usr/include/bits/socket2.h:
 
 /usr/include/bits/in.h:
+
+tcp_handler.h:
 
 process_manager.h:
 

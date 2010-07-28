@@ -36,7 +36,7 @@ int ph_irc_deinit(void* handler)
 	return 0;
 }
 
-int ph_irc_handle_payload_stc(void* handler, connection_t* conn,  const char* payload, size_t* len)
+int ph_irc_handle_payload_stc(void* handler, connection_t* conn,  const char* payload, ssize_t* len)
 {
         char msgCopy[MAXLINE];
 	char* currentLinePtr = NULL;
@@ -133,7 +133,7 @@ int ph_irc_handle_payload_stc(void* handler, connection_t* conn,  const char* pa
 	return logger_get()->log(logger_get(), conn, "server", payload);
 }
 
-int ph_irc_handle_payload_cts(void* handler, connection_t* conn,  const char* payload, size_t* len)
+int ph_irc_handle_payload_cts(void* handler, connection_t* conn,  const char* payload, ssize_t* len)
 {
 	char msgCopy[MAXLINE];
 	char* currentLinePtr = NULL;
@@ -177,7 +177,7 @@ int ph_irc_handle_payload_cts(void* handler, connection_t* conn,  const char* pa
 		return logger_get()->log(logger_get(), conn, "client", payload);
 }
 
-int ph_irc_handle_packet(void* handler, const char* packet, size_t len)
+int ph_irc_handle_packet(void* handler, const char* packet, ssize_t len)
 {
 	return 0;
 }

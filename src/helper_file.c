@@ -43,7 +43,7 @@ int save_binarydata_to_file(char* fileLocation, const char* dataToWrite, int dat
 		return 0;
 	}
 	else  {
-		count = fwrite (dataToWrite , 1 , dataLength , pFile );
+		count = fwrite (dataToWrite , dataLength, 1 , pFile );
 		msg(MSG_DEBUG,"wrote %zu bytes to %s",count,fileLocation);
 		fclose (pFile);
 

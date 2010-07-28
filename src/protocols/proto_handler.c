@@ -7,7 +7,7 @@
 #include "protocols/http.h"
 #include "protocols/ftp.h"
 #include "protocols/unknown.h"
-
+#include "protocols/unknown_udp.h"
 #include <stdlib.h>
 
 static struct proto_handler_t* create_handler(protocols_app app)
@@ -52,11 +52,22 @@ static struct proto_handler_t* create_handler(protocols_app app)
 		ret->handle_packet = ph_irc_handle_packet;
 		ret->determine_target = ph_irc_determine_target;
 		break;
+	case UNKNOWN_UDP:
+		msg(MSG_DEBUG,"created unknown_udp handler");
+		ret->handler = ph_unknown_udp_create();
+		ret->init = ph_unknown_udp_init;
+		ret->deinit = ph_unknown_udp_deinit;
+		ret->handle_payload_stc = ph_unknown_udp_handle_payload_stc;
+		ret->handle_payload_cts = ph_unknown_udp_handle_payload_cts;
+		ret->handle_packet = ph_unknown_udp_handle_packet;
+		ret->determine_target = ph_unknown_udp_determine_target;
+		break;
 	case DNS:
 		// DNS is handled by dns_resolver and not by dispatcher,
-		// thre is no need for a handler here
+		// thre is no need for a handler here	
 	default:
 		ret->handler = ph_unknown_create();
+		msg(MSG_DEBUG,"created unknown handler");
 		ret->init = ph_unknown_init;
 		ret->deinit = ph_unknown_deinit;
 		ret->handle_payload_stc = ph_unknown_handle_payload_stc;

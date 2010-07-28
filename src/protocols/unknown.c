@@ -34,7 +34,7 @@ int ph_unknown_deinit(void* handler)
 	return 0;
 }
 
-int ph_unknown_handle_payload_stc(void* handler, connection_t* conn,  const char* payload, size_t* len)
+int ph_unknown_handle_payload_stc(void* handler, connection_t* conn,  const char* payload, ssize_t* len)
 {
 	struct unknown_server_struct* data = (struct unknown_server_struct*) malloc(sizeof(struct unknown_server_struct));
 	msg(MSG_DEBUG,"Len (%d) is > 0:  %d",*len,*len>0);
@@ -53,9 +53,10 @@ int ph_unknown_handle_payload_stc(void* handler, connection_t* conn,  const char
 	return 0;
 }
 
-int ph_unknown_handle_payload_cts(void* handler, connection_t* conn, const char* payload, size_t* len)
+int ph_unknown_handle_payload_cts(void* handler, connection_t* conn, const char* payload, ssize_t* len)
 {
-        struct unknown_client_struct* data = (struct unknown_client_struct*) malloc(sizeof(struct unknown_client_struct));
+        msg(MSG_DEBUG,"unknown cts");
+	struct unknown_client_struct* data = (struct unknown_client_struct*) malloc(sizeof(struct unknown_client_struct));
 
 	msg(MSG_DEBUG,"Len (%d) is > 0:  %d",*len,*len>0);
 
@@ -71,15 +72,17 @@ int ph_unknown_handle_payload_cts(void* handler, connection_t* conn, const char*
 
         return 0;
 
+
 }
 
-int ph_unknown_handle_packet(void* handler, const char* packet, size_t len)
+int ph_unknown_handle_packet(void* handler, const char* packet, ssize_t len)
 {
 	return 0;
 }
 
 int ph_unknown_determine_target(void* handler, struct sockaddr_in* addr)
 {
+	msg(MSG_DEBUG,"determine target in udp");
 	/*If necessary any time in the future to change the destination on-the-fly (like redirecting packets to 135/139/445 to special windows machines... etc)
 	 *
 	 * struct ph_unknown* unknown = (struct ph_unknown*)handler;

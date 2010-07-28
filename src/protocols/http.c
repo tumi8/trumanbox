@@ -34,7 +34,7 @@ int ph_http_deinit(void* handler)
 	return 0;
 }
 
-int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* payload, size_t* len)
+int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* payload, ssize_t* len)
 {
 
 	char* ptrToHeaderEnd = strstr(payload,"\r\n\r\n"); // every proper HTTP header ends with this string
@@ -125,7 +125,7 @@ int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 }
 
 
-int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* payload, size_t* len)
+int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* payload, ssize_t* len)
 {
 	
 	
@@ -227,7 +227,7 @@ int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 	return 1;
 }
 
-int ph_http_handle_packet(void* handler, const char* packet, size_t len)
+int ph_http_handle_packet(void* handler, const char* packet, ssize_t len)
 {
 	return 0;
 }

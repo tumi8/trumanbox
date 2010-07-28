@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
-#include </usr/include/postgresql/libpq-fe.h>
+#include <postgresql/libpq-fe.h>
 
 #define MAX_STATEMENT 8000
 
@@ -246,7 +246,10 @@ int lpg_log_text(struct logger_t* logger, connection_t* conn, const char* tag, c
 	case UNKNOWN:
 		
 		break;
+	case UNKNOWN_UDP:
+		break;
 	}
+
 
 	return 0;
 }

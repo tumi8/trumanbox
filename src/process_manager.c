@@ -140,7 +140,7 @@ void pm_kill_temporary(void)
 	while (ple) {
 		if (ple->restart_flag) {
 			kill(ple->pid, SIGINT);
-			pm_del(pm, ple->pid); // TODO: this is stupid. optimize!
+			pm_del(pm, ple->pid); // TODO: this is stupid. optimize! use another data structure (hashtable etc.)
 		}
 		ple = ple->next;
 	}

@@ -35,7 +35,7 @@ int ph_smtp_deinit(void* handler)
 	return 0;
 }
 
-int ph_smtp_handle_payload_stc(void* handler, connection_t* conn, const char* payload, size_t* len)
+int ph_smtp_handle_payload_stc(void* handler, connection_t* conn, const char* payload, ssize_t* len)
 {
 	char msgCopy[MAXLINE];
 	char* linePtr = NULL;
@@ -62,7 +62,7 @@ int ph_smtp_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 	return logger_get()->log(logger_get(), conn, "content-stc", payload);
 }
 
-int ph_smtp_handle_payload_cts(void* handler, connection_t* conn, const char* payload, size_t* len)
+int ph_smtp_handle_payload_cts(void* handler, connection_t* conn, const char* payload, ssize_t* len)
 {
 	struct smtp_client_struct* data = (struct smtp_client_struct*) malloc(sizeof(struct smtp_client_struct));
 	
@@ -83,7 +83,7 @@ int ph_smtp_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 	return logger_get()->log(logger_get(), conn, "content-stc", payload);
 }
 
-int ph_smtp_handle_packet(void* handler, const char* packet, size_t len)
+int ph_smtp_handle_packet(void* handler, const char* packet, ssize_t len)
 {
 	return 0;
 }

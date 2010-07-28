@@ -149,7 +149,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 {
 	int maxfd;
 	struct sockaddr_in targetServAddr;
-	size_t r;
+	ssize_t r;
 	fd_set rset;
 	struct timeval tv;
 	char payload[MAXLINE];
