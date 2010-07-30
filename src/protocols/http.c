@@ -36,16 +36,16 @@ int ph_http_deinit(void* handler)
 
 int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* payload, ssize_t* len)
 {
+	struct http_server_struct* data;
+	if (conn->multiple_chunks == 0) {
 
-	char* ptrToHeaderEnd = strstr(payload,"\r\n\r\n"); // every proper HTTP header ends with this string
-	struct http_server_struct* data = (struct http_server_struct*) conn->log_struct_ptr;
-
-	if (ptrToHeaderEnd != NULL) 
-	{
+		char* ptrToHeaderEnd = strstr(payload,"\r\n\r\n"); // every proper HTTP header ends with this string
 		data = (struct http_server_struct*) malloc(sizeof(struct http_server_struct));
-		
 		conn->log_struct_ptr = data;
 
+
+
+		// we have now to log the header of the http response ( data->rcvd_content_length is always initially 0 
 		char* ptrToHeader = data->responseHeader;
 		ptrToHeaderEnd = ptrToHeaderEnd + 4; // skip the new lines/ carriage returns ; we have to add + 4 because of the 4 characters \r\n\r\n
 
@@ -78,46 +78,67 @@ int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 			}
 		
 		}
-
-		return 1;
-		
-	}
-
-	else if ((data->rcvd_content_done+*len) < data->rcvd_content_length) {
-		
-		msg(MSG_DEBUG,"we still have to collect some data...!");
-
-		if (data->rcvd_content_done_ptr != NULL) {
-			memcpy(data->rcvd_content_done_ptr+data->rcvd_content_done,payload,*len);
-			msg(MSG_DEBUG,"wrote %d bytes to temporary http chunk collection",*len);
-		}
-		data->rcvd_content_done += *len;
-
-		msg(MSG_DEBUG,"added: %d and now we have: %d",*len,data->rcvd_content_done);
-		return 1;
-	}
-	else if ((data->rcvd_content_done+*len) == data->rcvd_content_length && data->rcvd_content_length != 0) {
-		msg(MSG_DEBUG,"we are finished reading the body!");
 	
-		if (data->rcvd_content_done_ptr != NULL) {
-			memcpy(data->rcvd_content_done_ptr+data->rcvd_content_done,payload,*len);
-			msg(MSG_DEBUG,"wrote %d bytes to temporary http chunk collection",*len);
-		}
-		data->rcvd_content_done += *len;
-				
-		char timestamp[100];
+		// PREPARE BINARY FILENAME
+		char filename[1000];
+		char timestamp[200];
 		create_timestamp(timestamp);
-		snprintf(data->responseBodyBinaryLocation,1000,"http/rcvd/%s",timestamp);
+		sprintf(filename,"http/sent/%s",timestamp);
+
+		if (contentLength == 0) {
+			// nothing to do
+		}
+		else if (contentLength == bodyLength) {
+			// we have received the whole header and body in one "chunk"
 			
-		save_binarydata_to_file(data->responseBodyBinaryLocation,data->rcvd_content_done_ptr,data->rcvd_content_length);	
-		free(data->rcvd_content_done_ptr);
+			strcpy(data->responseBodyBinaryLocation,filename);
+			save_binarydata_to_file(data->responseBodyBinaryLocation,data->rcvd_content_done_ptr,data->rcvd_content_length);	
+		}
+		else {
+			// we still have some outstanding chunks, wait for them..!
+			strcpy(data->responseBodyBinaryLocation,filename);
+			conn->multiple_chunks = 1;
+			return 1;
+		}
+
 	}
 	else {
-		msg(MSG_DEBUG,"done: %d, total: %d, lenrcvd: %d",data->rcvd_content_done,data->rcvd_content_length,*len);
-		msg(MSG_DEBUG,"Malformed http request! Nothing to do");
-		return 1;
-	}
+		data = (struct http_server_struct*) conn->log_struct_ptr;
 
+		if ((data->rcvd_content_done+*len) < data->rcvd_content_length) {
+			
+			msg(MSG_DEBUG,"we still have to collect some data...!");
+
+			if (data->rcvd_content_done_ptr != NULL) {
+				memcpy(data->rcvd_content_done_ptr+data->rcvd_content_done,payload,*len);
+				msg(MSG_DEBUG,"wrote %d bytes to temporary http chunk collection",*len);
+			}
+			data->rcvd_content_done += *len;
+
+			msg(MSG_DEBUG,"added: %d and now we have: %d",*len,data->rcvd_content_done);
+			return 1;
+		}
+		else if ((data->rcvd_content_done+*len) == data->rcvd_content_length && data->rcvd_content_length != 0) {
+			msg(MSG_DEBUG,"we are finished reading the body!");
+		
+			if (data->rcvd_content_done_ptr != NULL) {
+				memcpy(data->rcvd_content_done_ptr+data->rcvd_content_done,payload,*len);
+				msg(MSG_DEBUG,"wrote %d bytes to temporary http chunk collection",*len);
+			}
+			data->rcvd_content_done += *len;
+					
+				
+			save_binarydata_to_file(data->responseBodyBinaryLocation,data->rcvd_content_done_ptr,data->rcvd_content_length);	
+			free(data->rcvd_content_done_ptr);
+			conn->log_struct_ptr = NULL;
+			conn->multiple_chunks = 0;
+		}
+		else {
+			msg(MSG_DEBUG,"done: %d, total: %d, lenrcvd: %d",data->rcvd_content_done,data->rcvd_content_length,*len);
+			msg(MSG_DEBUG,"Malformed http request! Nothing to do");
+			return 1;
+		}
+	}
 
 	logger_get()->log_struct(logger_get(), conn, "server", data);
 	return 1;
@@ -129,18 +150,13 @@ int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 {
 	
 	
-	// we perform a log operation for a client request
-	// try to extract host, url, user-agent
+	struct http_client_struct* data;
+	if (conn->multiple_chunks == 0) {
 
-	char* ptrToHeaderEnd = strstr(payload,"\r\n\r\n"); // every proper HTTP header ends with this string
-
-	struct http_client_struct* data = (struct http_client_struct*) conn->log_struct_ptr;
-	
-	if (ptrToHeaderEnd != NULL) {		
 		data = (struct http_client_struct*) malloc(sizeof(struct http_client_struct));
-
 		conn->log_struct_ptr = data;
 
+		char* ptrToHeaderEnd = strstr(payload,"\r\n\r\n"); // every proper HTTP header ends with this string
 		char* ptrToHeader = data->requestHeader;
 		char* ptrToRequestedLocation = NULL;
 
@@ -185,44 +201,78 @@ int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 		
 		}
 
+
+		// PREPARE BINARY FILENAME
+		char filename[1000];
+		char timestamp[200];
+		create_timestamp(timestamp);
+		sprintf(filename,"http/sent/%s",timestamp);
+
 		extract_http_header_field(data->requestedHost,"Host:",data->requestHeader);
 		extract_http_header_field(data->userAgent,"User-Agent:",data->requestHeader);
 		
+		msg(MSG_DEBUG,"we initialized struct with following properties: contentLengthTotal = %d contentLengthDoneAlready = %d and we received just a moment ago : %zu",data->sent_content_length,data->sent_content_done,*len);
 		msg(MSG_DEBUG,"length comparison: complete: %d header: %d body: %d",*len,headerLength, bodyLength);
 	
 		build_tree(conn, payload);
-		logger_get()->log_struct(logger_get(), conn, "client", data);
-	}
-	else if ((data->sent_content_done+*len) < data->sent_content_length) {
-		
-		msg(MSG_DEBUG,"we still have to collect some data...!");
-
-		if (data->sent_content_done_ptr != NULL) {
-			memcpy(data->sent_content_done_ptr+data->sent_content_done,payload,*len);
-			msg(MSG_DEBUG,"wrote %d bytes to temporary http chunk collection",*len);
+		if (contentLength == 0) {
+			// nothing to do
 		}
-		data->sent_content_done += *len;
-
-		msg(MSG_DEBUG,"added: %d and now we have: %d",*len,data->sent_content_done);
-
-	}
-	else if ((data->sent_content_done+*len) == data->sent_content_length && data->sent_content_length != 0) {
-		msg(MSG_DEBUG,"we are finished reading the body!");
-	
-		if (data->sent_content_done_ptr != NULL) {
-			memcpy(data->sent_content_done_ptr+data->sent_content_done,payload,*len);
-			msg(MSG_DEBUG,"wrote %d bytes to temporary http chunk collection",*len);
+		else if (contentLength == bodyLength) {
+			// we have received the whole header and body in one "chunk"
+			
+			strcpy(data->requestBodyBinaryLocation,filename);
+			save_binarydata_to_file(data->requestBodyBinaryLocation,data->sent_content_done_ptr,data->sent_content_length);	
 		}
-		data->sent_content_done += *len;
-		
-		char location[200];
-		save_binarydata_to_file(location,data->sent_content_done_ptr,data->sent_content_length);	
-		free(data->sent_content_done_ptr);
+		else {
+			// we still have some outstanding chunks, wait for them..!
+			strcpy(data->requestBodyBinaryLocation,filename);
+			conn->multiple_chunks = 1;
+			return 1;
+		}
+
 	}
 	else {
-		msg(MSG_DEBUG,"Malformed http request! Nothing to do");
+		data = (struct http_client_struct*) conn->log_struct_ptr;
+		msg(MSG_DEBUG,"ole ole...%d",*len);
+		if ((data->sent_content_done+*len) < data->sent_content_length) {
+			
+			msg(MSG_DEBUG,"we still have to collect some data...!");
+
+			if (data->sent_content_done_ptr != NULL) {
+				memcpy(data->sent_content_done_ptr+data->sent_content_done,payload,*len);
+				msg(MSG_DEBUG,"wrote %d bytes to temporary http chunk collection",*len);
+			}
+			data->sent_content_done += *len;
+
+			msg(MSG_DEBUG,"added: %d and now we have: %d",*len,data->sent_content_done);
+			return 1;
+		}
+		else if ((data->sent_content_done+*len) == data->sent_content_length && data->sent_content_length != 0) {
+			msg(MSG_DEBUG,"we are finished reading the body!");
+		
+			if (data->sent_content_done_ptr != NULL) {
+				memcpy(data->sent_content_done_ptr+data->sent_content_done,payload,*len);
+				msg(MSG_DEBUG,"wrote %d bytes to temporary http chunk collection",*len);
+			}
+			data->sent_content_done += *len;
+			
+			
+			save_binarydata_to_file(data->requestBodyBinaryLocation,data->sent_content_done_ptr,data->sent_content_length);	
+			free(data->sent_content_done_ptr);
+			conn->log_struct_ptr = NULL;
+			conn->multiple_chunks = 0;
+		}
+		else {
+			msg(MSG_DEBUG,"Malformed http request! Nothing to do with chunk of size %d", *len);
+			return 1;
+		}
 	}
 
+
+
+
+	logger_get()->log_struct(logger_get(), conn, "client", data);
 
 	return 1;
 }

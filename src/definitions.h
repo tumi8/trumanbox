@@ -59,6 +59,7 @@ struct s_connection {
 	protocols_net net_proto;
 	protocols_app app_proto;
 	char timestamp[100]; // form of timestamp: "[secs-msecs]"  (since epoch - 1.1.1970)
+	u_int32_t multiple_chunks;
 	void* log_struct_ptr; //pointer to logging structure
 };
 typedef struct s_connection connection_t;

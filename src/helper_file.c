@@ -44,7 +44,7 @@ int save_binarydata_to_file(char* fileLocation, const char* dataToWrite, int dat
 	}
 	else  {
 		count = fwrite (dataToWrite , dataLength, 1 , pFile );
-		msg(MSG_DEBUG,"wrote %zu bytes to %s",count,fileLocation);
+		msg(MSG_DEBUG,"wrote %zu item: %s",count,fileLocation);
 		fclose (pFile);
 
 	}

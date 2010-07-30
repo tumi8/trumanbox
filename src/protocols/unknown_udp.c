@@ -46,19 +46,16 @@ int ph_unknown_udp_handle_payload_stc(void* handler, connection_t* conn,  const 
 int ph_unknown_udp_handle_payload_cts(void* handler, connection_t* conn, const char* payload, ssize_t* len)
 {
 
-	msg(MSG_DEBUG,"we got %s",payload);
 
 	msg(MSG_DEBUG,"unknown udp cts");
-	msg(MSG_DEBUG,"Handling udp unknown Len (%d) is > 0:  %d",*len,*len>0);
-	char chunk[MAXLINE];
+	msg(MSG_DEBUG,"Handling udp unknown Len (%d)",*len);
 	char location[1000];
+	
 	if (*len > 0) {
 		char timestamp[1000];
 		create_timestamp(timestamp);
 		snprintf(location,1000,"unknown_udp/%s",timestamp);
 		save_binarydata_to_file(location,payload,*len);
-        	memcpy(chunk,payload,*len);
-		msg(MSG_DEBUG,"we got: %s",chunk);
 	}
 
         //logger_get()->log_struct(logger_get(), conn, "client", data);

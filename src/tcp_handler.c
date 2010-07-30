@@ -84,12 +84,14 @@ void tcphandler_determine_target(struct tcp_handler_t* tcph, protocols_app app_p
 	case full_proxy:
 		// Connect to the original target (if this target is available)
 		msg(MSG_DEBUG, "Determine target for full proxy mode ...");
-		bzero(&targetServAddr, sizeof(targetServAddr));
+		bzero(targetServAddr, sizeof(*targetServAddr));
 		targetServAddr->sin_family = AF_INET;
 		targetServAddr->sin_port = htons((uint16_t)tcph->connection->dport);
-		memcpy(tcph->connection->dest, tcph->connection->orig_dest, strlen(tcph->connection->dest));
+		memcpy(tcph->connection->dest, tcph->connection->orig_dest, strlen(tcph->connection->orig_dest));
+		tcph->connection->dest[strlen(tcph->connection->orig_dest)] = '\0'; // null termination for the address
+		msg(MSG_DEBUG,"last check: %s",tcph->connection->dest);
 		Inet_pton(AF_INET, tcph->connection->dest, &targetServAddr->sin_addr);
-	
+		break;
 	default:
 		msg(MSG_FATAL, "Unknown mode: This is an internal programming error!!!! Exiting!");
 		exit(-1);
@@ -179,7 +181,8 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 			bzero(payload,MAXLINE); // clean the old payload string, because we want to save new data
 			msg(MSG_DEBUG, "Received data from target server!");
 			r = read(tcph->targetServiceFd, payload, MAXLINE - 1);
-			msg(MSG_DEBUG,"payload received: \n%s",payload);
+			//msg(MSG_DEBUG,"payload received: \n%s",payload);
+		
 			if (!r) {
 				msg(MSG_DEBUG, "Target closed the connection...");
 				goto out;
@@ -193,7 +196,9 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 				}
 			}
 			proto_handler = tcph->ph[tcph->connection->app_proto];
+			msg(MSG_DEBUG,"we give answer to protocol handler with size %d",r);
 			proto_handler->handle_payload_stc(proto_handler->handler, tcph->connection, payload, &r);
+
 			if (-1 == write(tcph->inConnFd, payload, r)) {
 				msg(MSG_FATAL, "Could not write to target!");
 				goto out;
@@ -203,7 +208,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 			msg(MSG_DEBUG, "Received data from infected machine!");
 			// we received data from the infected machine
 			r = read(tcph->inConnFd, payload, MAXLINE - 1);
-			msg(MSG_DEBUG, "Received %d bytes of data:",r);
+			//msg(MSG_DEBUG, "Received %d bytes of data:",r);
 			if (!r) {
 				msg(MSG_DEBUG, "Source closed the connection...");
 				goto out;
@@ -222,7 +227,6 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 					tcph->connectedToFinal = 1;
 				}
 			} 
-			msg(MSG_DEBUG,"protocol: %d",tcph->connection->app_proto);
 			
 			proto_handler = tcph->ph[tcph->connection->app_proto];
 			msg(MSG_DEBUG, "Sending payload to protocol handler ...");

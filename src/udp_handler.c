@@ -23,7 +23,7 @@ struct udp_handler_t {
 
 struct udp_handler_t* udphandler_create(int udpfd, struct configuration_t* config, connection_t* c, struct proto_identifier_t* pi, struct proto_handler_t** ph)
 {
-	struct udp_handler_t* ret = (struct udp_handler_t*)malloc(sizeof(struct udp_handler_t*));
+	struct udp_handler_t* ret = (struct udp_handler_t*)malloc(sizeof(struct udp_handler_t));
 	ret->udpfd = udpfd;
         ret->config = config;
         ret->mode = conf_get_mode(config);
