@@ -79,6 +79,7 @@ int ph_smtp_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 		msg(MSG_DEBUG, "changed payload from client:%s", payload);
 			*len = strlen(payload);
 	}
+	
 	logger_get()->log_struct(logger_get(), conn, "client", data);
 	return logger_get()->log(logger_get(), conn, "content-stc", payload);
 }

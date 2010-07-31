@@ -12,14 +12,13 @@ struct ph_unknown_udp {
 
 void* ph_unknown_udp_create()
 {
-	msg(MSG_DEBUG,"unknown udp create");
 	void* ret = malloc(sizeof(struct ph_unknown_udp));
 	return ret;
 }
 
 int ph_unknown_udp_destroy(void* handler)
 {
-	msg(MSG_DEBUG,"try to destroy...");free(handler);
+	free(handler);
 	return 0;
 }
 
@@ -39,7 +38,6 @@ int ph_unknown_udp_deinit(void* handler)
 
 int ph_unknown_udp_handle_payload_stc(void* handler, connection_t* conn,  const char* payload, ssize_t* len)
 {
-	msg(MSG_DEBUG,"unknown udp stc");
 	return 0;
 }
 
@@ -47,12 +45,10 @@ int ph_unknown_udp_handle_payload_cts(void* handler, connection_t* conn, const c
 {
 
 
-	msg(MSG_DEBUG,"unknown udp cts");
-	msg(MSG_DEBUG,"Handling udp unknown Len (%d)",*len);
-	char location[1000];
 	
 	if (*len > 0) {
-		char timestamp[1000];
+		char timestamp[200];
+		char location[1000];
 		create_timestamp(timestamp);
 		snprintf(location,1000,"unknown_udp/%s",timestamp);
 		save_binarydata_to_file(location,payload,*len);

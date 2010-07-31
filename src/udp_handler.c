@@ -1,4 +1,5 @@
 #include "configuration.h"
+#include <arpa/inet.h>
 #include "udp_handler.h"
 #include "definitions.h"
 #include "helper_net.h"
@@ -114,14 +115,18 @@ void udphandler_run(struct udp_handler_t* udph)
 	bzero(payload,MAXLINE);
 	maxfdp = udph->udpfd + 1;
 	clilen = sizeof(cliaddr);
-	
-
+	msg(MSG_DEBUG,"%s %s %s %s",udph->connection->orig_dest,udph->connection->dest,udph->connection->source,udph->connection->orig_source);
 	udphandler_determine_target(udph, UNKNOWN_UDP, &targetServAddr);
 
 	while (select(maxfdp, &rset, NULL, NULL, &tv)) {
 		if (FD_ISSET(udph->udpfd, &rset)) {
 			r = Recvfrom(udph->udpfd, payload, MAXLINE, 0, (SA *)  &cliaddr, &clilen);
 			msg(MSG_DEBUG,"num bytes rcvd: %d",r);
+			char cli[INET_ADDRSTRLEN];
+			char srv[INET_ADDRSTRLEN];
+			inet_ntop(AF_INET, &(cliaddr.sin_addr), cli, INET_ADDRSTRLEN);
+			inet_ntop(AF_INET, &(targetServAddr.sin_addr), srv, INET_ADDRSTRLEN);
+			msg(MSG_DEBUG,"cliaddr: %s, srvaddr: %s",cli,srv);
 			proto_handler = udph->ph[UNKNOWN_UDP];
 			if (proto_handler != NULL) {
 			msg(MSG_DEBUG, "Sending payload to protocol handler ...");

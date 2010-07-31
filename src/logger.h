@@ -88,6 +88,14 @@ struct unknown_server_struct {
 };
 
 
+struct dns_struct {
+	char domain[1000];
+	char realServerIP[100];
+	char serverIP[100];
+	char clientIP[100];
+};
+
+
 /**
  * This creates the logging object. There may be an arbitrary number of logging objets
  * The logging module *MUST* expect that different *processes* and modules want concurrent 

@@ -38,7 +38,14 @@ int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 {
 	struct http_server_struct* data;
 	if (conn->multiple_chunks == 0) {
+			
 
+		if (!strstr(payload,"200 OK")) {
+			msg(MSG_DEBUG,"we have no proper http reply and thus are not interested");
+			return 1;
+		}
+		
+		msg(MSG_DEBUG,"Payload \n%s",payload);
 		char* ptrToHeaderEnd = strstr(payload,"\r\n\r\n"); // every proper HTTP header ends with this string
 		data = (struct http_server_struct*) malloc(sizeof(struct http_server_struct));
 		conn->log_struct_ptr = data;
@@ -83,7 +90,7 @@ int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 		char filename[1000];
 		char timestamp[200];
 		create_timestamp(timestamp);
-		sprintf(filename,"http/sent/%s",timestamp);
+		sprintf(filename,"http/rcvd/%s",timestamp);
 
 		if (contentLength == 0) {
 			// nothing to do
@@ -234,7 +241,6 @@ int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 	}
 	else {
 		data = (struct http_client_struct*) conn->log_struct_ptr;
-		msg(MSG_DEBUG,"ole ole...%d",*len);
 		if ((data->sent_content_done+*len) < data->sent_content_length) {
 			
 			msg(MSG_DEBUG,"we still have to collect some data...!");

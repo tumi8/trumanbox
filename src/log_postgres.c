@@ -53,6 +53,7 @@ int execute_statement(char* stmt) {
 	    	if (PQresultStatus(res) != PGRES_COMMAND_OK)
 		{
 			msg(MSG_FATAL,"ERROR: %s",PQresultErrorMessage(res));
+			msg(MSG_FATAL,"Could not execute \n %s \n",stmt);
 			return 0;
 		}
 		else 
@@ -104,152 +105,6 @@ int lpg_finish_log(struct logger_t* logger)
 int lpg_log_text(struct logger_t* logger, connection_t* conn, const char* tag, const char* message)
 {
 	
-	snprintf(statement, MAX_STATEMENT, "INSERT into SMTP_LOGS () values vlqa");
-	
-	// BIG FAT TODO: sql injection ....
-	switch (conn->app_proto) {
-	// log depening on the protocol	
-	case SMTP:
-	//	if (execute_stmt(statement)) {
-	//		msg(MSG_ERROR, "Could not execute: \n %s", statement);
-	//	}
-		msg(MSG_DEBUG,"SMTP Logging attempt");
-		break;
-	case FTP:
-		msg(MSG_DEBUG,"FTP Logging attempt");
-		break;
-	case FTP_anonym:
-		msg(MSG_DEBUG,"FTP anonym Logging attempt");
-		break;
-	case FTP_data:
-		msg(MSG_DEBUG,"FTP data Logging attempt");
-		break;
-	case HTTP:
-	
-		msg(MSG_DEBUG,"HTTP Logging attempt");
-		/*if (strcmp(tag,"client") == 0) {
-			msg(MSG_DEBUG,"We have a client request log");
-		// we perform a log operation for a client request
-		// try to extract host, url, user-agent
-		char header[1000];
-		char userAgent[1000];
-		char requestedHost[1000];
-		char requestedLocation[1000];
-		char method[20];
-		char* ptrToBody = NULL; //this pointer contains the address of the body of the POST-Request
-		char* ptrToHeader = header;
-		char* ptrToRequestedLocation = NULL;
-
-		ptrToBody  = strstr(message, "\r\n\r\n"); // skip the new lines/ carriage returns
-		int bodyLength = strlen(ptrToBody);
-		int completeLength = strlen(message);
-		int headerLength = completeLength - bodyLength;
-		
-		
-		
-
-		// HEADER extractor
-		strncpy(header,message,headerLength);
-		*(ptrToHeader+headerLength+1) = '\0';
-		msg(MSG_DEBUG,"Header: %s",header);
-
-
-		// METHOD extractor
-		int methodLength = strcspn(header," ");
-		strncpy(method,header,methodLength);
-		method[methodLength] = '\0';
-		msg(MSG_DEBUG,"Method: '%s'",method);	
-
-		// LOCATION extractor 
-		
-		ptrToRequestedLocation = strstr(header,"/");
-		int locationLength = strcspn(ptrToRequestedLocation," ");
-		strncpy(requestedLocation,ptrToRequestedLocation,locationLength);
-		requestedLocation[locationLength] = '\0';
-		msg(MSG_DEBUG,"Location: '%s'",requestedLocation);
-		
-		extract_header_field(requestedHost,"Host:",header);
-		extract_header_field(userAgent,"User-Agent:",header);
-
-		snprintf(statement,MAX_STATEMENT, "INSERT into %s (RequesterIP, DestinationIP, TrueDestinationIP, RequestHeader, Date, RequestedHost, RequestedLocation, UserAgent, Method,timestamp) VALUES ('%s','%s','%s','%s',(select current_timestamp),'%s','%s','%s','%s','%s');",data->tables[HTTP_GET],conn->source,conn->orig_dest,conn->dest,header,requestedHost,requestedLocation,userAgent,method,conn->timestamp);
-
-		
-		}
-		else {
-		msg(MSG_DEBUG,"We have a server response log");
-		char header[1000];
-		char serverType[100];
-		char contentType[20];
-		char lastModified[40];
-		char* ptrToHeader = header;
-		char* ptrToBody = NULL; //this pointer contains the address of the body 
-		char* tmpPtr = NULL; // used for miscellaneous purposes
-                ptrToBody  = strstr(message, "\r\n\r\n") + 4; // skip the new lines/ carriage returns ; we have to add + 4 because of the 4 characters \r\n\r\n
-		int bodyLength = strlen(ptrToBody);
-		int completeLength = strlen(message);
-		int headerLength = completeLength - bodyLength;
-
-		// HEADER extractor
-		strncpy(header,message,headerLength);
-		*(ptrToHeader+headerLength+1) = '\0';
-		msg(MSG_DEBUG,"Response Header: %s",header);
-		
-		
-		// extract header fields
-		extract_header_field(contentType,"Content-Type:",header);
-		extract_header_field(serverType,"Server:",header);
-		extract_header_field(lastModified,"Last-Modified:",header);
-
-
-		// now check if the server response has content-type of kind text
-		tmpPtr = strstr(contentType,"text");
-		char bodyText[100];
-		
-		if (tmpPtr == NULL) {
-			char* dummyMsg = "body contains no plain text data";
-			strcpy(bodyText,dummyMsg);
-
-			//  we have to copy the binary data into the response body field 
-		}
-		else {
-			//  we got text data, thus we can save the response as a string into the body field
-			char bodyText[bodyLength+1];
-			strncpy(bodyText,ptrToBody,bodyLength);
-			bodyText[bodyLength] = '\0';
-			msg(MSG_DEBUG,"Body: '%s'",bodyText);
-		}
-
-		snprintf(statement,MAX_STATEMENT, "update %s set ResponseHeader = '%s' , ResponseBody = '%s' , ResponseLastModified = '%s' , ServerType = '%s' where timestamp = '%s';",data->tables[HTTP_GET],header,bodyText,lastModified,serverType,conn->timestamp);
-
-		
-		msg(MSG_DEBUG,"try to execute: \n %s",statement);
-		}
-
- 
-		snprintf(statement,MAX_STATEMENT, "INSERT into %s (RequesterIP, DestinationIP, TrueDestinationIP, Header, Date) VALUES ('%s','%s','%s','%s',(select current_timestamp));",data->tables[HTTP_GET],conn->source,conn->orig_dest,conn->dest,message);
-		msg(MSG_DEBUG,"INSERT into %s (RequesterIP, DestinationIP, TrueDestinationIP, Header, Date) VALUES ('%s','%s','%s','%s',(select current_timestamp));",data->tables[HTTP_GET],conn->source,conn->orig_dest,conn->dest,message);
-*/		//snprintf(statement, MAX_STATEMENT, "INSERT into %s (domain, direction, content) values ('%s','%s', '%s');", data->tables[HTTP_GET], conn->orig_dest, tag, message);
-	/*	rc = sqlite3_exec(data->db, statement, callback, 0, &err);
-		if (rc) {
-			msg(MSG_ERROR, "Error performing '%s': %s", statement, err);
-		}*/		
-		break;
-	case IRC:
-		break;
-	case DNS:
-		//snprintf(statement, MAX_STATEMENT, "INSERT into %s (domain, original, returned) values ('%s', '%s', '%s');", data->tables[DNS], message, conn->orig_dest, conn->dest);
-		//rc = sqlite3_exec(data->db, statement, callback, 0, &err);
-		//if (rc) {
-		//	msg(MSG_ERROR, "Error performing '%s': %s", statement, err);
-		//	}		
-		break;
-	case UNKNOWN:
-		
-		break;
-	case UNKNOWN_UDP:
-		break;
-	}
-
 
 	return 0;
 }
@@ -341,7 +196,7 @@ int lpg_log_struct(struct logger_t* log, connection_t* conn, const char* tag, vo
 		}
 		else {
 			struct unknown_server_struct* logdata =  (struct unknown_server_struct *) data;
-			snprintf(statement, MAX_STATEMENT, "insert into UNKNOWN_SERVER_LOGS (ClientIP,ClientPort,ServerIP,RealServerIP,ServerPort,ServerName,serverMessage,serverMessageBinaryLocation,date,TrumanTimestamp) Values (inet('%s'),%d,inet('%s'),inet('%s'),%d, '%s','%s', (select current_timestamp),'%s')",
+			snprintf(statement, MAX_STATEMENT, "insert into UNKNOWN_SERVER_LOGS (ClientIP,ClientPort,ServerIP,RealServerIP,ServerPort,serverMessage,serverMessageBinaryLocation,date,TrumanTimestamp) Values (inet('%s'),%d,inet('%s'),inet('%s'),%d, '%s','%s', (select current_timestamp),'%s')",
 			conn->source,conn->sport,conn->orig_dest,conn->dest,conn->dport,logdata->serverMsg,logdata->serverMsgBinaryLocation,conn->timestamp
 			);
 			execute_statement(statement);
@@ -349,6 +204,18 @@ int lpg_log_struct(struct logger_t* log, connection_t* conn, const char* tag, vo
 	
 		}
 	 	break;	
+	}
+
+	case DNS:
+	{
+			struct dns_struct* logdata =  (struct dns_struct *) data;
+			msg(MSG_DEBUG,"logdata: [%s:%s:%s]",logdata->realServerIP,logdata->serverIP,logdata->clientIP);
+			snprintf(statement, MAX_STATEMENT, "insert into DNS_LOGS (clientIP,ServerIP,RealServerIP,DomainName,date,trumantimestamp) Values (inet('%s'),inet('%s'),inet('%s'),'%s', (select current_timestamp),'%s')",
+			logdata->clientIP,logdata->realServerIP,logdata->serverIP,logdata->domain,conn->timestamp
+			);
+			execute_statement(statement);
+
+	
 	}
 	default:
 		{

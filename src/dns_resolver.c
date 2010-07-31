@@ -7,7 +7,7 @@
 #include "wrapper.h"
 #include "logger.h"
 #include "definitions.h"
-
+#include "helper_file.h"
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -46,7 +46,7 @@ struct dns_resolver_t* dns_create_resolver(struct configuration_t* c)
 	inet_pton(AF_INET, conf_get(c, "dns", "fake_address"), &ret->response_addr);
 
 	strncpy(ret->conn.dest, ret->listen_ip, IPLENGTH);
-
+	create_timestamp(ret->conn.timestamp); 
 	ret->conn.dport = 53;
 	ret->conn.app_proto = DNS;
 
@@ -93,7 +93,7 @@ static void dns_worker(struct dns_resolver_t* resolver)
 	uint32_t real_addr;
 	char real_addr_str[INET_ADDRSTRLEN];
 	char returned_addr_str[INET_ADDRSTRLEN];
-	char logline[1000]; //FIXME
+
 
 	socket = Socket(AF_INET, SOCK_DGRAM, 0);
 	bzero(&saddr, sizeof(saddr));
@@ -173,9 +173,16 @@ static void dns_worker(struct dns_resolver_t* resolver)
 		}
 		Sendto(socket, response, tmp, 0, (struct sockaddr *)&cliaddr, clilen);
 
+
 		// OK , DNS name resolved - now enter the logging function
-		snprintf(logline, 1000, "%s:%s:%s", domainname, real_addr_str, returned_addr_str);
-		logger_get()->log(logger_get(), &resolver->conn, "", logline);
+		struct dns_struct* data = (struct dns_struct*) malloc(sizeof(struct dns_struct));
+
+		Inet_ntop(AF_INET, &cliaddr.sin_addr, data->clientIP, INET_ADDRSTRLEN);
+		strcpy(data->serverIP,returned_addr_str);
+		strcpy(data->realServerIP,real_addr_str);
+		strcpy(data->domain,domainname);
+
+		logger_get()->log_struct(logger_get(), &resolver->conn, "", data);
 		}
 }
 

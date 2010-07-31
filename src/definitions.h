@@ -5,7 +5,7 @@
 
 #define VALID_FTP_USER		"ftpin\r\n"
 #define VALID_FTP_PASS		"123\r\n"
-#define LOCAL_EMAIL_ADDRESS	" christiangorecki@localhost\r\n"   // email address with a leading blank
+#define LOCAL_EMAIL_ADDRESS	" martinmax1860@yahoo.de\r\n"   // email address with a leading blank
 
 #define MAX_PATH_LENGTH 	4096
 #define HTTP_BASE_DIR 		"/var/www/localhost/htdocs"

@@ -1,7 +1,5 @@
 #include "dispatching.h"
 #include "signals.h"
-#include <sys/time.h>
-#include <time.h>
 #include "configuration.h"
 #include "helper_file.h"
 #include "helper_net.h"
@@ -150,10 +148,7 @@ void disp_run(struct dispatcher_t* disp)
 		connection.log_struct_ptr = NULL;
 		connection.multiple_chunks = 0;
 		// generate timestamp for the connection
-		struct timeval currentStart;
-		gettimeofday(&currentStart,0);
-		sprintf(connection.timestamp,"%ld-%ld",currentStart.tv_sec,currentStart.tv_usec);	
-		msg(MSG_DEBUG,"Timestamp: %s",connection.timestamp);
+		create_timestamp(connection.timestamp);
 
 
 		if (connection.net_proto == ERROR)
@@ -186,10 +181,11 @@ void disp_run(struct dispatcher_t* disp)
 
 		}
 		else if (connection.net_proto == UDP) {
-			/*Inet_ntop(AF_INET, &cliaddr.sin_addr, connection.source, sizeof(connection.source));
+			Inet_ntop(AF_INET, &cliaddr.sin_addr, connection.source, sizeof(connection.source));
 			connection.sport = ntohs(cliaddr.sin_port);
+			msg(MSG_DEBUG,"conn source dispatching : %s port %d",connection.source,connection.sport);
 			// parse_conntrack fills in the remaining variables of connection
-			while ( parse_conntrack(&connection) != 0 ) {
+			/*while ( parse_conntrack(&connection) != 0 ) {
 				msg(MSG_DEBUG, "could not parse conntrack table, trying again in 2sec...");
 				sleep(2);
 				tries_pars_ct++;
@@ -267,7 +263,7 @@ static int parse_conntrack(connection_t *conn) {
 	while ( (NULL != (r = fgets(line, MAX_LINE_LENGTH, fd))) || (line != NULL) ) {
 		//sleep(2);
 
-	//	msg(MSG_DEBUG, "We got:\n%s", line);
+//		msg(MSG_DEBUG, "We got:\n%s", line);
 
 		if (strncmp(line, proto, 3) == 0) {
 
