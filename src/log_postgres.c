@@ -14,59 +14,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
-#include <postgresql/libpq-fe.h>
+#include "helper_file.h"
 
 #define MAX_STATEMENT 8000
 
 static char statement[MAX_STATEMENT];
-PGconn *psql;
-
-// checks at first whether the connection is already established, before it tries to connect
-int connect_to_db() {
-	
-	
-	if (!psql || PQstatus(psql) != CONNECTION_OK) {
-		psql = PQconnectdb("hostaddr = '127.0.0.1' port = '5432' dbname = 'trumanlogs' user = 'trumanbox' password = 'das$)13x!#+23' connect_timeout = '10'");
-	}
-	else {
-		// connection is already established...
-		return 1;
-	}
-
-
-	if (!psql) {
-		msg(MSG_FATAL,"libpq error : PQconnectdb returned NULL.\n\n");
-		return 0;
-	}
-
-	if (PQstatus(psql) != CONNECTION_OK) {
-		msg(MSG_FATAL,"libpq error: PQstatus(psql) != CONNECTION_OK\n\n");
-		return 0;
-	}
-	return 1;
-}
-
-
-int execute_statement(char* stmt) {
-	if (connect_to_db()) {
-		PGresult *res = PQexec(psql, stmt);
-	    	if (PQresultStatus(res) != PGRES_COMMAND_OK)
-		{
-			msg(MSG_FATAL,"ERROR: %s",PQresultErrorMessage(res));
-			msg(MSG_FATAL,"Could not execute \n %s \n",stmt);
-			return 0;
-		}
-		else 
-		{ 
-			return 1;
-		}
-	}
-	else {
-	//connection error
-	return 0;
-	}
-}
-
 
 
 // Returns: Whether connection is successful AND if tables are already present
@@ -74,9 +26,8 @@ int lpg_init(struct logger_t* logger)
 {
 	// TODO:
 	// Check if tables are already created
+	return 1;	
 	
-	
-	return connect_to_db();
 
 }
 
@@ -98,7 +49,6 @@ int lpg_create_log(struct logger_t* logger)
 // returns: 1 if everything was fine, 0 if error
 int lpg_finish_log(struct logger_t* logger)
 {
-	PQfinish(psql);
 	return 1;
 }
 
@@ -112,6 +62,7 @@ int lpg_log_text(struct logger_t* logger, connection_t* conn, const char* tag, c
 int lpg_log_struct(struct logger_t* log, connection_t* conn, const char* tag, void* data)
 {
 	
+
 	switch (conn->app_proto) {
 	     // log depening on the protoco
 	case SMTP:
@@ -215,7 +166,7 @@ int lpg_log_struct(struct logger_t* log, connection_t* conn, const char* tag, vo
 			);
 			execute_statement(statement);
 
-	
+	break;
 	}
 	default:
 		{

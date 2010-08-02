@@ -68,6 +68,7 @@ int main(int argc, char **argv) {
 	struct dispatcher_t* dispatcher;
 	int msg_level = MSG_ERROR;
 	char* config_file = NULL;
+	
 
 	while (-1 != (c=getopt(argc, argv, "hdm:f:"))) {
 		switch (c) {
@@ -90,7 +91,6 @@ int main(int argc, char **argv) {
 			exit(1);
 		}
 	}
-
 	msg_setlevel(msg_level);
 
 	if (!config_file) {
@@ -139,6 +139,17 @@ int main(int argc, char **argv) {
 		msg(MSG_FATAL, "Failure while initializing logging module. Exiting ...");
 		return -1;
 	}
+
+
+	// we have to set the specific trumanbox runtime ID which usually corresponds to a malware sample
+	
+	if (msg_level == MSG_ERROR) {
+		char update_trumanbox_runtime_id[1000] = "update trumanbox_settings set value = value+1 where key = 'SAMPLE_COUNTER'";
+		execute_statement(update_trumanbox_runtime_id);
+	}
+
+
+
 
 	dns_resolver = dns_create_resolver(config);
 	dispatcher = disp_create(config);

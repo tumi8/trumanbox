@@ -13,6 +13,49 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <postgresql/libpq-fe.h>
+
+
+
+
+
+
+int execute_statement(char* stmt) {
+	PGconn *psql = NULL; 
+
+        if (psql == NULL || PQstatus(psql) != CONNECTION_OK) {
+                psql = PQconnectdb("hostaddr = '127.0.0.1' port = '5432' dbname = 'trumanlogs' user = 'trumanbox' password = 'das$)13x!#+23' connect_timeout = '10'");
+        }
+        else {
+              // connection is already established...
+              
+        }
+
+
+        if (!psql) {
+                msg(MSG_FATAL,"libpq error : PQconnectdb returned NULL.\n\n");
+                return 0;
+        }
+
+        if (PQstatus(psql) != CONNECTION_OK) {
+                msg(MSG_FATAL,"libpq error: PQstatus(psql) != CONNECTION_OK\n\n");
+                return 0;
+        }
+
+
+	PGresult *res = PQexec(psql, stmt);
+	if (PQresultStatus(res) != PGRES_COMMAND_OK)
+	{		
+		msg(MSG_FATAL,"ERROR: %s",PQresultErrorMessage(res));
+		msg(MSG_FATAL,"Could not execute \n %s \n",stmt);
+		PQfinish(psql);
+		return 0;
+	}
+	 
+		
+	PQfinish(psql);
+	return 1;
+}
 
 
 
