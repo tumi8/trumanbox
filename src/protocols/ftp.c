@@ -38,12 +38,14 @@ int ph_ftp_deinit(void* handler)
 
 int ph_ftp_handle_payload_stc(void* handler, connection_t* conn, const char* payload, ssize_t* len)
 {
+	msg(MSG_DEBUG,"ConnectionTimestamp: %s , FTP Payload STC: %s",conn->timestamp,payload);
 	return logger_get()->log(logger_get(), conn, "content-cts", payload);
 }
 
 int ph_ftp_handle_payload_cts(void* handler, connection_t* conn, const char* payload, ssize_t* len)
 {
-	char 	*ptr,
+	msg(MSG_DEBUG,"ConnectionTimestamp: %s FTP payload CTS: %s",conn->timestamp,payload);
+	/*char 	*ptr,
 		username[50],
 		password[50];
 	build_tree(conn, payload);
@@ -104,6 +106,8 @@ int ph_ftp_handle_payload_cts(void* handler, connection_t* conn, const char* pay
 			break;
 	}
 	return logger_get()->log(logger_get(), conn, "content-cts", payload);
+	*/
+	return 1;
 }
 
 int ph_ftp_handle_packet(void* handler, const char* packet, ssize_t len)

@@ -40,17 +40,17 @@ int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 	if (conn->multiple_chunks == 0) {
 			
 
-		if (!strstr(payload,"200 OK")) {
-			msg(MSG_DEBUG,"we have no proper http reply and thus are not interested");
-			return 1;
-		}
 		
 		msg(MSG_DEBUG,"Payload \n%s",payload);
 		char* ptrToHeaderEnd = strstr(payload,"\r\n\r\n"); // every proper HTTP header ends with this string
+		if (ptrToHeaderEnd == NULL) {
+			msg(MSG_DEBUG,"header not ended");
+			return 1;
+		}
 		data = (struct http_server_struct*) malloc(sizeof(struct http_server_struct));
 		conn->log_struct_ptr = data;
 
-
+		
 
 		// we have now to log the header of the http response ( data->rcvd_content_length is always initially 0 
 		char* ptrToHeader = data->responseHeader;
@@ -87,7 +87,7 @@ int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 		}
 	
 		// PREPARE BINARY FILENAME
-		char filename[1000];
+		char filename[MAX_PATH_LENGTH];
 		char timestamp[200];
 		create_timestamp(timestamp);
 		sprintf(filename,"http/rcvd/%s",timestamp);
@@ -210,7 +210,7 @@ int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 
 
 		// PREPARE BINARY FILENAME
-		char filename[1000];
+		char filename[MAX_PATH_LENGTH];
 		char timestamp[200];
 		create_timestamp(timestamp);
 		sprintf(filename,"http/sent/%s",timestamp);

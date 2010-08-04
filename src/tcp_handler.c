@@ -139,8 +139,8 @@ int tcphandler_handle_unknown(struct tcp_handler_t* tcph, struct sockaddr_in* ta
 	} else {
 		if (app_proto == UNKNOWN) {
 			// we are connected but the protocol is unknown. what to do know?
-			msg(MSG_FATAL, "Internal programming error!");
-			exit(-1);
+			msg(MSG_FATAL, "We are already connected");
+			//exit(-1);
 		}
 	}
 
@@ -196,7 +196,6 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 				}
 			}
 			proto_handler = tcph->ph[tcph->connection->app_proto];
-			msg(MSG_DEBUG,"we give answer to protocol handler with size %d",r);
 			proto_handler->handle_payload_stc(proto_handler->handler, tcph->connection, payload, &r);
 
 			if (-1 == write(tcph->inConnFd, payload, r)) {

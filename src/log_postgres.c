@@ -42,7 +42,17 @@ int lpg_deinit(struct logger_t* logger)
 // returns: 1 if creation was successful, 0 if not
 int lpg_create_log(struct logger_t* logger)
 {
-	// todo: create tables if they don't exist yet
+	const char* testmode = conf_get(logger->config, "logging", "testmode");	
+	if (strcmp(testmode,"0") == 0) {
+                char update_trumanbox_runtime_id[1000] = "update trumanbox_settings set value = value+1 where key = 'SAMPLE_COUNTER'";
+                execute_statement(update_trumanbox_runtime_id);
+                char set_current_id[1000] = "update trumanbox_settings set value = (select t.value from trumanbox_settings t  where t.key = 'SAMPLE_COUNTER') where key = 'CURRENT_SAMPLE'";
+                execute_statement(set_current_id);
+	}
+	else {
+                char set_current_id[1000] = "update trumanbox_settings set value = -1 where key = 'CURRENT_SAMPLE'";
+                execute_statement(set_current_id);
+	}
 	return 1; // by default, all tables are already created
 }
 
@@ -67,18 +77,17 @@ int lpg_log_struct(struct logger_t* log, connection_t* conn, const char* tag, vo
 	     // log depening on the protoco
 	case SMTP:
 	{	
+		struct smtp_struct* logdata =  (struct smtp_struct *) data;
 		if (strcmp(tag,"client") == 0) {
-			struct smtp_client_struct* logdata =  (struct smtp_client_struct *) data;
-			snprintf(statement, MAX_STATEMENT, "insert into SMTP_CLIENT_LOGS (ClientIP,ClientPort,ServerIP,RealServerIP,ServerPort,ClientMessage,date,TrumanTimestamp) Values (inet('%s'),%d,inet('%s'),inet('%s'),%d, '%s', (select current_timestamp),'%s')",
-			conn->source,conn->sport,conn->orig_dest,conn->dest,conn->dport,logdata->clientMsg,conn->timestamp
+			snprintf(statement, MAX_STATEMENT, "insert into SMTP_LOGS (ClientIP,ClientPort,ServerIP,RealServerIP,ServerPort,Message,Type,date,TrumanTimestamp,sample_id) Values (inet('%s'),%d,inet('%s'),inet('%s'),%d, '%s','client', (select current_timestamp),'%s',(select distinct value from trumanbox_settings where key = 'CURRENT_SAMPLE'))",
+			conn->source,conn->sport,conn->orig_dest,conn->dest,conn->dport,logdata->Message,conn->timestamp
 			);
 			execute_statement(statement);
 
 		}
 		else {
-			struct smtp_server_struct* logdata =  (struct smtp_server_struct *) data;
-			snprintf(statement, MAX_STATEMENT, "insert into SMTP_SERVER_LOGS (ClientIP,ClientPort,ServerIP,RealServerIP,ServerPort,StatusCode,ServerMessage,date,TrumanTimestamp) Values (inet('%s'),%d,inet('%s'),inet('%s'),%d, '%s','%s', (select current_timestamp),'%s')",
-			conn->source,conn->sport,conn->orig_dest,conn->dest,conn->dport,logdata->statusCode,logdata->serverMsg,conn->timestamp
+			snprintf(statement, MAX_STATEMENT, "insert into SMTP_LOGS (ClientIP,ClientPort,ServerIP,RealServerIP,ServerPort,Message,Type,date,TrumanTimestamp,sample_id) Values (inet('%s'),%d,inet('%s'),inet('%s'),%d, '%s', 'server', (select current_timestamp),'%s',(select distinct value from trumanbox_settings where key = 'CURRENT_SAMPLE'))",
+			conn->source,conn->sport,conn->orig_dest,conn->dest,conn->dport,logdata->Message,conn->timestamp
 			);
 			execute_statement(statement);
 
@@ -91,7 +100,7 @@ int lpg_log_struct(struct logger_t* log, connection_t* conn, const char* tag, vo
 	{	
 		if (strcmp(tag,"client") == 0) {
 			struct http_client_struct* logdata =  (struct http_client_struct *) data;
-			snprintf(statement, MAX_STATEMENT, "insert into HTTP_LOGS (ClientIP,ClientPort,ServerIP,RealServerIP,ServerPort,requestedhost,requestedlocation,useragent,method,requestheader,requestbodybinarylocation,date,TrumanTimestamp) Values (inet('%s'),%d,inet('%s'),inet('%s'),%d, '%s', '%s', '%s',  '%s', '%s','%s', (select current_timestamp),'%s')",
+			snprintf(statement, MAX_STATEMENT, "insert into HTTP_LOGS (ClientIP,ClientPort,ServerIP,RealServerIP,ServerPort,requestedhost,requestedlocation,useragent,method,requestheader,requestbodybinarylocation,date,TrumanTimestamp,sample_id) Values (inet('%s'),%d,inet('%s'),inet('%s'),%d, '%s', '%s', '%s',  '%s', '%s','%s', (select current_timestamp),'%s',(select distinct value from trumanbox_settings where key = 'CURRENT_SAMPLE'))",
 			conn->source,conn->sport,conn->orig_dest,conn->dest,conn->dport,logdata->requestedHost,logdata->requestedLocation,logdata->userAgent,logdata->method,logdata->requestHeader,logdata->requestBodyBinaryLocation,conn->timestamp
 			);
 			execute_statement(statement);
@@ -114,7 +123,7 @@ int lpg_log_struct(struct logger_t* log, connection_t* conn, const char* tag, vo
 	{	
 		if (strcmp(tag,"client") == 0) {
 			struct irc_client_struct* logdata =  (struct irc_client_struct *) data;
-			snprintf(statement, MAX_STATEMENT, "insert into IRC_CLIENT_LOGS (ClientIP,ClientPort,ServerIP,RealServerIP,ServerPort,Command,Arguments,date,TrumanTimestamp) Values (inet('%s'),%d,inet('%s'),inet('%s'),%d, '%s', '%s', (select current_timestamp),'%s')",
+			snprintf(statement, MAX_STATEMENT, "insert into IRC_CLIENT_LOGS (ClientIP,ClientPort,ServerIP,RealServerIP,ServerPort,Command,Arguments,date,TrumanTimestamp,sample_id) Values (inet('%s'),%d,inet('%s'),inet('%s'),%d, '%s', '%s', (select current_timestamp),'%s',(select distinct value from trumanbox_settings where key = 'CURRENT_SAMPLE'))",
 			conn->source,conn->sport,conn->orig_dest,conn->dest,conn->dport,logdata->command,logdata->arguments,conn->timestamp
 			);
 			execute_statement(statement);
@@ -122,7 +131,7 @@ int lpg_log_struct(struct logger_t* log, connection_t* conn, const char* tag, vo
 		}
 		else {
 			struct irc_server_struct* logdata =  (struct irc_server_struct *) data;
-			snprintf(statement, MAX_STATEMENT, "insert into IRC_SERVER_LOGS (ClientIP,ClientPort,ServerIP,RealServerIP,ServerPort,ServerName,NumericReply,RecipientNickname,Message,date,TrumanTimestamp) Values (inet('%s'),%d,inet('%s'),inet('%s'),%d, '%s','%s','%s','%s', (select current_timestamp),'%s')",
+			snprintf(statement, MAX_STATEMENT, "insert into IRC_SERVER_LOGS (ClientIP,ClientPort,ServerIP,RealServerIP,ServerPort,ServerName,NumericReply,RecipientNickname,Message,date,TrumanTimestamp,sample_id) Values (inet('%s'),%d,inet('%s'),inet('%s'),%d, '%s','%s','%s','%s', (select current_timestamp),'%s',(select distinct value from trumanbox_settings where key = 'CURRENT_SAMPLE'))",
 			conn->source,conn->sport,conn->orig_dest,conn->dest,conn->dport,logdata->serverName,logdata->numericReply,logdata->recipientNickname,logdata->message,conn->timestamp
 			);
 			execute_statement(statement);
@@ -137,18 +146,18 @@ int lpg_log_struct(struct logger_t* log, connection_t* conn, const char* tag, vo
 			snprintf(conn->dest,IPLENGTH,"0.0.0.0");
 		}
 		msg(MSG_DEBUG,"Unknown Logging: %s, %d, %s, %s, %d",conn->source,conn->sport,conn->orig_dest,conn->dest,conn->dport);
+		struct unknown_struct* logdata =  (struct unknown_struct *) data;
+
 		if (strcmp(tag,"client") == 0) {
-			struct unknown_client_struct* logdata =  (struct unknown_client_struct *) data;
-			snprintf(statement, MAX_STATEMENT, "insert into UNKNOWN_CLIENT_LOGS (ClientIP,ClientPort,ServerIP,RealServerIP,ServerPort,ClientMessage,ClientMessageBinaryLocation,date,TrumanTimestamp) Values (inet('%s'),%d,inet('%s'),inet('%s'),%d, '%s', '%s', (select current_timestamp),'%s')",
-			conn->source,conn->sport,conn->orig_dest,conn->dest,conn->dport,logdata->clientMsg,logdata->clientMsgBinaryLocation,conn->timestamp
+			snprintf(statement, MAX_STATEMENT, "insert into UNKNOWN_LOGS (ClientIP,ClientPort,ServerIP,RealServerIP,ServerPort, binaryLocation, type,date,TrumanTimestamp,sample_id) Values (inet('%s'),%d,inet('%s'),inet('%s'),%d, '%s', 'client', (select current_timestamp),'%s',(select distinct value from trumanbox_settings where key = 'CURRENT_SAMPLE'))",
+			conn->source,conn->sport,conn->orig_dest,conn->dest,conn->dport,logdata->binaryLocation,conn->timestamp
 			);
 			execute_statement(statement);
 
 		}
 		else {
-			struct unknown_server_struct* logdata =  (struct unknown_server_struct *) data;
-			snprintf(statement, MAX_STATEMENT, "insert into UNKNOWN_SERVER_LOGS (ClientIP,ClientPort,ServerIP,RealServerIP,ServerPort,serverMessage,serverMessageBinaryLocation,date,TrumanTimestamp) Values (inet('%s'),%d,inet('%s'),inet('%s'),%d, '%s','%s', (select current_timestamp),'%s')",
-			conn->source,conn->sport,conn->orig_dest,conn->dest,conn->dport,logdata->serverMsg,logdata->serverMsgBinaryLocation,conn->timestamp
+			snprintf(statement, MAX_STATEMENT, "insert into UNKNOWN_LOGS (ClientIP,ClientPort,ServerIP,RealServerIP,ServerPort,binaryLocation,type,date,TrumanTimestamp,sample_id) Values (inet('%s'),%d,inet('%s'),inet('%s'),%d,'%s', (select current_timestamp),'%s', 'server', (select distinct value from trumanbox_settings where key = 'CURRENT_SAMPLE'))",
+			conn->source,conn->sport,conn->orig_dest,conn->dest,conn->dport,logdata->binaryLocation,conn->timestamp
 			);
 			execute_statement(statement);
 
@@ -160,8 +169,7 @@ int lpg_log_struct(struct logger_t* log, connection_t* conn, const char* tag, vo
 	case DNS:
 	{
 			struct dns_struct* logdata =  (struct dns_struct *) data;
-			msg(MSG_DEBUG,"logdata: [%s:%s:%s]",logdata->realServerIP,logdata->serverIP,logdata->clientIP);
-			snprintf(statement, MAX_STATEMENT, "insert into DNS_LOGS (clientIP,ServerIP,RealServerIP,DomainName,date,trumantimestamp) Values (inet('%s'),inet('%s'),inet('%s'),'%s', (select current_timestamp),'%s')",
+			snprintf(statement, MAX_STATEMENT, "insert into DNS_LOGS (clientIP,ServerIP,RealServerIP,DomainName,date,trumantimestamp,sample_id) Values (inet('%s'),inet('%s'),inet('%s'),'%s', (select current_timestamp),'%s',(select distinct value from trumanbox_settings where key = 'CURRENT_SAMPLE'))",
 			logdata->clientIP,logdata->realServerIP,logdata->serverIP,logdata->domain,conn->timestamp
 			);
 			execute_statement(statement);

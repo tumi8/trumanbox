@@ -141,12 +141,6 @@ int main(int argc, char **argv) {
 	}
 
 
-	// we have to set the specific trumanbox runtime ID which usually corresponds to a malware sample
-	
-	if (msg_level == MSG_ERROR) {
-		char update_trumanbox_runtime_id[1000] = "update trumanbox_settings set value = value+1 where key = 'SAMPLE_COUNTER'";
-		execute_statement(update_trumanbox_runtime_id);
-	}
 
 
 

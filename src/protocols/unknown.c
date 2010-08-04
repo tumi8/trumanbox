@@ -36,7 +36,7 @@ int ph_unknown_deinit(void* handler)
 
 int ph_unknown_handle_payload_stc(void* handler, connection_t* conn,  const char* payload, ssize_t* len)
 {
-	struct unknown_server_struct* data = (struct unknown_server_struct*) malloc(sizeof(struct unknown_server_struct));
+	struct unknown_struct* data = (struct unknown_struct*) malloc(sizeof(struct unknown_struct));
 	msg(MSG_DEBUG,"Len (%d) is > 0:  %d",*len,*len>0);
 
 
@@ -44,9 +44,8 @@ int ph_unknown_handle_payload_stc(void* handler, connection_t* conn,  const char
 	{
 		char timestamp[100];
 		create_timestamp(timestamp);
-		snprintf(data->serverMsgBinaryLocation,1000,"unknown/received/%s",timestamp);
-		save_binarydata_to_file(data->serverMsgBinaryLocation,payload,*len);
-		memcpy(data->serverMsg,payload,*len);
+		snprintf(data->binaryLocation,MAX_PATH_LENGTH,"unknown/received/%s",timestamp);
+		save_binarydata_to_file(data->binaryLocation,payload,*len);
 	}        
 	logger_get()->log_struct(logger_get(), conn, "server", data);
 
@@ -56,16 +55,15 @@ int ph_unknown_handle_payload_stc(void* handler, connection_t* conn,  const char
 int ph_unknown_handle_payload_cts(void* handler, connection_t* conn, const char* payload, ssize_t* len)
 {
         msg(MSG_DEBUG,"unknown cts");
-	struct unknown_client_struct* data = (struct unknown_client_struct*) malloc(sizeof(struct unknown_client_struct));
+	struct unknown_struct* data = (struct unknown_struct*) malloc(sizeof(struct unknown_struct));
 
 	msg(MSG_DEBUG,"Len (%d) is > 0:  %d",*len,*len>0);
 
 	if (*len > 0) {
 		char timestamp[100];
 		create_timestamp(timestamp);
-		snprintf(data->clientMsgBinaryLocation,1000,"unknown/sent/%s",timestamp);
-		save_binarydata_to_file(data->clientMsgBinaryLocation,payload,*len);
-        	memcpy(data->clientMsg,payload,*len);
+		snprintf(data->binaryLocation,MAX_PATH_LENGTH,"unknown/sent/%s",timestamp);
+		save_binarydata_to_file(data->binaryLocation,payload,*len);
 	}
 
         logger_get()->log_struct(logger_get(), conn, "client", data);

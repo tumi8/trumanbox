@@ -44,31 +44,31 @@ int ph_smtp_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 
 	while (linePtr!= NULL) {
 		// parse all response lines from server
-		struct smtp_server_struct* data = (struct smtp_server_struct*) malloc(sizeof(struct smtp_server_struct));
+		struct smtp_struct* data = (struct smtp_struct*) malloc(sizeof(struct smtp_struct));
 	
+	/*
 		//extract status code (3 numbers)
 		strncpy(data->statusCode,linePtr,3);
 		data->statusCode[3] = '\0';
 		linePtr = linePtr + 4;
-
+	*/
 		//extract server message (arbitrary length possible)
 		int Msglength = strcspn(linePtr,"\r\n");
-		strncpy(data->serverMsg,linePtr,Msglength);
-		msg(MSG_DEBUG,"we have code '%s':'%s'",data->statusCode,data->serverMsg);
+		strncpy(data->Message,linePtr,Msglength);
 		linePtr = strtok(NULL,"\n");
 		logger_get()->log_struct(logger_get(), conn, "server", data);
 	}
 
-	return logger_get()->log(logger_get(), conn, "content-stc", payload);
+	return 1;
 }
 
 int ph_smtp_handle_payload_cts(void* handler, connection_t* conn, const char* payload, ssize_t* len)
 {
-	struct smtp_client_struct* data = (struct smtp_client_struct*) malloc(sizeof(struct smtp_client_struct));
+	struct smtp_struct* data = (struct smtp_struct*) malloc(sizeof(struct smtp_struct));
 	
-	strncpy(data->clientMsg,payload,strlen(payload)); 
-	int lengthMsg= strlen(data->clientMsg);
-	data->clientMsg[lengthMsg-2] = '\0'; // we want to discard the last two characters : \r\n
+	strncpy(data->Message,payload,strlen(payload)); 
+	int lengthMsg= strlen(data->Message);
+	data->Message[lengthMsg-2] = '\0'; // we want to discard the last two characters : \r\n
 
 	// change payload in order to avoid spam attacks
 	char* ptr;
@@ -81,7 +81,7 @@ int ph_smtp_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 	}
 	
 	logger_get()->log_struct(logger_get(), conn, "client", data);
-	return logger_get()->log(logger_get(), conn, "content-stc", payload);
+	return 1;
 }
 
 int ph_smtp_handle_packet(void* handler, const char* packet, ssize_t len)
