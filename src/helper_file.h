@@ -4,7 +4,7 @@
 #include "definitions.h"
 
 
-int execute_statement(char* stmt); // execute sql command
+//int execute_statement(char* stmt); // execute sql command
 int save_binarydata_to_file(char* fileLocation, const char* dataToWrite, int dataLength);
 int create_timestamp(char* destination);
 int create_index_file();

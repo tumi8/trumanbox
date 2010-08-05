@@ -79,13 +79,15 @@ void udphandler_determine_target(struct udp_handler_t* udph, protocols_app app_p
 		break;
 	case full_proxy:
 		// Connect to the original target (if this target is available)
-		msg(MSG_DEBUG, "Determine target for full proxy mode ...");
+		msg(MSG_DEBUG, "Determine target for full proxy mode ...%s",targetServAddr);
 		bzero(&targetServAddr, sizeof(targetServAddr));
-		targetServAddr->sin_family = AF_INET;
-		msg(MSG_DEBUG,"dport: %d",udph->connection->dport);
+		msg(MSG_FATAL,"we have not implemented the parse_conntrack functions for UDP!!!");
+		//targetServAddr->sin_family = AF_INET;
+		/*msg(MSG_DEBUG,"dport: %d",udph->connection->dport);
 		targetServAddr->sin_port = htons((uint16_t)udph->connection->dport);
 		memcpy(udph->connection->dest, udph->connection->orig_dest, strlen(udph->connection->dest));
 		Inet_pton(AF_INET, udph->connection->dest, &targetServAddr->sin_addr);
+		*/
 		break;
 	default:
 		msg(MSG_FATAL, "Unknown mode: This is an internal programming error!!!! Exiting!");
@@ -124,8 +126,8 @@ void udphandler_run(struct udp_handler_t* udph)
 			msg(MSG_DEBUG,"num bytes rcvd: %d",r);
 			char cli[INET_ADDRSTRLEN];
 			char srv[INET_ADDRSTRLEN];
-			inet_ntop(AF_INET, &cliaddr.sin_addr, cli, INET_ADDRSTRLEN);
-			inet_ntop(AF_INET, &targetServAddr.sin_addr, srv, INET_ADDRSTRLEN);
+			Inet_ntop(AF_INET, &cliaddr.sin_addr, cli, INET_ADDRSTRLEN);
+			Inet_ntop(AF_INET, &targetServAddr.sin_addr, srv, INET_ADDRSTRLEN);
 			msg(MSG_DEBUG,"cliaddr: %s, srvaddr: %s",cli,srv);
 			proto_handler = udph->ph[UNKNOWN_UDP];
 			if (proto_handler != NULL) {

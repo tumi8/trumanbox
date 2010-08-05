@@ -38,13 +38,46 @@ int ph_ftp_deinit(void* handler)
 
 int ph_ftp_handle_payload_stc(void* handler, connection_t* conn, const char* payload, ssize_t* len)
 {
-	msg(MSG_DEBUG,"ConnectionTimestamp: %s , FTP Payload STC: %s",conn->timestamp,payload);
-	return logger_get()->log(logger_get(), conn, "content-cts", payload);
+	
+        char msgCopy[MAXLINE]; 
+        char* linePtr = NULL; 
+        strcpy(msgCopy,payload); 
+        linePtr = strtok (msgCopy,"\n"); 
+ 
+        while (linePtr!= NULL) { 
+                // parse all response lines from server 
+                struct ftp_struct* data = (struct ftp_struct*) malloc(sizeof(struct ftp_struct)); 
+         
+                //extract server message (arbitrary length possible) 
+                int Msglength = strcspn(linePtr,"\r\n"); 
+                strncpy(data->Message,linePtr,Msglength); 
+                linePtr = strtok(NULL,"\n"); 
+                logger_get()->log_struct(logger_get(), conn, "server", data); 
+        } 
+
+        return 1;
+
 }
 
 int ph_ftp_handle_payload_cts(void* handler, connection_t* conn, const char* payload, ssize_t* len)
 {
-	msg(MSG_DEBUG,"ConnectionTimestamp: %s FTP payload CTS: %s",conn->timestamp,payload);
+
+        char msgCopy[MAXLINE];
+        char* linePtr = NULL;
+        strcpy(msgCopy,payload);
+        linePtr = strtok (msgCopy,"\n");
+
+        while (linePtr!= NULL) {
+                // parse all response lines from server
+                struct ftp_struct* data = (struct ftp_struct*) malloc(sizeof(struct ftp_struct));
+        
+                //extract server message (arbitrary length possible)
+                int Msglength = strcspn(linePtr,"\r\n");
+                strncpy(data->Message,linePtr,Msglength);
+                linePtr = strtok(NULL,"\n");
+                logger_get()->log_struct(logger_get(), conn, "client", data);
+        }
+
 	/*char 	*ptr,
 		username[50],
 		password[50];

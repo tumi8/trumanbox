@@ -24,7 +24,6 @@ int ph_unknown_udp_destroy(void* handler)
 
 int ph_unknown_udp_init(void* handler, struct configuration_t* c)
 {
-	msg(MSG_DEBUG,"unknown udp init");
 	struct ph_unknown_udp* unknown_udp = (struct ph_unknown_udp*)handler;
 	unknown_udp->config = c;
 
@@ -48,13 +47,12 @@ int ph_unknown_udp_handle_payload_cts(void* handler, connection_t* conn, const c
 	
 	if (*len > 0) {
 		char timestamp[200];
-		char location[1000];
+		char location[MAX_PATH_LENGTH];
 		create_timestamp(timestamp);
 		snprintf(location,1000,"unknown_udp/%s",timestamp);
 		save_binarydata_to_file(location,payload,*len);
 	}
 
-        //logger_get()->log_struct(logger_get(), conn, "client", data);
 
         return 1;
 

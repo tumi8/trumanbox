@@ -18,6 +18,9 @@
 
 
 
+/*
+factored out to log_postgres
+
 
 
 int execute_statement(char* stmt) {
@@ -56,7 +59,7 @@ int execute_statement(char* stmt) {
 	PQfinish(psql);
 	return 1;
 }
-
+*/
 
 
 int create_timestamp(char* destination) {

@@ -60,6 +60,9 @@ struct smtp_struct {
 	char Message[MAXLINE];
 };
 
+struct ftp_struct {
+	char Message[MAXLINE];
+};
 
 struct irc_client_struct {
 	char command[MAXLINE];
