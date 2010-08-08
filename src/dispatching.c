@@ -28,7 +28,7 @@ struct dispatcher_t {
 	struct configuration_t* config;
 };
 
-enum e_command { unknown_command, restart_analysis };
+enum e_command { unknown_command, start_analysis, stop_analysis, restart_analysis };
 
 static enum e_command read_command(struct configuration_t* disp, int fd);
 static int parse_conntrack(connection_t *conn);
@@ -212,6 +212,17 @@ void disp_run(struct dispatcher_t* disp)
 				logger_get()->create_log(logger_get());
 				msg(MSG_DEBUG, "Restarted logging process!");
 			}
+			else if (res == start_analysis) {
+				msg(MSG_DEBUG,"Got start analysis command");
+				logger_get()->create_log(logger_get());
+				msg(MSG_DEBUG,"Started logging process");
+			}
+			else if (res == stop_analysis) {
+				msg(MSG_DEBUG,"Got stop analysis command");
+				pm_kill_temporary();
+				msg(MSG_DEBUG, "Finalizing logfiles!");
+				logger_get()->finish_log(logger_get());
+			}
 		} else {
 			msg(MSG_DEBUG, "we got some network protocol which is neither tcp nor udp");
 		}
@@ -227,12 +238,21 @@ static enum e_command read_command(struct configuration_t* config, int fd)
 	socklen_t clilen;
 	struct sockaddr_in cliaddr;
 	const char* magic_string = conf_get(config, "main", "magic_string");
+	const char* start_string = conf_get(config, "main", "logger_start_string");
+	const char* stop_string = conf_get(config, "main", "logger_stop_string");
+
 	r = Recvfrom(fd, payload, MAXLINE, 0, (SA *)  &cliaddr, &clilen);
 	msg(MSG_DEBUG, "Received %s, magic string: %s", payload, magic_string);
 	// TODO: remove -1. i need this because i'm testing with netcat which adds an additional \n
 	if (!strncmp(payload, magic_string, r - 1)) {
 		return restart_analysis;
-	} 
+	}
+	else if (!strncmp(payload,start_string,r-1)) {
+		return start_analysis;
+	}
+	else if (!strncmp(payload,stop_string,r-1)) {
+		return stop_analysis;
+	}
 	return unknown_command;
 }
 

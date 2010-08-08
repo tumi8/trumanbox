@@ -90,15 +90,22 @@ int lpg_deinit(struct logger_t* logger)
 int lpg_create_log(struct logger_t* logger)
 {
 	const char* testmode = conf_get(logger->config, "logging", "testmode");	
+
 	if (strcmp(testmode,"0") == 0) {
                 char update_trumanbox_runtime_id[1000] = "update trumanbox_settings set value = value+1 where key = 'SAMPLE_COUNTER'";
-                execute_statement(update_trumanbox_runtime_id);
-                char set_current_id[1000] = "update trumanbox_settings set value = (select t.value from trumanbox_settings t  where t.key = 'SAMPLE_COUNTER') where key = 'CURRENT_SAMPLE'";
-                execute_statement(set_current_id);
+                if (!execute_statement(update_trumanbox_runtime_id))
+                	return 0;
+		char set_current_id[1000] = "update trumanbox_settings set value = (select t.value from trumanbox_settings t  where t.key = 'SAMPLE_COUNTER') where key = 'CURRENT_SAMPLE'";
+                if (!execute_statement(set_current_id))
+			return 0;
+		char new_malware_dataset[1000] = "insert into malwaresamples (id,beginlogging) values ((select t.value from trumanbox_settings t where t.key = 'CURRENT_SAMPLE'), (select current_timestamp))";
+		if (!execute_statement(new_malware_dataset))
+			return 0;
 	}
 	else {
                 char set_current_id[1000] = "update trumanbox_settings set value = -1 where key = 'CURRENT_SAMPLE'";
-                execute_statement(set_current_id);
+                if(!execute_statement(set_current_id))
+			return 0;
 	}
 	return 1; // by default, all tables are already created
 }
@@ -106,6 +113,10 @@ int lpg_create_log(struct logger_t* logger)
 // returns: 1 if everything was fine, 0 if error
 int lpg_finish_log(struct logger_t* logger)
 {
+	// set timestamp of logging end
+	char set_ending_timestamp[1000] = "update malwaresamples set endlogging = (select current_timestamp) where id = (select t.value from trumanbox_settings t where t. key = 'CURRENT_SAMPLE')";
+	if (!execute_statement(set_ending_timestamp))
+		return 0;
 	return 1;
 }
 
