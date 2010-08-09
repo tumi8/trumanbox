@@ -73,37 +73,48 @@ int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 		// CONTENT-LENGTH extractor
 		char contentLengthStr[100];
 		extract_http_header_field(contentLengthStr,"Content-Length:",data->responseHeader);
-		int contentLength = atoi(contentLengthStr);
-		if (contentLength != 0) {
-			//parse was successful
-			data->rcvd_content_length = contentLength;
-			data->rcvd_content_done = bodyLength;
-			data->rcvd_content_done_ptr = (char*) malloc (contentLength);
-			if (data->rcvd_content_done_ptr != NULL) {
-				memcpy(data->rcvd_content_done_ptr,ptrToHeaderEnd,bodyLength);
-				msg(MSG_DEBUG,"wrote %d bytes to temporary http chunk collection (total: %d) and (total: %d)",bodyLength,contentLength,data->rcvd_content_length);
-			}
-		
-		}
-	
-		// PREPARE BINARY FILENAME
-		char filename[MAX_PATH_LENGTH];
-		char timestamp[200];
-		create_timestamp(timestamp);
-		sprintf(filename,"http/rcvd/%s",timestamp);
-
-		if (contentLength == 0) {
-			// nothing to do
-		}
-		else if (contentLength == bodyLength) {
-			// we have received the whole header and body in one "chunk"
-			
-			strcpy(data->responseBodyBinaryLocation,filename);
-			save_binarydata_to_file(data->responseBodyBinaryLocation,data->rcvd_content_done_ptr,data->rcvd_content_length);	
+		int contentLength;
+		if (strncmp(contentLengthStr,"N/A",3)==0) {
+			// we have no content-length!
+			contentLength = -1;
 		}
 		else {
-			// we still have some outstanding chunks, wait for them..!
-			strcpy(data->responseBodyBinaryLocation,filename);
+			contentLength = atoi(contentLengthStr);
+		}
+
+
+
+		if (contentLength > 0) {
+						
+			// PREPARE BINARY FILENAME
+			char timestamp[200];
+			create_timestamp(timestamp);
+			sprintf(data->responseBodyBinaryLocation,"http/rcvd/%s",timestamp);
+
+			data->rcvd_content_length = contentLength;
+			data->rcvd_content_done = bodyLength;
+
+			append_binarydata_to_file(data->responseBodyBinaryLocation,ptrToHeaderEnd,bodyLength);
+
+			msg(MSG_DEBUG,"wrote %d bytes to %s (total: %d) and (total: %d)",bodyLength,data->responseBodyBinaryLocation,contentLength,data->rcvd_content_length);
+			if (bodyLength == contentLength) {	
+				// we still have some outstanding chunks, wait for them..!
+				conn->multiple_chunks = 1;
+				return 1;
+			}
+		}
+		else if (contentLength < 0) {
+			// we have no content-Length! That means we have to save the whole body for this and successive connections
+			data->rcvd_content_length = -1;
+			data->rcvd_content_done = bodyLength;
+			
+			// PREPARE BINARY FILENAME
+			char timestamp[200];
+			create_timestamp(timestamp);
+			sprintf(data->responseBodyBinaryLocation,"http/rcvd/%s",timestamp);
+			
+			append_binarydata_to_file(data->responseBodyBinaryLocation,ptrToHeaderEnd,bodyLength);
+			msg(MSG_DEBUG,"wrote %d bytes to %s",bodyLength,data->responseBodyBinaryLocation);
 			conn->multiple_chunks = 1;
 			return 1;
 		}
@@ -115,33 +126,32 @@ int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 		if ((data->rcvd_content_done+*len) < data->rcvd_content_length) {
 			
 			msg(MSG_DEBUG,"we still have to collect some data...!");
-
-			if (data->rcvd_content_done_ptr != NULL) {
-				memcpy(data->rcvd_content_done_ptr+data->rcvd_content_done,payload,*len);
-				msg(MSG_DEBUG,"wrote %d bytes to temporary http chunk collection",*len);
-			}
+			append_binarydata_to_file(data->responseBodyBinaryLocation,payload,*len);
+			msg(MSG_DEBUG,"wrote %d bytes to %s",*len,data->responseBodyBinaryLocation);
 			data->rcvd_content_done += *len;
 
 			msg(MSG_DEBUG,"added: %d and now we have: %d",*len,data->rcvd_content_done);
 			return 1;
 		}
 		else if ((data->rcvd_content_done+*len) == data->rcvd_content_length && data->rcvd_content_length != 0) {
-			msg(MSG_DEBUG,"we are finished reading the body!");
-		
-			if (data->rcvd_content_done_ptr != NULL) {
-				memcpy(data->rcvd_content_done_ptr+data->rcvd_content_done,payload,*len);
-				msg(MSG_DEBUG,"wrote %d bytes to temporary http chunk collection",*len);
-			}
+			append_binarydata_to_file(data->responseBodyBinaryLocation,payload,*len);
+			msg(MSG_DEBUG,"wrote %d bytes to temporary http chunk collection",*len);
 			data->rcvd_content_done += *len;
 					
+			msg(MSG_DEBUG,"we are finished reading the body!");
 				
-			save_binarydata_to_file(data->responseBodyBinaryLocation,data->rcvd_content_done_ptr,data->rcvd_content_length);	
-			free(data->rcvd_content_done_ptr);
 			conn->log_struct_ptr = NULL;
 			conn->multiple_chunks = 0;
 		}
-		else {
-			msg(MSG_DEBUG,"done: %d, total: %d, lenrcvd: %d",data->rcvd_content_done,data->rcvd_content_length,*len);
+		else if (data->rcvd_content_length == -1) {
+			append_binarydata_to_file(data->responseBodyBinaryLocation,payload,*len);
+			msg(MSG_DEBUG,"wrote %d bytes to %s",*len,data->responseBodyBinaryLocation);
+			data->rcvd_content_done += *len;
+					
+		}
+		
+		else
+		{
 			msg(MSG_DEBUG,"Malformed http request! Nothing to do");
 			return 1;
 		}

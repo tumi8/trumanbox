@@ -197,9 +197,9 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 			}
 			proto_handler = tcph->ph[tcph->connection->app_proto];
 			proto_handler->handle_payload_stc(proto_handler->handler, tcph->connection, payload, &r);
-
+			msg(MSG_DEBUG,"sending servermsg to infected machine");
 			if (-1 == write(tcph->inConnFd, payload, r)) {
-				msg(MSG_FATAL, "Could not write to target!");
+				msg(MSG_FATAL, "Could not write to target (infected machine)!");
 				goto out;
 			}
 		} else if (FD_ISSET(tcph->inConnFd, &rset)) {

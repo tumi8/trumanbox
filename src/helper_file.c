@@ -18,49 +18,6 @@
 
 
 
-/*
-factored out to log_postgres
-
-
-
-int execute_statement(char* stmt) {
-	PGconn *psql = NULL; 
-
-        if (psql == NULL || PQstatus(psql) != CONNECTION_OK) {
-                psql = PQconnectdb("hostaddr = '127.0.0.1' port = '5432' dbname = 'trumanlogs' user = 'trumanbox' password = 'das$)13x!#+23' connect_timeout = '10'");
-        }
-        else {
-              // connection is already established...
-              
-        }
-
-
-        if (!psql) {
-                msg(MSG_FATAL,"libpq error : PQconnectdb returned NULL.\n\n");
-                return 0;
-        }
-
-        if (PQstatus(psql) != CONNECTION_OK) {
-                msg(MSG_FATAL,"libpq error: PQstatus(psql) != CONNECTION_OK\n\n");
-                return 0;
-        }
-
-
-	PGresult *res = PQexec(psql, stmt);
-	if (PQresultStatus(res) != PGRES_COMMAND_OK)
-	{		
-		msg(MSG_FATAL,"ERROR: %s",PQresultErrorMessage(res));
-		msg(MSG_FATAL,"Could not execute \n %s \n",stmt);
-		PQfinish(psql);
-		return 0;
-	}
-	 
-		
-	PQfinish(psql);
-	return 1;
-}
-*/
-
 
 int create_timestamp(char* destination) {
         
@@ -77,10 +34,10 @@ int create_timestamp(char* destination) {
 /* Saves the data given as second argument into a file with an unique filename in the folder specified in the first argument.
  * returns 0 on failure, 1 on success
  * */
-int save_binarydata_to_file(char* fileLocation, const char* dataToWrite, int dataLength) {
+int save_binarydata_to_file_generic(char* fileLocation, const char* dataToWrite, int dataLength,const char* mode) {
 	size_t count;
 	FILE * pFile;
-	pFile = fopen ( fileLocation , "wb" );
+	pFile = fopen ( fileLocation , mode );
 	
 	msg(MSG_DEBUG,"LengthToWrite: %d, is > 0: %d",dataLength,dataLength>0);
 	
@@ -97,6 +54,17 @@ int save_binarydata_to_file(char* fileLocation, const char* dataToWrite, int dat
 	return 1;
 
 }
+
+
+int save_binarydata_to_file(char* fileLocation, const char* dataToWrite, int dataLength) {
+	return save_binarydata_to_file_generic(fileLocation,dataToWrite,dataLength,"wb");
+}
+
+int append_binarydata_to_file(char* fileLocation, const char* dataToWrite, int dataLength) {
+	return save_binarydata_to_file_generic(fileLocation,dataToWrite,dataLength,"ab");
+}
+
+
 
 int create_index_file(char* filename) {
 	FILE *fd;

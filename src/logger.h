@@ -53,7 +53,6 @@ struct http_server_struct {
 	char serverType[1000];
 	u_int32_t rcvd_content_length; // the content length of the whole chunk of data we expect to receive 
 	u_int32_t rcvd_content_done;
-	char* rcvd_content_done_ptr; // pointer to memory where we store the already received data
 };
 
 struct smtp_struct {
