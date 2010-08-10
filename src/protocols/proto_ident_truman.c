@@ -89,6 +89,8 @@ protocols_app pi_buildin_payload(struct proto_identifier_t* pi, connection_t *co
 		else {
 			conn->app_proto = UNKNOWN;
 		}
+
+		msg(MSG_DEBUG,"we have the following information: IPServ: [%s] IPServ2: [%s] PortServ: [%d]",conn->orig_dest,conn->dest,conn->dport);
 	}
 
 	msg(MSG_DEBUG, "protocol identified by payload is: %d", conn->app_proto);

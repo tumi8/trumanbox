@@ -42,7 +42,6 @@ struct http_client_struct {
 	char requestBodyBinaryLocation[MAX_PATH_LENGTH];
         u_int32_t sent_content_length; // the conteht length of the whole chunk of data we expect to send
 	u_int32_t sent_content_done;
-	char* sent_content_done_ptr; // pointer to memory where we store the already sent data
 };
 
 struct http_server_struct {

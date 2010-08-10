@@ -59,7 +59,8 @@ struct s_connection {
 	protocols_net net_proto;
 	protocols_app app_proto;
 	char timestamp[100]; // form of timestamp: "[secs-msecs]"  (since epoch - 1.1.1970)
-	u_int32_t multiple_chunks;
+	u_int32_t multiple_client_chunks;// indicates whether we expect multiple successive chunks from client side that belong together
+	u_int32_t multiple_server_chunks; // indicates whether we expect multiple successive chunks from server side that belong together
 	void* log_struct_ptr; //pointer to logging structure
 };
 typedef struct s_connection connection_t;
