@@ -146,6 +146,7 @@ void disp_run(struct dispatcher_t* disp)
 		connection.net_proto = wait_for_incoming_connection(disp->tcpfd, disp->udpfd, disp->controlfd);
 		connection.app_proto = UNKNOWN;
 		connection.log_struct_ptr = NULL;
+		connection.log_struct_initialized = 0;
 		connection.multiple_client_chunks = 0;
 		connection.multiple_server_chunks = 0;
 		// generate timestamp for the connection

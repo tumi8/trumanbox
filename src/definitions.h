@@ -62,6 +62,7 @@ struct s_connection {
 	u_int32_t multiple_client_chunks;// indicates whether we expect multiple successive chunks from client side that belong together
 	u_int32_t multiple_server_chunks; // indicates whether we expect multiple successive chunks from server side that belong together
 	void* log_struct_ptr; //pointer to logging structure
+	u_int16_t log_struct_initialized; // indicates if the log_struct was already malloced (that is, if the log_struct ptr already points to a valid destination)
 };
 typedef struct s_connection connection_t;
 #endif

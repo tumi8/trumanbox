@@ -38,7 +38,17 @@ int ph_ftp_deinit(void* handler)
 
 int ph_ftp_handle_payload_stc(void* handler, connection_t* conn, const char* payload, ssize_t* len)
 {
-	
+	struct ftp_struct* data;
+
+	if (conn->log_struct_initialized == 0) {
+              	data = (struct ftp_struct*) malloc(sizeof(struct ftp_struct)); 
+		conn->log_struct_ptr = data;
+		conn->log_struct_initialized = 1;
+	}
+	else {
+		data = (struct ftp_struct*) conn->log_struct_ptr;
+	}
+
         char msgCopy[MAXLINE]; 
         char* linePtr = NULL; 
         strcpy(msgCopy,payload); 
@@ -46,11 +56,49 @@ int ph_ftp_handle_payload_stc(void* handler, connection_t* conn, const char* pay
  
         while (linePtr!= NULL) { 
                 // parse all response lines from server 
-                struct ftp_struct* data = (struct ftp_struct*) malloc(sizeof(struct ftp_struct)); 
-         
+        	bzero(data->Message,MAXLINE); 
                 //extract server message (arbitrary length possible) 
                 int Msglength = strcspn(linePtr,"\r\n"); 
-                strncpy(data->Message,linePtr,Msglength); 
+                strncpy(data->Message,linePtr,Msglength);
+
+		if (strncmp(linePtr,"227",3) == 0)  {
+			// we found as passive command!
+			// try to extract the information...
+			char* ptr = strstr(linePtr,"(");
+			ptr =  ptr + 1; // now we see the first part of the ip
+			msg(MSG_DEBUG,"lets go [%s]",linePtr);
+			char IP[100] = ""; // initialize as empty string because we want directly append to it!
+			//u_int16_t port;
+			int i;
+		
+			for (i = 0 ; i < 4;  i++) {
+				int len = strcspn(ptr,",");
+				strncat(IP,ptr,len);
+				if (i < 3) 
+					strncat(IP,".",1);
+				ptr = ptr + len +1;
+			}
+			msg(MSG_DEBUG,"IP: %s",IP);
+		
+			// TRY to extract port
+			
+			char portPart1[100] = "";
+			char portPart2[100] = "";
+
+			int len1 = strcspn(ptr,",");
+			strncat(portPart1,ptr,len1);
+			ptr = ptr + len1 + 1;
+			
+			int len2 =  strcspn(ptr,")");
+			strncat(portPart2,ptr,len2);
+			
+			msg(MSG_DEBUG,"port p1: [%s] port p2 : [%s]",portPart1,portPart2);
+			
+
+			
+
+		}
+
                 linePtr = strtok(NULL,"\n"); 
                 logger_get()->log_struct(logger_get(), conn, "server", data); 
         } 
@@ -61,7 +109,16 @@ int ph_ftp_handle_payload_stc(void* handler, connection_t* conn, const char* pay
 
 int ph_ftp_handle_payload_cts(void* handler, connection_t* conn, const char* payload, ssize_t* len)
 {
+	struct ftp_struct* data;
 
+	if (conn->log_struct_initialized == 0) {
+              	data = (struct ftp_struct*) malloc(sizeof(struct ftp_struct)); 
+		conn->log_struct_ptr = data;
+		conn->log_struct_initialized = 1;
+	}
+	else {
+		data = (struct ftp_struct*) conn->log_struct_ptr;
+	}
         char msgCopy[MAXLINE];
         char* linePtr = NULL;
         strcpy(msgCopy,payload);
@@ -69,11 +126,12 @@ int ph_ftp_handle_payload_cts(void* handler, connection_t* conn, const char* pay
 
         while (linePtr!= NULL) {
                 // parse all response lines from server
-                struct ftp_struct* data = (struct ftp_struct*) malloc(sizeof(struct ftp_struct));
         
+        	bzero(data->Message,MAXLINE); 
                 //extract server message (arbitrary length possible)
                 int Msglength = strcspn(linePtr,"\r\n");
                 strncpy(data->Message,linePtr,Msglength);
+
                 linePtr = strtok(NULL,"\n");
                 logger_get()->log_struct(logger_get(), conn, "client", data);
         }
