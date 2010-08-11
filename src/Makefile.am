@@ -12,6 +12,7 @@ trumanbox_SOURCES=config.h definitions.h dns_resolver.c helper_file.h iniparser.
 	protocols/proto_handler.c protocols/proto_ident_truman.c \
 	protocols/proto_ident_truman.h protocols/proto_ident_opendpi.h protocols/proto_ident_opendpi.c \
 	protocols/ftp.h protocols/ftp.c protocols/http.h protocols/http.c \
+	protocols/ftp_data.h protocols/ftp_data.c \
 	protocols/smtp.h protocols/smtp.c protocols/irc.h protocols/irc.c \
 	protocols/unknown.h protocols/unknown.c protocols/unknown_udp.h protocols/unknown_udp.c
 

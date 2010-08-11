@@ -21,7 +21,8 @@
 #define MAX_STATEMENT 8000
 
 static char statement[MAX_STATEMENT];
-PGconn *psql;
+
+/*PGconn *psql;
 
 // checks at first whether the connection is already established, before it tries to connect
 int connect_to_db() {
@@ -66,7 +67,7 @@ int execute_statement(char* stmt) {
 	//connection error
 	return 0;
 	}
-}
+}*/
 
 // Returns: Whether connection is successful AND if tables are already present
 int lpg_init(struct logger_t* logger)

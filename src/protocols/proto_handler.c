@@ -6,6 +6,7 @@
 #include "protocols/smtp.h"
 #include "protocols/http.h"
 #include "protocols/ftp.h"
+#include "protocols/ftp_data.h"
 #include "protocols/unknown.h"
 #include "protocols/unknown_udp.h"
 #include <stdlib.h>
@@ -15,7 +16,6 @@ static struct proto_handler_t* create_handler(protocols_app app)
 	struct proto_handler_t* ret = (struct proto_handler_t*)malloc(sizeof(struct proto_handler_t));
 	switch (app) {
 	case FTP:
-	case FTP_data:
 	case FTP_anonym:
 		ret->handler = ph_ftp_create();
 		ret->init = ph_ftp_init;
@@ -25,6 +25,15 @@ static struct proto_handler_t* create_handler(protocols_app app)
 		ret->handle_packet = ph_ftp_handle_packet;
 		ret->determine_target = ph_ftp_determine_target;
 		break;
+	case FTP_data:
+		ret->handler = ph_ftp_data_create();
+		ret->init = ph_ftp_data_init;
+		ret->deinit = ph_ftp_data_deinit;
+		ret->handle_payload_stc = ph_ftp_data_handle_payload_stc;
+		ret->handle_payload_cts = ph_ftp_data_handle_payload_cts;
+		ret->handle_packet = ph_ftp_data_handle_packet;
+		ret->determine_target = ph_ftp_data_determine_target;
+		break;	
 	case SMTP:
 		ret->handler = ph_smtp_create();
 		ret->init = ph_smtp_init;

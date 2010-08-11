@@ -1,14 +1,17 @@
 #include "proto_ident_truman.h"
+#include <stdlib.h>
 #include "helper_net.h"
 #include "msg.h"
 #include "string.h"
-
+#include "log_postgres.h"
 #include <stdio.h>
+#include </usr/include/postgresql/libpq-fe.h>
 
 int pi_buildin_init(struct proto_identifier_t* p) { return 0; }
 int pi_buildin_deinit(struct proto_identifier_t* p) { return 0; }
 
 char *strcasestr(const char *haystack, const char *needle);
+
 
 protocols_app pi_buildin_port(struct proto_identifier_t* pi, connection_t *conn)
 {
@@ -88,11 +91,40 @@ protocols_app pi_buildin_payload(struct proto_identifier_t* pi, connection_t *co
 		}
 		else {
 			conn->app_proto = UNKNOWN;
+			
+			// check if we can classfiy this tcp traffic with the data from the database
+
+			char statement[1000] = "";
+			snprintf(statement, 1000, "select count(*) as anz from awaited_pasv where serverIP = inet('%s') and serverPort = %d",
+			conn->orig_dest,conn->dport
+			);
+			msg(MSG_DEBUG,"[to execute: %s]",statement);
+				PGconn* psql = PQconnectdb("hostaddr = '127.0.0.1' port = '5432' dbname = 'trumanlogs' user = 'trumanbox' password = 'das$)13x!#+23' connect_timeout = '10'");
+				PGresult *res = PQexec(psql, statement);
+				if (PQresultStatus(res) != PGRES_TUPLES_OK)
+					{
+					msg(MSG_FATAL,"Status: %s",PQresStatus(PQresultStatus(res)));
+					msg(MSG_FATAL,"%s",PQresultErrorMessage(res));
+					}
+				else {	
+					char* value =  PQgetvalue(res,0,0);
+					msg(MSG_DEBUG,"we have value: %s",value);
+						
+					int valueInt = atoi(value);
+					if (valueInt > 0) {
+						conn->app_proto = FTP_data;
+					}
+					else {
+						// not found, do nothing
+					}
+																														}
+			
+			PQfinish(psql);
+		
+
+			msg(MSG_DEBUG,"we have the following information: IPServ: [%s] IPServ2: [%s] PortServ: [%d]",conn->orig_dest,conn->dest,conn->dport);
 		}
-
-		msg(MSG_DEBUG,"we have the following information: IPServ: [%s] IPServ2: [%s] PortServ: [%d]",conn->orig_dest,conn->dest,conn->dport);
 	}
-
 	msg(MSG_DEBUG, "protocol identified by payload is: %d", conn->app_proto);
 	return conn->app_proto;
 }

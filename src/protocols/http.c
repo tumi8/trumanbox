@@ -49,7 +49,7 @@ int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 			return 1;
 		}
 		data = (struct http_server_struct*) malloc(sizeof(struct http_server_struct));
-		conn->log_struct_ptr = data;
+		conn->log_server_struct_ptr = data;
 
 		
 
@@ -124,7 +124,7 @@ int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 
 	}
 	else {
-		data = (struct http_server_struct*) conn->log_struct_ptr;
+		data = (struct http_server_struct*) conn->log_server_struct_ptr;
 
 		if ((data->rcvd_content_done+*len) < data->rcvd_content_length) {
 			
@@ -142,7 +142,7 @@ int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 					
 			msg(MSG_DEBUG,"we are finished reading the body!");
 				
-			conn->log_struct_ptr = NULL;
+			conn->log_server_struct_ptr = NULL;
 			conn->multiple_server_chunks = 0;
 		}
 		else if (data->rcvd_content_length == -1) {
@@ -171,7 +171,7 @@ int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 	if (conn->multiple_client_chunks == 0) {
 
 		data = (struct http_client_struct*) malloc(sizeof(struct http_client_struct));
-		conn->log_struct_ptr = data;
+		conn->log_client_struct_ptr = data;
 
 		char* ptrToHeaderEnd = strstr(payload,"\r\n\r\n"); // every proper HTTP header ends with this string
 		char* ptrToHeader = data->requestHeader;
@@ -256,7 +256,7 @@ int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 
 	}
 	else {
-		data = (struct http_client_struct*) conn->log_struct_ptr;
+		data = (struct http_client_struct*) conn->log_client_struct_ptr;
 		if ((data->sent_content_done+*len) < data->sent_content_length) {
 			
 
@@ -275,7 +275,7 @@ int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 			data->sent_content_done += *len;
 			
 			
-			conn->log_struct_ptr = NULL;
+			conn->log_client_struct_ptr = NULL;
 			conn->multiple_client_chunks = 0;
 			msg(MSG_DEBUG,"we are finished reading the body!");
 		}

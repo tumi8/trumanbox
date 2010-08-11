@@ -18,6 +18,79 @@
 
 
 
+int execute_statement(char* stmt) {
+	return execute_nonquery_statement(stmt);
+}
+
+
+int execute_nonquery_statement(char* stmt) {
+ 
+	int result = 0;
+	PGconn* psql  = PQconnectdb("hostaddr = '127.0.0.1' port = '5432' dbname = 'trumanlogs' user = 'trumanbox' password = 'das$)13x!#+23' connect_timeout = '10'");
+	if (!psql) {
+                msg(MSG_FATAL,"libpq error : PQconnectdb returned NULL.\n\n");
+                return result;
+        }
+
+        if (PQstatus(psql) != CONNECTION_OK) {
+                msg(MSG_FATAL,"libpq error: PQstatus(psql) != CONNECTION_OK\n\n");
+                return result;
+        }
+	
+        PGresult *res = PQexec(psql, stmt);
+        if (PQresultStatus(res) != PGRES_COMMAND_OK)
+                {
+                msg(MSG_FATAL,"ERROR: %s",PQresultErrorMessage(res));
+                result = 0;
+                }
+                else
+                {
+                result = 1; // success
+      	}
+	
+	PQfinish(psql);
+	return result;
+}
+
+
+char* execute_query_statement_singlevalue(char* stmt) {
+	char* result = NULL;
+       	PGconn* psql = PQconnectdb("hostaddr = '127.0.0.1' port = '5432' dbname = 'trumanlogs' user = 'trumanbox' password = 'das$)13x!#+23' connect_timeout = '10'");
+	if (!psql) {
+                msg(MSG_FATAL,"libpq error : PQconnectdb returned NULL.\n\n");
+                return result;
+        }
+
+        if (PQstatus(psql) != CONNECTION_OK) {
+                msg(MSG_FATAL,"libpq error: PQstatus(psql) != CONNECTION_OK\n\n");
+                return result;
+        }
+
+	PGresult *res = PQexec(psql, stmt);
+                
+	if (PQresultStatus(res) != PGRES_TUPLES_OK)
+		{
+		msg(MSG_FATAL,"Status: %s",PQresStatus(PQresultStatus(res)));
+		msg(MSG_FATAL,"%s",PQresultErrorMessage(res));
+		}
+	else {
+		char* value =  PQgetvalue(res,0,0);
+		msg(MSG_DEBUG,"we have value: %s",value);
+		strcpy(result,value);
+
+		
+	 }
+
+	
+	PQfinish(psql);
+
+
+	return result;
+}
+
+
+
+
 
 int create_timestamp(char* destination) {
         

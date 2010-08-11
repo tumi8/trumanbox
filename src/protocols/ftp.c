@@ -2,11 +2,13 @@
 
 #include <stdlib.h>
 #include <string.h>
-
+#include "log_postgres.h"
 #include "wrapper.h"
 #include "logger.h"
 #include "helper_file.h"
 #include "msg.h"
+
+//PGconn *psql;
 
 struct ph_ftp {
 	struct configuration_t* config;
@@ -40,13 +42,15 @@ int ph_ftp_handle_payload_stc(void* handler, connection_t* conn, const char* pay
 {
 	struct ftp_struct* data;
 
-	if (conn->log_struct_initialized == 0) {
+	if (conn->log_server_struct_initialized == 0) {
               	data = (struct ftp_struct*) malloc(sizeof(struct ftp_struct)); 
-		conn->log_struct_ptr = data;
-		conn->log_struct_initialized = 1;
+		conn->log_server_struct_ptr = data;
+		conn->log_server_struct_initialized = 1;
+		bzero(data,sizeof(struct ftp_struct));
+		msg(MSG_DEBUG,"initalized a new serverstrcut and we have %d",data->pasvPort);
 	}
 	else {
-		data = (struct ftp_struct*) conn->log_struct_ptr;
+		data = (struct ftp_struct*) conn->log_server_struct_ptr;
 	}
 
         char msgCopy[MAXLINE]; 
@@ -92,12 +96,20 @@ int ph_ftp_handle_payload_stc(void* handler, connection_t* conn, const char* pay
 			int len2 =  strcspn(ptr,")");
 			strncat(portPart2,ptr,len2);
 			
-			msg(MSG_DEBUG,"port p1: [%s] port p2 : [%s]",portPart1,portPart2);
-			
 
+			int port1,port2;
+			u_int16_t port;
+			port1 = atoi(portPart1);
+			port2 = atoi(portPart2);
+			port = port1 * 256 + port2;
 			
-
+			strcpy(data->serverIP,IP);
+			data->pasvPort = port;
+			msg(MSG_DEBUG,"PASV Mode will be opened at IP: [%s] Port: [%d]",data->serverIP,data->pasvPort);
 		}
+			
+
+
 
                 linePtr = strtok(NULL,"\n"); 
                 logger_get()->log_struct(logger_get(), conn, "server", data); 
@@ -111,13 +123,13 @@ int ph_ftp_handle_payload_cts(void* handler, connection_t* conn, const char* pay
 {
 	struct ftp_struct* data;
 
-	if (conn->log_struct_initialized == 0) {
+	if (conn->log_server_struct_initialized == 0) {
               	data = (struct ftp_struct*) malloc(sizeof(struct ftp_struct)); 
-		conn->log_struct_ptr = data;
-		conn->log_struct_initialized = 1;
+		conn->log_server_struct_ptr = data;
+		conn->log_server_struct_initialized = 1;
 	}
 	else {
-		data = (struct ftp_struct*) conn->log_struct_ptr;
+		data = (struct ftp_struct*) conn->log_server_struct_ptr;
 	}
         char msgCopy[MAXLINE];
         char* linePtr = NULL;
@@ -126,11 +138,43 @@ int ph_ftp_handle_payload_cts(void* handler, connection_t* conn, const char* pay
 
         while (linePtr!= NULL) {
                 // parse all response lines from server
-        
-        	bzero(data->Message,MAXLINE); 
+              	bzero(data->Message,MAXLINE); 
                 //extract server message (arbitrary length possible)
                 int Msglength = strcspn(linePtr,"\r\n");
                 strncpy(data->Message,linePtr,Msglength);
+ 
+		if (data->pasvPort > 0) {
+			char* ptr = strstr(linePtr," ");
+		
+			char transferType[100] = "";
+			char filename[MAX_PATH_LENGTH] = "";
+			if (ptr != NULL) {
+				int lenTransferType = strcspn(linePtr," ");
+				strncat(transferType,linePtr,lenTransferType);
+				ptr = ptr + 1;
+
+				strcpy(filename,ptr);
+
+			}
+			else {
+				strncat(transferType,linePtr,Msglength);
+			}
+			char statement[1000] = "";
+			snprintf(statement, 1000, "insert into AWAITED_PASV (ServerIP,ServerPort,Type,filename) Values (inet('%s'),%d,'%s', '%s')",
+			data->serverIP,data->pasvPort,transferType,filename
+			);
+			msg(MSG_DEBUG,"insertion: %s",statement);
+			if (execute_statement(statement)) {
+				msg(MSG_DEBUG,"inserted new pasv information successfully");
+			}
+			else {
+				msg(MSG_DEBUG,"insertion not succcessful!");
+			}
+			data->pasvPort = 0;
+
+			bzero(data->serverIP,100); 
+		}
+
 
                 linePtr = strtok(NULL,"\n");
                 logger_get()->log_struct(logger_get(), conn, "client", data);

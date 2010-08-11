@@ -61,8 +61,10 @@ struct s_connection {
 	char timestamp[100]; // form of timestamp: "[secs-msecs]"  (since epoch - 1.1.1970)
 	u_int32_t multiple_client_chunks;// indicates whether we expect multiple successive chunks from client side that belong together
 	u_int32_t multiple_server_chunks; // indicates whether we expect multiple successive chunks from server side that belong together
-	void* log_struct_ptr; //pointer to logging structure
-	u_int16_t log_struct_initialized; // indicates if the log_struct was already malloced (that is, if the log_struct ptr already points to a valid destination)
+	void* log_client_struct_ptr; // pointer to client logging structure (CTS)
+	void* log_server_struct_ptr; // pointer to server logging structure (STC)
+	u_int16_t log_client_struct_initialized; // indicates if the client log_struct (CTS) was already malloced (that is, if the log_struct ptr already points to a valid destination)
+	u_int16_t log_server_struct_initialized; // indicates if the server log_struct (STC) was already malloced (that is, if the log_struct ptr already points to a valid destination)
 };
 typedef struct s_connection connection_t;
 #endif

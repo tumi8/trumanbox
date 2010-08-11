@@ -61,8 +61,11 @@ struct smtp_struct {
 struct ftp_struct {
 	u_int16_t pasvPort;
 	char serverIP[100];
-	char filename[MAX_PATH_LENGTH];
 	char Message[MAXLINE];
+};
+
+struct ftp_data_struct {
+	char binaryLocation[MAX_PATH_LENGTH];
 };
 
 struct irc_client_struct {
