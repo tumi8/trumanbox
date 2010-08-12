@@ -107,8 +107,21 @@ int ph_ftp_handle_payload_stc(void* handler, connection_t* conn, const char* pay
 			data->pasvPort = port;
 			msg(MSG_DEBUG,"PASV Mode will be opened at IP: [%s] Port: [%d]",data->serverIP,data->pasvPort);
 		}
-			
+		else if (strncmp(linePtr,"229",3) == 0) {
+			// we found a extended passive command reply
+			char* ptr = strstr(linePtr,"(");
+			ptr = ptr + 4; // we have to skip the character sequence (||| 
+			char* ptrEnd = strstr(ptr,"|");
+			int len = ptrEnd - ptr;
+			char portString[100] = "";
+			strncat(portString,ptr,len);
+			strcpy(data->serverIP,conn->dest);
+			data->pasvPort = atoi(portString);
 
+
+			msg(MSG_DEBUG,"extracted port: %s",portString);
+
+		}
 
 
                 linePtr = strtok(NULL,"\n"); 

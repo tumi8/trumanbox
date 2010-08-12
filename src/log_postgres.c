@@ -22,53 +22,6 @@
 
 static char statement[MAX_STATEMENT];
 
-/*PGconn *psql;
-
-// checks at first whether the connection is already established, before it tries to connect
-int connect_to_db() {
-	
-	
-	if (!psql || PQstatus(psql) != CONNECTION_OK) {
-		psql = PQconnectdb("hostaddr = '127.0.0.1' port = '5432' dbname = 'trumanlogs' user = 'trumanbox' password = 'das$)13x!#+23' connect_timeout = '10'");
-	}
-	else {
-		// connection is already established...
-		return 1;
-	}
-
-
-	if (!psql) {
-		msg(MSG_FATAL,"libpq error : PQconnectdb returned NULL.\n\n");
-		return 0;
-	}
-
-	if (PQstatus(psql) != CONNECTION_OK) {
-		msg(MSG_FATAL,"libpq error: PQstatus(psql) != CONNECTION_OK\n\n");
-		return 0;
-	}
-	return 1;
-}
-
-
-int execute_statement(char* stmt) {
-	if (connect_to_db()) {
-		PGresult *res = PQexec(psql, stmt);
-	    	if (PQresultStatus(res) != PGRES_COMMAND_OK)
-		{
-			msg(MSG_FATAL,"ERROR: %s",PQresultErrorMessage(res));
-			return 0;
-		}
-		else 
-		{ 
-			return 1;
-		}
-	}
-	else {
-	//connection error
-	return 0;
-	}
-}*/
-
 // Returns: Whether connection is successful AND if tables are already present
 int lpg_init(struct logger_t* logger)
 {
@@ -218,14 +171,31 @@ int lpg_log_struct(struct logger_t* log, connection_t* conn, const char* tag, vo
 
 	case DNS:
 	{
-			struct dns_struct* logdata =  (struct dns_struct *) data;
-			snprintf(statement, MAX_STATEMENT, "insert into DNS_LOGS (clientIP,ServerIP,RealServerIP,DomainName,date,trumantimestamp,sample_id) Values (inet('%s'),inet('%s'),inet('%s'),'%s', (select current_timestamp),'%s',(select distinct value from trumanbox_settings where key = 'CURRENT_SAMPLE'))",
-			logdata->clientIP,logdata->realServerIP,logdata->serverIP,logdata->domain,conn->timestamp
-			);
-			execute_statement(statement);
+		struct dns_struct* logdata =  (struct dns_struct *) data;
+		snprintf(statement, MAX_STATEMENT, "insert into DNS_LOGS (clientIP,ServerIP,RealServerIP,DomainName,date,trumantimestamp,sample_id) Values (inet('%s'),inet('%s'),inet('%s'),'%s', (select current_timestamp),'%s',(select distinct value from trumanbox_settings where key = 'CURRENT_SAMPLE'))",
+		logdata->clientIP,logdata->realServerIP,logdata->serverIP,logdata->domain,conn->timestamp
+		);
+		execute_statement(statement);
 
-	break;
+		break;
 	}
+	case FTP_data:
+	{
+		struct ftp_data_struct* logdata = (struct ftp_data_struct *) data;
+		snprintf(statement, MAX_STATEMENT, "insert into FTP_Passive_Logs (clientIP,clientport,ServerIP,RealServerIP,Serverport,binarylocation, type, filename, date,Trumantimestamp,sample_id) VALUES \
+		(inet('%s'),%d,inet('%s'),inet('%s'),%d,'%s', \
+		(select case when type = '' then null else type end from awaited_pasv where serverport = %d and serverIP = inet('%s')), \
+		(select case when filename = '' then null else filename end from awaited_pasv where serverport = %d and serverIP = inet('%s')), (select current_timestamp), '%s',(select distinct value from trumanbox_settings where key = 'CURRENT_SAMPLE'))",
+		conn->source,conn->sport,conn->orig_dest,conn->dest,conn->dport,logdata->binaryLocation,conn->dport,conn->dest,conn->dport,conn->dest,conn->timestamp
+		);
+		msg(MSG_DEBUG,"try to insert: %s",statement);
+		execute_statement(statement);
+		snprintf(statement, MAX_STATEMENT, "delete from awaited_pasv where serverport = %d and serverip = inet('%s')",
+		conn->dport,conn->dest);
+		execute_statement(statement);	
+		break;
+	}
+
 	default:
 		{
 		msg(MSG_DEBUG, "Protocol not yet handled, abort...");

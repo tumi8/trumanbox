@@ -75,8 +75,8 @@ protocols_app pi_buildin_payload(struct proto_identifier_t* pi, connection_t *co
 			else
 				msg(MSG_DEBUG, "and now we removed the file: %s", (char *) filename);
 		}
-		else if (strncmp(payload, "220 ", 4) == 0) {
-			if ( strcasestr(payload, "ftp") != 0 ) {
+		else if (strncmp(payload, "220", 3) == 0) {
+			if ( strcasestr(payload, "ftp") != 0 || strcasestr(payload,"welcome") != 0 ) {
 				conn->app_proto = FTP;
 				//if (anonym_ftp)
 				//	conn->app_proto = FTP_anonym;

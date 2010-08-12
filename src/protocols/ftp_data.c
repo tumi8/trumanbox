@@ -41,21 +41,27 @@ int ph_ftp_data_deinit(void* handler)
 int ph_ftp_data_handle_payload_stc(void* handler, connection_t* conn, const char* payload, ssize_t* len)
 {
 	struct ftp_data_struct* data;
-	if (conn->multiple_server_chunks == 0) {
+	if (conn->log_server_struct_initialized == 0) {
 		// PREPARE BINARY FILENAME
        		char timestamp[200];
 		create_timestamp(timestamp);
 		data = (struct ftp_data_struct*) malloc(sizeof(struct ftp_data_struct));
+		conn->log_server_struct_initialized = 1;
+		conn->log_server_struct_ptr = data;
 		sprintf(data->binaryLocation,"ftp_data/rcvd/%s",timestamp);
-	
+		
 
-			
+		append_binarydata_to_file(data->binaryLocation,payload,*len);
+
 		logger_get()->log_struct(logger_get(), conn, "server", data);
 			
 		conn->multiple_server_chunks = 1;
 	}
 	else {
-	  	// append the incoming data to the file
+		data = (struct ftp_data_struct*) conn->log_server_struct_ptr;
+
+		append_binarydata_to_file(data->binaryLocation,payload,*len);
+			
 	}
 
 
@@ -67,21 +73,26 @@ int ph_ftp_data_handle_payload_stc(void* handler, connection_t* conn, const char
 int ph_ftp_data_handle_payload_cts(void* handler, connection_t* conn, const char* payload, ssize_t* len)
 {
 	struct ftp_data_struct* data;
-	if (conn->multiple_client_chunks == 0) {
+	if (conn->log_client_struct_initialized == 0) {
 		// do the logging stuff
 		char timestamp[200];
 		create_timestamp(timestamp);
 	
 		data = (struct ftp_data_struct*) malloc(sizeof(struct ftp_data_struct));
-		
+		conn->log_client_struct_initialized = 1;
+		conn->log_client_struct_ptr = data;
+
 		sprintf(data->binaryLocation,"ftp_data/sent/%s",timestamp);
-			
+		append_binarydata_to_file(data->binaryLocation,payload,*len);
 		
 		logger_get()->log_struct(logger_get(), conn, "client", data);
 		conn->multiple_client_chunks = 1;
 	}
 	else {
 	  	// append the incoming data to the file
+		data = (struct ftp_data_struct*) conn->log_client_struct_ptr;
+		append_binarydata_to_file(data->binaryLocation,payload,*len);
+		
 	}
 
 
