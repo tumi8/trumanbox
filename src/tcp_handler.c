@@ -74,6 +74,48 @@ void tcphandler_determine_target(struct tcp_handler_t* tcph, protocols_app app_p
 		// can be performed on both the intial client as well as the 
 		// initial server string
 		msg(MSG_DEBUG, "Determine target for half proxy mode...");
+				
+		   int   sd;         //socket descriptor
+		   int    rval;         //socket descriptor for connect   
+		   struct sockaddr_in servaddr;   //socket structure
+
+
+
+			 //portno is ascii to int second argument     
+
+		   sd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP); //created the tcp socket
+		   if (sd == -1)
+		   {
+		     msg(MSG_FATAL,"Socket()\n");
+		   }   
+		else {
+		   memset( &servaddr, 0, sizeof(servaddr));
+
+		   servaddr.sin_family = AF_INET;
+		   servaddr.sin_port = htons((uint16_t)tcph->connection->dport); //set the portno
+
+		   Inet_pton(AF_INET, tcph->connection->orig_dest, &targetServAddr->sin_addr);
+		   
+		msg(MSG_DEBUG,"from: %s:%d to %s:%s:%d",tcph->connection->source,tcph->connection->sport,tcph->connection->orig_dest,tcph->connection->dest,tcph->connection->dport);
+	
+		   //below connects to the specified ip in hostaddr
+
+		   rval = connect(sd, (struct sockaddr *) &servaddr, sizeof(servaddr));
+		  
+		  if (rval == -1)
+		   {
+		   msg(MSG_DEBUG,"Port is closed\n");
+		msg(MSG_DEBUG,"from: %s:%d to %s:%s:%d",tcph->connection->source,tcph->connection->sport,tcph->connection->orig_dest,tcph->connection->dest,tcph->connection->dport);
+		   close(sd);
+		   }
+		   else {
+		   msg(MSG_DEBUG,"Port is open\n");
+		   
+		   close(sd);         //socket descriptor
+	   	}
+
+		}
+
 		if (app_proto == UNKNOWN) {
 			bzero(tcph->connection->dest, IPLENGTH);
 		} else {
