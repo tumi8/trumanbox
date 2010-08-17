@@ -74,11 +74,12 @@ int execute_query_statement_singlevalue(char* dst, char* stmt) {
 		msg(MSG_FATAL,"%s",PQresultErrorMessage(res));
 		}
 	else {
+		if (PQntuples(res) > 0 && PQnfields(res) > 0) {
 		result = 1;
 		char* value =  PQgetvalue(res,0,0);
 		msg(MSG_DEBUG,"we have value: %s",value);
 		strcpy(dst,value);
-
+		}
 		
 	 }
 
@@ -159,6 +160,11 @@ int create_index_file(char* filename) {
 	return 0;
 }
 
+/*
+int create_path_tree_with_file(char* file_location, char* httplocation, int user_id, int_group_id) {
+	return 0;
+}
+*/
 int create_path_tree(char *path, int user_id, int group_id) {
 	//int status = 0;
 	//char *tmp_ptr;
@@ -199,9 +205,44 @@ int create_path_tree(char *path, int user_id, int group_id) {
 	return 0;
 }
 
+
+
+
+
+void extract_filename_from_request(char* destfilename, char* request) {
+
+	char* ptrToHttpArgs =  strchr(request,'?');
+	char filename[MAX_PATH_LENGTH];
+	if (ptrToHttpArgs != NULL) {
+			
+		// requested location has the form /bla/x?a1=4&a2=8
+
+		char* beginFilename = ptrToHttpArgs;
+		while (*beginFilename !=  '/') {
+			beginFilename --;
+		}
+		strncpy(filename,beginFilename+1,ptrToHttpArgs-beginFilename-1);
+		filename[ptrToHttpArgs-beginFilename-1] = 0;
+	}
+	else {
+		int len = strlen(request);
+		char* endFilename = &request[len];
+		char* beginFilename = endFilename;
+		while (*beginFilename != '/') {
+			beginFilename --;
+		}
+		strcpy(filename,beginFilename+1);
+		
+	}
+	msg(MSG_DEBUG,"extracted filename from request: %s",filename);
+
+}
+
+
+
 void build_tree(const connection_t *conn, const char *cmd_str) {
 	char base_dir[MAX_PATH_LENGTH]; // htdocs directory of webserver
-	char full_path[MAX_PATH_LENGTH];
+	char full_path[MAX_PATH_LENGTH]; // full path requested, e.g. "/img/src/docs/malware.cgi?cc=149131&year=2010" 
 	char *filename = "index.html";  // filename of the dummyfile to create
 	char *path;
 	char *tmp1 = NULL;
@@ -235,101 +276,9 @@ void build_tree(const connection_t *conn, const char *cmd_str) {
 	if (path == NULL)
 		return;
 
-	char* ptrToHttpArgs = NULL;
-	char args[MAX_PATH_LENGTH];
-	char* ptrArgs[100];	
-	int countArgs = 0;
-	
-
-	ptrToHttpArgs = strchr(path,'?');
-	// check if the requested location has the form /bla/x?a1=4&a2=)
-	if (ptrToHttpArgs != NULL) {
-		
-		ptrToHttpArgs++; // now we are at the position of the first argument
-		msg(MSG_DEBUG,"Args found: \n%s",ptrToHttpArgs);
-		strcpy(args,ptrToHttpArgs); 
-		tmp1 = strchr(args, ' ');
-		*tmp1 = '\0'; // end of string
-		char* tmpArg = NULL;
-
-		tmpArg = strtok(args, "&");
-		while(tmpArg!=NULL) 
-		{
-			msg(MSG_DEBUG,"arg length %d: %s\n",strlen(tmpArg),tmpArg);
-			ptrArgs[countArgs] = tmpArg;
-
-	/*		char singleArg[strlen(tmpArg)+1]; // we need additional character for NULL
-			strcpy(singleArg,tmpArg);
-
-			char* separateArgs;
-			separateArgs = strtok(singleArg, "=");
-			msg(MSG_DEBUG,"argName: %s\n",separateArgs);
-			separateArgs = strtok(NULL, "=");
-			msg(MSG_DEBUG,"argValue: %s\n",separateArgs);
-			
-			
-	*	char* sepharateArgs;
-			char tmparg2[strlen(tmparg+1)];
-			strcpy(tmparg2,tmparg);
-			separateArgs = strtok(tmparg2, "=");
-			argsNames[countArgs] = separateArgs;
-			separateArgs = strtok(NULL, "=");
-			argsValues[countArgs] = separateArgs; */
-			tmpArg = strtok(NULL,"&");
-			countArgs++;
-		}
-
-		msg(MSG_DEBUG,"Finished Parsing Args: %d",countArgs);
-		        int j;
-			        for (j = 0; j < countArgs; j++) {
-				         char singleArg[strlen(ptrArgs[j])+1]; // we need additional character for NULL
-					          strcpy(singleArg,ptrArgs[j]);
-						           char* separateArgs;
-							            separateArgs = strtok(singleArg, "=");
-								             msg(MSG_DEBUG,"argName: %s\n",separateArgs);
-									              separateArgs = strtok(NULL, "=");
-										               msg(MSG_DEBUG,"argValue: %s\n",separateArgs);
-
-											               }
-                tmp1 = strchr(path, '?');
-		tmp1 = strchr(tmp1, '?');
-
-	}
-         
        
      
-      
-    
-   
-	else {
-	                tmp1 = strchr(path, ' ');
-			tmp1 = strchr(tmp1, ' ');
 
-	}
-
-/*
-
-	if (conn->app_proto == FTP || conn->app_proto == FTP_anonym)
-		tmp1 = strchr(path, '\r');
-	else if (conn->app_proto == HTTP) {
-
-		tmp1 = strchr(path, ' ');
-		tmp1 = strchr(tmp1, ' ');
-	}*/
-
-
-	if (tmp1 == NULL)
-		return;
-	
-	tmp1--; //tmp1 points now to the ending position of the path
-
-
-	
-	/*if (*tmp1 != '/') {
-		msg(MSG_DEBUG,"konkateniere noch ein / hinten dran");
-		tmp1++;
-		*tmp1 = '/';
-	}*/
 	
 	if (*tmp1 == '/') {
 	// requested location has the form /folder/folder2/ -> reply with index.html (default filename)

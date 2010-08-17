@@ -253,15 +253,24 @@ int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 		extract_http_header_field(data->userAgent,"User-Agent:",data->requestHeader);
 		if (conn->destOffline) {
 			msg(MSG_DEBUG,"ok we got all we need for the request: %s || %s || %s",data->requestedHost,data->requestedLocation,data->userAgent);
-			char statement[1000];
+			char statement[1000],trumantimestamp[100];
 			snprintf(statement,1000,"select max(trumantimestamp) from HTTP_LOGS where (requestedHost = '%s' or ServerIP = inet('%s')) and requestedLocation = '%s'",
 				data->requestedHost,conn->orig_dest,data->requestedLocation);
 			msg(MSG_DEBUG,"execute: %s",statement);
-			char trumantimestamp[100];
 			execute_query_statement_singlevalue(trumantimestamp,statement);
 
 			if (trumantimestamp != NULL) {
-
+				strcpy(conn->timestampEmulation,trumantimestamp); // save the timestamp for future purposes
+				
+				char savedServerResponse[MAX_PATH_LENGTH]; // location of the server response
+				snprintf(statement,1000,"select ResponseBodyBinaryLocation from HTTP_LOGS where trumantimestamp = '%s'",conn->timestampEmulation);
+				msg(MSG_DEBUG,"executed: %s",statement);
+				execute_query_statement_singlevalue(savedServerResponse,statement);
+				if (savedServerResponse != NULL) {
+					msg(MSG_DEBUG,"Response Location: %s",savedServerResponse);	
+				}
+				extract_filename_from_request(NULL,data->requestedLocation);
+				
 			}
 
 
