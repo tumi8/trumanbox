@@ -25,6 +25,7 @@ struct tcp_handler_t {
 	int connectedToFinal;
 	struct proto_identifier_t* pi;
 	struct proto_handler_t** ph;
+	int timeout;
 };
 
 struct tcp_handler_t* tcphandler_create(struct configuration_t* config, connection_t* c, int inconn, struct proto_identifier_t* pi, struct proto_handler_t** ph)
@@ -38,7 +39,7 @@ struct tcp_handler_t* tcphandler_create(struct configuration_t* config, connecti
 	ret->pi = pi;
 	ret->ph = ph;
 	ret->connectedToFinal = 0;
-
+	ret->timeout = 0; // indicator whether the connection to the target already timedout (we only want to try once in half proxy mode!)
 	return ret;
 }
 
@@ -73,55 +74,56 @@ void tcphandler_determine_target(struct tcp_handler_t* tcph, protocols_app app_p
 		// Final target depends on the protocol. Protcol identification
 		// can be performed on both the intial client as well as the 
 		// initial server string
+
 		msg(MSG_DEBUG, "Determine target for half proxy mode...");
+		if (tcph->timeout == 0) { // we had no timeout yet to the given target server
+
+			// first of all, we set the target as the original target (without modifying it)
+			bzero(targetServAddr, sizeof(*targetServAddr));
+			targetServAddr->sin_family = AF_INET;
+			targetServAddr->sin_port = htons((uint16_t)tcph->connection->dport);
+			memcpy(tcph->connection->dest, tcph->connection->orig_dest, strlen(tcph->connection->orig_dest));
+			tcph->connection->dest[strlen(tcph->connection->orig_dest)] = '\0'; // null termination for the address
+			Inet_pton(AF_INET, tcph->connection->dest, &targetServAddr->sin_addr);		
+
+
+			// now we try to establish a connection to the original target and the given port within the timeinterval tv  
+			int testFd = 0;
+			testFd = Socket(AF_INET, SOCK_STREAM, 0);
+			struct timeval tv;
+			tv.tv_sec = 2;
+			tv.tv_usec = 0;
+			setsockopt(testFd,SOL_SOCKET,SO_SNDTIMEO,&tv,sizeof(tv));
+			if (-1 == Connect(testFd, (struct sockaddr *) targetServAddr, sizeof(*targetServAddr))) {
+				msg(MSG_DEBUG,"port closed");
+				// the connection to the original target / port failed, so we change the target to our local emulation server
 				
-		   int   sd;         //socket descriptor
-		   int    rval;         //socket descriptor for connect   
-		   struct sockaddr_in servaddr;   //socket structure
+				if (app_proto == UNKNOWN) {
+					bzero(tcph->connection->dest, IPLENGTH);
+				} else {
+					tcph->ph[app_proto]->determine_target(tcph->ph[app_proto]->handler, targetServAddr);
+					Inet_ntop(AF_INET, &targetServAddr->sin_addr, tcph->connection->dest, IPLENGTH);
+				}
+				
+				tcph->timeout = 1;	
+			}
+			else {
+				// connection to the target server succeeded, thus no modification at the target is necessary
+				Close_conn(testFd, "port open");
+				}
 
-
-
-			 //portno is ascii to int second argument     
-
-		   sd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP); //created the tcp socket
-		   if (sd == -1)
-		   {
-		     msg(MSG_FATAL,"Socket()\n");
-		   }   
+		}
 		else {
-		   memset( &servaddr, 0, sizeof(servaddr));
 
-		   servaddr.sin_family = AF_INET;
-		   servaddr.sin_port = htons((uint16_t)tcph->connection->dport); //set the portno
-
-		   Inet_pton(AF_INET, tcph->connection->orig_dest, &targetServAddr->sin_addr);
-		   
-		msg(MSG_DEBUG,"from: %s:%d to %s:%s:%d",tcph->connection->source,tcph->connection->sport,tcph->connection->orig_dest,tcph->connection->dest,tcph->connection->dport);
-	
-		   //below connects to the specified ip in hostaddr
-
-		   rval = connect(sd, (struct sockaddr *) &servaddr, sizeof(servaddr));
-		  
-		  if (rval == -1)
-		   {
-		   msg(MSG_DEBUG,"Port is closed\n");
-		msg(MSG_DEBUG,"from: %s:%d to %s:%s:%d",tcph->connection->source,tcph->connection->sport,tcph->connection->orig_dest,tcph->connection->dest,tcph->connection->dport);
-		   close(sd);
-		   }
-		   else {
-		   msg(MSG_DEBUG,"Port is open\n");
-		   
-		   close(sd);         //socket descriptor
-	   	}
-
+				// we already received a timeout for this target and thus we do not forward all requests to our local services (emulation)
+				if (app_proto == UNKNOWN) {
+					bzero(tcph->connection->dest, IPLENGTH);
+				} else {
+					tcph->ph[app_proto]->determine_target(tcph->ph[app_proto]->handler, targetServAddr);
+					Inet_ntop(AF_INET, &targetServAddr->sin_addr, tcph->connection->dest, IPLENGTH);
+				}
 		}
 
-		if (app_proto == UNKNOWN) {
-			bzero(tcph->connection->dest, IPLENGTH);
-		} else {
-			tcph->ph[app_proto]->determine_target(tcph->ph[app_proto]->handler, targetServAddr);
-			Inet_ntop(AF_INET, &targetServAddr->sin_addr, tcph->connection->dest, IPLENGTH);
-		}
 		break;
 	case full_proxy:
 		// Connect to the original target (if this target is available)
@@ -204,7 +206,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 	tcph->targetServiceFd = Socket(AF_INET, SOCK_STREAM, 0);
 
 	tcphandler_determine_target(tcph, UNKNOWN, &targetServAddr);
-
+	msg(MSG_DEBUG,"finished determining target");
 	FD_ZERO(&rset);
 	//FD_SET(tcph->targetServiceFd, &rset); // as this socket is not connected to anyone, it should to be responsible for select to fail
 	FD_SET(tcph->inConnFd, &rset);
@@ -287,6 +289,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 				msg(MSG_ERROR, "Connection timed out!");
 				goto out; // exit function
 			}
+			msg(MSG_DEBUG,"Received a timeout???");
 			tcphandler_handle_unknown(tcph, &targetServAddr);
 		}
 		FD_ZERO(&rset);

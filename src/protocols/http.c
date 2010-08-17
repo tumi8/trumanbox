@@ -302,9 +302,11 @@ int ph_http_handle_packet(void* handler, const char* packet, ssize_t len)
 
 int ph_http_determine_target(void* handler, struct sockaddr_in* addr)
 {
+	msg(MSG_DEBUG,"determine http target");
 	struct ph_http* http = (struct ph_http*)handler;
 	if (conf_get_mode(http->config) < full_proxy) {
-                bzero(addr, sizeof(struct sockaddr_in));
+                msg(MSG_DEBUG,"we set to dummy ip");
+		bzero(addr, sizeof(struct sockaddr_in));
                 addr->sin_family = AF_INET;
                 Inet_pton(AF_INET, conf_get(http->config, "http", "http_redirect"), &addr->sin_addr);
 		addr->sin_port = htons((uint16_t)80);
