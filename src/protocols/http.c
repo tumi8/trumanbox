@@ -251,6 +251,24 @@ int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 
 		extract_http_header_field(data->requestedHost,"Host:",data->requestHeader);
 		extract_http_header_field(data->userAgent,"User-Agent:",data->requestHeader);
+		if (conn->destOffline) {
+			msg(MSG_DEBUG,"ok we got all we need for the request: %s || %s || %s",data->requestedHost,data->requestedLocation,data->userAgent);
+			char statement[1000];
+			snprintf(statement,1000,"select max(trumantimestamp) from HTTP_LOGS where (requestedHost = '%s' or ServerIP = inet('%s')) and requestedLocation = '%s'",
+				data->requestedHost,conn->orig_dest,data->requestedLocation);
+			msg(MSG_DEBUG,"execute: %s",statement);
+			char trumantimestamp[100];
+			execute_query_statement_singlevalue(trumantimestamp,statement);
+
+			if (trumantimestamp != NULL) {
+
+			}
+
+
+
+
+			}
+		
 		logger_get()->log_struct(logger_get(), conn, "client", data);
 	
 

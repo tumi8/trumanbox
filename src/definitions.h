@@ -58,6 +58,7 @@ struct s_connection {
 	u_int16_t dport;
 	protocols_net net_proto;
 	protocols_app app_proto;
+	int destOffline; // indicates whether this connection should be handled in emulation mode (that is, manipulating the payload)
 	char timestamp[100]; // form of timestamp: "[secs-msecs]"  (since epoch - 1.1.1970)
 	u_int32_t multiple_client_chunks;// indicates whether we expect multiple successive chunks from client side that belong together
 	u_int32_t multiple_server_chunks; // indicates whether we expect multiple successive chunks from server side that belong together
@@ -65,6 +66,7 @@ struct s_connection {
 	void* log_server_struct_ptr; // pointer to server logging structure (STC)
 	u_int16_t log_client_struct_initialized; // indicates if the client log_struct (CTS) was already malloced (that is, if the log_struct ptr already points to a valid destination)
 	u_int16_t log_server_struct_initialized; // indicates if the server log_struct (STC) was already malloced (that is, if the log_struct ptr already points to a valid destination)
+	char timestampEmulation[100]; // If we are in emulation mode, we need a timestamp to refer to when getting data from the the database with old logs (this timestamp serves as a key)
 };
 typedef struct s_connection connection_t;
 #endif

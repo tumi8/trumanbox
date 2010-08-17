@@ -76,12 +76,12 @@ void tcphandler_determine_target(struct tcp_handler_t* tcph, protocols_app app_p
 		// initial server string
 
 		msg(MSG_DEBUG, "Determine target for half proxy mode...");
-		if (tcph->timeout == 0) { // we had no timeout yet to the given target server
+		if (tcph->connection->destOffline == 0) { // we had no timeout yet to the given target server
 
 			// first of all, we set the target as the original target (without modifying it)
 			bzero(targetServAddr, sizeof(*targetServAddr));
 			targetServAddr->sin_family = AF_INET;
-			targetServAddr->sin_port = htons((uint16_t)tcph->connection->dport);
+			targetServAddr->sin_port = htons((uint16_t)21);
 			memcpy(tcph->connection->dest, tcph->connection->orig_dest, strlen(tcph->connection->orig_dest));
 			tcph->connection->dest[strlen(tcph->connection->orig_dest)] = '\0'; // null termination for the address
 			Inet_pton(AF_INET, tcph->connection->dest, &targetServAddr->sin_addr);		
@@ -94,8 +94,15 @@ void tcphandler_determine_target(struct tcp_handler_t* tcph, protocols_app app_p
 			tv.tv_sec = 2;
 			tv.tv_usec = 0;
 			setsockopt(testFd,SOL_SOCKET,SO_SNDTIMEO,&tv,sizeof(tv));
-			if (-1 == Connect(testFd, (struct sockaddr *) targetServAddr, sizeof(*targetServAddr))) {
-				msg(MSG_DEBUG,"port closed");
+			int status = Connect(testFd, (struct sockaddr *) targetServAddr, sizeof(*targetServAddr));
+			
+			if (status == -2 ) {
+				msg(MSG_DEBUG, "connection refused");
+				targetServAddr->sin_port = htons((uint16_t)tcph->connection->dport);
+			}
+			else if (status == -1)
+			{
+				msg(MSG_DEBUG,"dest is offline");
 				// the connection to the original target / port failed, so we change the target to our local emulation server
 				
 				if (app_proto == UNKNOWN) {
@@ -105,11 +112,12 @@ void tcphandler_determine_target(struct tcp_handler_t* tcph, protocols_app app_p
 					Inet_ntop(AF_INET, &targetServAddr->sin_addr, tcph->connection->dest, IPLENGTH);
 				}
 				
-				tcph->timeout = 1;	
+				tcph->connection->destOffline = 1;	
 			}
 			else {
 				// connection to the target server succeeded, thus no modification at the target is necessary
 				Close_conn(testFd, "port open");
+				targetServAddr->sin_port = htons((uint16_t)tcph->connection->dport);
 				}
 
 		}
@@ -159,10 +167,7 @@ int tcphandler_handle_unknown(struct tcp_handler_t* tcph, struct sockaddr_in* ta
 		tcphandler_determine_target(tcph, app_proto, targetServAddr);
 		break;
 	case  half_proxy:
-		// TODO: fetch banner
-		// try to identify using fetched banner
-		msg(MSG_FATAL, "Internal programming error!");
-		exit(-1);
+		tcphandler_determine_target(tcph, app_proto, targetServAddr);
 		break;
 	case full_proxy:
 		// do nothing, we know the original target and will connect to it after this switch

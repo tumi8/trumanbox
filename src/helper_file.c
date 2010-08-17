@@ -53,8 +53,8 @@ int execute_nonquery_statement(char* stmt) {
 }
 
 
-char* execute_query_statement_singlevalue(char* stmt) {
-	char* result = NULL;
+int execute_query_statement_singlevalue(char* dst, char* stmt) {
+	int result = 0;
        	PGconn* psql = PQconnectdb("hostaddr = '127.0.0.1' port = '5432' dbname = 'trumanlogs' user = 'trumanbox' password = 'das$)13x!#+23' connect_timeout = '10'");
 	if (!psql) {
                 msg(MSG_FATAL,"libpq error : PQconnectdb returned NULL.\n\n");
@@ -74,9 +74,10 @@ char* execute_query_statement_singlevalue(char* stmt) {
 		msg(MSG_FATAL,"%s",PQresultErrorMessage(res));
 		}
 	else {
+		result = 1;
 		char* value =  PQgetvalue(res,0,0);
 		msg(MSG_DEBUG,"we have value: %s",value);
-		strcpy(result,value);
+		strcpy(dst,value);
 
 		
 	 }

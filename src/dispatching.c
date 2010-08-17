@@ -151,6 +151,7 @@ void disp_run(struct dispatcher_t* disp)
 		connection.log_client_struct_initialized = 0;
 		connection.multiple_client_chunks = 0;
 		connection.multiple_server_chunks = 0;
+		connection.destOffline = 0;
 		// generate timestamp for the connection
 		create_timestamp(connection.timestamp);
 

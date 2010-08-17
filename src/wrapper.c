@@ -48,12 +48,15 @@ void Bind(int fd, const struct sockaddr *sa, socklen_t salen) {
 		msg(MSG_ERROR, "bind error: %s", strerror(errno));
 }
 
+// this function returns 0 on success, -2 on connection refused (ECONNREFUSED) and -1 on all other errors
 int Connect(int fd, const struct sockaddr *sa, socklen_t salen) {
 	int status;
 
-	if ((status = connect(fd, sa, salen)) < 0)
+	if ((status = connect(fd, sa, salen)) < 0) {
 		msg(MSG_ERROR, "connect error: %s", strerror(errno));
-
+		if (errno == ECONNREFUSED) // these are the error codes of ECONNREFUSED
+			return -2;
+	}
 	return status;
 }
 
