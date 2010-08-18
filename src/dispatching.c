@@ -31,7 +31,7 @@ struct dispatcher_t {
 enum e_command { unknown_command, start_analysis, stop_analysis, restart_analysis };
 
 static enum e_command read_command(struct configuration_t* disp, int fd);
-static int parse_conntrack(connection_t *conn);
+//static int parse_conntrack(connection_t *conn);
 
 struct dispatcher_t* disp_create(struct configuration_t* c)
 {
@@ -186,11 +186,11 @@ void disp_run(struct dispatcher_t* disp)
 
 		}
 		else if (connection.net_proto == UDP) {
-			Inet_ntop(AF_INET, &cliaddr.sin_addr, connection.source, sizeof(connection.source));
+		/*	Inet_ntop(AF_INET, &cliaddr.sin_addr, connection.source, sizeof(connection.source));
 			connection.sport = ntohs(cliaddr.sin_port);
 			msg(MSG_DEBUG,"conn source dispatching : %s port %d",connection.source,connection.sport);
 			// parse_conntrack fills in the remaining variables of connection
-			/*while ( parse_conntrack(&connection) != 0 ) {
+			while ( parse_conntrack(&connection) != 0 ) {
 				msg(MSG_DEBUG, "could not parse conntrack table, trying again in 2sec...");
 				sleep(2);
 				tries_pars_ct++;
@@ -261,7 +261,7 @@ static enum e_command read_command(struct configuration_t* config, int fd)
 	return unknown_command;
 }
 
-static int parse_conntrack(connection_t *conn) {
+int parse_conntrack(connection_t *conn) {
 	FILE *fd;
 	char line[MAX_LINE_LENGTH];
 	char proto[5];
@@ -285,7 +285,7 @@ static int parse_conntrack(connection_t *conn) {
 	else
 		proto[0] = 0;
 
-	while ( (NULL != (r = fgets(line, MAX_LINE_LENGTH, fd))) || (line != NULL) ) {
+	while ( (NULL != (r = fgets(line, MAX_LINE_LENGTH, fd))) ) {
 		//sleep(2);
 
 //		msg(MSG_DEBUG, "We got:\n%s", line);
@@ -294,7 +294,6 @@ static int parse_conntrack(connection_t *conn) {
 
 			begin = strstr(line, "src=") + 4;
 			end = strchr(begin, ' ');
-			
 			snprintf(tmp, (end-begin+1), "%s", begin);
 
 			if (strncmp(conn->source, begin, (end - begin)) == 0) {
@@ -302,7 +301,7 @@ static int parse_conntrack(connection_t *conn) {
 				end = strchr(begin, ' ');
 			
 				snprintf(portnum, end-begin+1, "%s", begin);
-				//msg(MSG_DEBUG, "Source port string: %s\nSource port int: %d", portnum, atoi(portnum));
+				msg(MSG_DEBUG, "Source port string: %s\nSource port int: %d", portnum, atoi(portnum));
 
 				if (conn->sport == atoi(portnum)) {
 					// We have found right conntrack entry
@@ -317,7 +316,7 @@ static int parse_conntrack(connection_t *conn) {
 					snprintf(portnum, end-begin+1, "%s", begin);
 
 					conn->dport = atoi(portnum);
-					
+					msg(MSG_DEBUG,"we found as source/client: %s %d and as destination/server: %s %d",conn->source,conn->sport,conn->orig_dest,conn->dport);		
 					return 0;
 				}
 				else {

@@ -74,7 +74,7 @@ void tcphandler_determine_target(struct tcp_handler_t* tcph, protocols_app app_p
 		// Final target depends on the protocol. Protcol identification
 		// can be performed on both the intial client as well as the 
 		// initial server string
-
+/*
 		msg(MSG_DEBUG, "Determine target for half proxy mode...");
 		if (tcph->connection->destOffline == 0) { // we had no timeout yet to the given target server
 
@@ -132,7 +132,7 @@ void tcphandler_determine_target(struct tcp_handler_t* tcph, protocols_app app_p
 				}
 		}
 
-		break;
+		break;*/
 	case full_proxy:
 		// Connect to the original target (if this target is available)
 		msg(MSG_DEBUG, "Determine target for full proxy mode ...");
@@ -209,6 +209,10 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 
 	bzero(payload, MAXLINE);
 	tcph->targetServiceFd = Socket(AF_INET, SOCK_STREAM, 0);
+	struct timeval timeoutTarget;
+	timeoutTarget.tv_sec = 5; 
+	timeoutTarget.tv_usec = 0;
+	setsockopt(tcph->targetServiceFd,SOL_SOCKET,SO_SNDTIMEO,&timeoutTarget,sizeof(timeoutTarget));
 
 	tcphandler_determine_target(tcph, UNKNOWN, &targetServAddr);
 	msg(MSG_DEBUG,"finished determining target");
@@ -269,8 +273,28 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 					msg(MSG_DEBUG, "Identified protocol. Connecting to target");
 					tcphandler_determine_target(tcph, tcph->connection->app_proto, &targetServAddr);
 					if (-1 == Connect(tcph->targetServiceFd, (struct sockaddr*)&targetServAddr, sizeof(targetServAddr))) {
-						Close_conn(tcph->inConnFd, "Connection to targetservice could not be established");
-						goto out;
+						if (tcph->mode == half_proxy) {
+						msg(MSG_DEBUG,"dest is offline");
+						// the connection to the original target / port failed, so we change the target to our local emulation server
+						
+							Close_conn(tcph->targetServiceFd, "Connection to targetservice could not be established");
+							if (tcph->connection->app_proto == UNKNOWN) {
+								bzero(tcph->connection->dest, IPLENGTH);
+							} else {
+								tcph->ph[tcph->connection->app_proto]->determine_target(tcph->ph[tcph->connection->app_proto]->handler, &targetServAddr);
+								Inet_ntop(AF_INET, &(&targetServAddr)->sin_addr, tcph->connection->dest, IPLENGTH);
+							}
+							
+						tcph->connection->destOffline = 1;	
+							if (-1 == Connect(tcph->targetServiceFd, (struct sockaddr*)&targetServAddr, sizeof(targetServAddr))) {
+								msg(MSG_FATAL,"Connection to emulation target not possible, abort...");
+								goto out;
+							}
+						}
+						else {
+							Close_conn(tcph->inConnFd, "Connection to targetservice could not be established");
+							goto out;
+						}
 					}
 					tcph->connectedToFinal = 1;
 				}

@@ -269,7 +269,7 @@ int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 				if (savedServerResponse != NULL) {
 					msg(MSG_DEBUG,"Response Location: %s",savedServerResponse);	
 				}
-				extract_filename_from_request(NULL,data->requestedLocation);
+		//		extract_filename_from_request(NULL,data->requestedLocation);
 				
 			}
 
@@ -332,7 +332,6 @@ int ph_http_determine_target(void* handler, struct sockaddr_in* addr)
 	msg(MSG_DEBUG,"determine http target");
 	struct ph_http* http = (struct ph_http*)handler;
 	if (conf_get_mode(http->config) < full_proxy) {
-                msg(MSG_DEBUG,"we set to dummy ip");
 		bzero(addr, sizeof(struct sockaddr_in));
                 addr->sin_family = AF_INET;
                 Inet_pton(AF_INET, conf_get(http->config, "http", "http_redirect"), &addr->sin_addr);

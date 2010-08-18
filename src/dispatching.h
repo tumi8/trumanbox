@@ -8,7 +8,7 @@ struct configuration_t;
 
 struct dispatcher_t* disp_create(struct configuration_t* c);
 int disp_destroy(struct dispatcher_t* d);
-
+int parse_conntrack(connection_t *conn);
 void disp_run(struct dispatcher_t* d);
 
 #endif

@@ -1,4 +1,5 @@
 #include "configuration.h"
+#include "dispatching.h"
 #include <arpa/inet.h>
 #include "udp_handler.h"
 #include "definitions.h"
@@ -9,6 +10,7 @@
 #include <sys/select.h>
 #include <netinet/in.h>
 #include <string.h>
+#include <unistd.h>
 
 struct udp_handler_t {
 	int udpfd;
@@ -118,23 +120,50 @@ void udphandler_run(struct udp_handler_t* udph)
 	bzero(payload,MAXLINE);
 	maxfdp = udph->udpfd + 1;
 	clilen = sizeof(cliaddr);
-	udphandler_determine_target(udph, UNKNOWN_UDP, &targetServAddr);
+	//udphandler_determine_target(udph, UNKNOWN_UDP, &targetServAddr);
 
 	while (select(maxfdp, &rset, NULL, NULL, &tv)) {
 		if (FD_ISSET(udph->udpfd, &rset)) {
 			r = Recvfrom(udph->udpfd, payload, MAXLINE, 0, (SA *)  &cliaddr, &clilen);
+			Inet_ntop(AF_INET, &cliaddr.sin_addr, udph->connection->source, sizeof(udph->connection->source));
+			udph->connection->sport = ntohs(cliaddr.sin_port);
+			msg(MSG_DEBUG,"conn source dispatching : %s port %d",udph->connection->source,udph->connection->sport);
+			int tries_pars_ct = 0;
+
+			
+			// parse_conntrack fills in the remaining variables of connection
+			while ( parse_conntrack(udph->connection) != 0 ) {
+				msg(MSG_DEBUG, "could not parse conntrack table, trying again in 2sec...");
+				sleep(2);
+				tries_pars_ct++;
+				if (tries_pars_ct > 5) {
+					break;
+				}
+			}
+			
+			// all right we finished parsing the conntrack table and we extracted all necessary information (source ip/port, dest ip/port)
+			bzero(&targetServAddr, sizeof(targetServAddr));
+			msg(MSG_FATAL,"we have not implemented the parse_conntrack functions for UDP!!!");
+			targetServAddr.sin_family = AF_INET;
+			msg(MSG_DEBUG,"dport: %d",udph->connection->dport);
+			targetServAddr.sin_port = htons((uint16_t)udph->connection->dport);
+			//memcpy(udph->connection->dest, udph->connection->orig_dest, strlen(udph->connection->dest));
+			Inet_pton(AF_INET, udph->connection->orig_dest, &targetServAddr.sin_addr);
+/*	
+			targetServAddr.sin_family = AF_INET;
+			targetServAddr.sin_port = htons((uint16_t)udph->connection->dport);
+			Inet_pton(AF_INET, udph->connection->orig_dest, &targetServAddr.sin_addr);
+			strcpy(udph->connection->dest,udph->connection->orig_dest);
+*/			
+
 			msg(MSG_DEBUG,"num bytes rcvd: %d",r);
-			char cli[INET_ADDRSTRLEN];
-			char srv[INET_ADDRSTRLEN];
-			Inet_ntop(AF_INET, &cliaddr.sin_addr, cli, INET_ADDRSTRLEN);
-			Inet_ntop(AF_INET, &targetServAddr.sin_addr, srv, INET_ADDRSTRLEN);
-			msg(MSG_DEBUG,"cliaddr: %s, srvaddr: %s",cli,srv);
 			proto_handler = udph->ph[UNKNOWN_UDP];
 			if (proto_handler != NULL) {
-			msg(MSG_DEBUG, "Sending payload to protocol handler ...");
-			proto_handler->handle_payload_cts(proto_handler->handler, udph->connection, payload, &r);
-			Sendto(udph->udpfd, payload, r, 0, (SA *) &cliaddr, clilen);
-}
+				msg(MSG_DEBUG, "Sending payload to protocol handler ...");
+				proto_handler->handle_payload_cts(proto_handler->handler, udph->connection, payload, &r);
+				//Sendto(udph->udpfd, payload, r, 0, (SA *) &cliaddr, clilen);
+				Sendto(udph->udpfd, payload, r, 0, (SA *) &targetServAddr, sizeof(targetServAddr));
+			}
 		memset(payload, 0, sizeof(payload));
 		}
 		FD_ZERO(&rset);
