@@ -208,9 +208,17 @@ int create_path_tree(char *path, int user_id, int group_id) {
 
 
 
+/*
+ * This method extracts the path and the filename from the request
+ * destpath: Pointer to the location where the path should be stored
+ * destfilename: Pointer to the location where the filename should be stored
+ * request: Location requested in a FTP/HTTP request, we need it to be in the form of something like that: '/index/bla/malware.cgi?auth=true&cc=false', '/index.html' or '/i/have/no/filename/'
+ * */
+void extract_dir_and_filename_from_request(char* destpath, char* destfilename, char* request) {
 
-void extract_filename_from_request(char* destfilename, char* request) {
-
+	bzero(destpath,sizeof(destpath));
+	bzero(destfilename,sizeof(destfilename));
+	msg(MSG_DEBUG,"sizeof destpath and destfilename: %d %d",sizeof(destpath),sizeof(destfilename));
 	char* ptrToHttpArgs =  strchr(request,'?');
 	char filename[MAX_PATH_LENGTH];
 	if (ptrToHttpArgs != NULL) {
@@ -234,11 +242,60 @@ void extract_filename_from_request(char* destfilename, char* request) {
 		strcpy(filename,beginFilename+1);
 		
 	}
-	msg(MSG_DEBUG,"extracted filename from request: %s",filename);
+	int len = strlen(request);
+	char* endFilename = &request[len];
+	char* beginFilename = endFilename;
+	while (*beginFilename != '/') {
+		beginFilename --;
+	}
+	beginFilename ++;
+	strncpy(destpath,request,beginFilename-request);
+	destpath[beginFilename-request] = 0;
+
 
 }
 
 
+
+int copy(char* src, char* dest) {
+	FILE *from, *to;
+	msg(MSG_DEBUG,"we would like to copy '%s' to '%s'",src,dest);
+	char line[512];
+	int bytes = 0;
+	/* open source file */
+	  if((from = fopen(src, "rb"))==NULL) {
+	    	msg(MSG_FATAL,"Cannot open source file - Error: %s",strerror(errno));
+	   	 return -1;
+	  }
+
+	  /* open destination file */
+	  if((to = fopen(dest, "wb"))==NULL) {
+	    	msg(MSG_FATAL,"Cannot open destination file - Error: %s",strerror(errno));
+	    	return -1;
+	  }
+
+	  /* copy the file */
+		
+	while ((bytes = fread(line,1,512,from)) > 0) {
+		if (fwrite(line,1,bytes,to) <= 0) {
+			msg(MSG_FATAL,"Error writing destination file");
+			return -1;
+		}
+
+	}
+
+	if(fclose(from)==EOF) {
+		msg(MSG_FATAL,"Error closing source file.");
+	    	return -1;
+	}
+
+	if(fclose(to)==EOF) {
+	    	msg(MSG_DEBUG,"Error closing destination file.");
+	    	return -1;
+	}
+
+	return 0;
+}
 
 void build_tree(const connection_t *conn, const char *cmd_str) {
 	char base_dir[MAX_PATH_LENGTH]; // htdocs directory of webserver

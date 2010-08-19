@@ -258,25 +258,43 @@ int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 				data->requestedHost,conn->orig_dest,data->requestedLocation);
 			msg(MSG_DEBUG,"execute: %s",statement);
 			execute_query_statement_singlevalue(trumantimestamp,statement);
+			char destination[MAX_PATH_LENGTH],path[MAX_PATH_LENGTH],filename[MAX_PATH_LENGTH],location[MAX_PATH_LENGTH];
+			strcpy(location,data->requestedLocation);
+			char src[MAX_PATH_LENGTH]; // location of the server response
+			extract_dir_and_filename_from_request(path, filename, location);
+			bzero(destination,MAX_PATH_LENGTH);
+			if (filename == NULL || strlen(filename) == 0) {
+				msg(MSG_DEBUG,"filename not given, set to index.html");
+				strcpy(filename,"index.html");
+			}
 
+			strncpy(destination, HTTP_BASE_DIR, sizeof(destination)-1);	
+			strcat(destination,location);
+			strcat(destination,filename);
+
+		
+		
 			if (trumantimestamp != NULL) {
+				// we found an old client request that is is similiar/identical to the one just received
+				
 				strcpy(conn->timestampEmulation,trumantimestamp); // save the timestamp for future purposes
-				
-				char savedServerResponse[MAX_PATH_LENGTH]; // location of the server response
-				snprintf(statement,1000,"select ResponseBodyBinaryLocation from HTTP_LOGS where trumantimestamp = '%s'",conn->timestampEmulation);
-				msg(MSG_DEBUG,"executed: %s",statement);
-				execute_query_statement_singlevalue(savedServerResponse,statement);
-				if (savedServerResponse != NULL) {
-					msg(MSG_DEBUG,"Response Location: %s",savedServerResponse);	
-				}
-		//		extract_filename_from_request(NULL,data->requestedLocation);
-				
-			}
-
-
+				snprintf(statement,1000,"select ResponseBodyBinaryLocation from HTTP_LOGS where trumantimestamp = '%s'",conn->timestampEmulation); // get the server response we once already received
+				execute_query_statement_singlevalue(src,statement);	
 
 
 			}
+	
+			if (src == NULL) {
+					// we have no old server response we can replay to the client, thus we just send a dummy reply
+					strncpy(src, HTTP_BASE_DIR,sizeof(src)-1);
+					strcat(src,"/dummy.html");
+
+			}
+
+			copy(src,destination);
+
+
+		}
 		
 		logger_get()->log_struct(logger_get(), conn, "client", data);
 	
