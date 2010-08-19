@@ -262,6 +262,10 @@ int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 			strcpy(location,data->requestedLocation);
 			char src[MAX_PATH_LENGTH]; // location of the server response
 			extract_dir_and_filename_from_request(path, filename, location);
+			
+			// build path on webserver
+			build_tree(conn,path);
+
 			bzero(destination,MAX_PATH_LENGTH);
 			if (filename == NULL || strlen(filename) == 0) {
 				msg(MSG_DEBUG,"filename not given, set to index.html");
@@ -269,7 +273,7 @@ int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 			}
 
 			strncpy(destination, HTTP_BASE_DIR, sizeof(destination)-1);	
-			strcat(destination,location);
+			strcat(destination,path);
 			strcat(destination,filename);
 
 		
@@ -284,7 +288,7 @@ int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 
 			}
 	
-			if (src == NULL) {
+			if (src == NULL || strlen(src) ==0) {
 					// we have no old server response we can replay to the client, thus we just send a dummy reply
 					strncpy(src, HTTP_BASE_DIR,sizeof(src)-1);
 					strcat(src,"/dummy.html");

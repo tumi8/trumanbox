@@ -215,12 +215,10 @@ int create_path_tree(char *path, int user_id, int group_id) {
  * request: Location requested in a FTP/HTTP request, we need it to be in the form of something like that: '/index/bla/malware.cgi?auth=true&cc=false', '/index.html' or '/i/have/no/filename/'
  * */
 void extract_dir_and_filename_from_request(char* destpath, char* destfilename, char* request) {
-
-	bzero(destpath,sizeof(destpath));
-	bzero(destfilename,sizeof(destfilename));
-	msg(MSG_DEBUG,"sizeof destpath and destfilename: %d %d",sizeof(destpath),sizeof(destfilename));
+	
+	bzero(destpath,MAX_PATH_LENGTH);
+	bzero(destfilename,MAX_PATH_LENGTH);
 	char* ptrToHttpArgs =  strchr(request,'?');
-	char filename[MAX_PATH_LENGTH];
 	if (ptrToHttpArgs != NULL) {
 			
 		// requested location has the form /bla/x?a1=4&a2=8
@@ -229,8 +227,8 @@ void extract_dir_and_filename_from_request(char* destpath, char* destfilename, c
 		while (*beginFilename !=  '/') {
 			beginFilename --;
 		}
-		strncpy(filename,beginFilename+1,ptrToHttpArgs-beginFilename-1);
-		filename[ptrToHttpArgs-beginFilename-1] = 0;
+		strncpy(destfilename,beginFilename+1,ptrToHttpArgs-beginFilename-1);
+		destfilename[ptrToHttpArgs-beginFilename-1] = 0;
 	}
 	else {
 		int len = strlen(request);
@@ -239,8 +237,7 @@ void extract_dir_and_filename_from_request(char* destpath, char* destfilename, c
 		while (*beginFilename != '/') {
 			beginFilename --;
 		}
-		strcpy(filename,beginFilename+1);
-		
+		strcpy(destfilename,beginFilename+1);
 	}
 	int len = strlen(request);
 	char* endFilename = &request[len];
@@ -252,7 +249,7 @@ void extract_dir_and_filename_from_request(char* destpath, char* destfilename, c
 	strncpy(destpath,request,beginFilename-request);
 	destpath[beginFilename-request] = 0;
 
-
+	msg(MSG_DEBUG,"extracted path: '%s', filename '%s'",destpath,destfilename);
 }
 
 
@@ -300,9 +297,7 @@ int copy(char* src, char* dest) {
 void build_tree(const connection_t *conn, const char *cmd_str) {
 	char base_dir[MAX_PATH_LENGTH]; // htdocs directory of webserver
 	char full_path[MAX_PATH_LENGTH]; // full path requested, e.g. "/img/src/docs/malware.cgi?cc=149131&year=2010" 
-	char *filename = "index.html";  // filename of the dummyfile to create
 	char *path;
-	char *tmp1 = NULL;
 	char saved_cwd[MAX_PATH_LENGTH];
 	int user_id, group_id;
 
@@ -334,29 +329,7 @@ void build_tree(const connection_t *conn, const char *cmd_str) {
 		return;
 
        
-     
 
-	
-	if (*tmp1 == '/') {
-	// requested location has the form /folder/folder2/ -> reply with index.html (default filename)
-	}
-	else {
-	// requested location has the form /folder/filename -> Create folders and file with "filename"
-	int filenameLength = 0;
-	char customFileName[MAX_PATH_LENGTH];
-	filename = customFileName;
-
-	// go back from filename end until we find the first '/'
-		while (*tmp1 != '/') {
-		tmp1--;
-		filenameLength ++;
-		}
-
-	strncpy(filename,tmp1+1,filenameLength); // now set the filename
-	}
-
-	tmp1++;
-	*tmp1 = 0;
 
 	if (getcwd(saved_cwd, sizeof(saved_cwd)) == NULL) {
 		msg(MSG_ERROR, "getcwd failed: %s", strerror(errno));
@@ -374,9 +347,9 @@ void build_tree(const connection_t *conn, const char *cmd_str) {
 		return;
 	}
 
-	if (conn->app_proto == HTTP)
+	/*if (conn->app_proto == HTTP)
 		create_index_file(filename);
-
+*/
 	if (chdir(saved_cwd) == -1) {
 		msg(MSG_ERROR, "could not change back to %s: %s", saved_cwd, strerror(errno));
 		return;
