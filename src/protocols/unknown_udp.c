@@ -37,24 +37,36 @@ int ph_unknown_udp_deinit(void* handler)
 
 int ph_unknown_udp_handle_payload_stc(void* handler, connection_t* conn,  const char* payload, ssize_t* len)
 {
-	return 0;
+	struct unknown_struct* data = (struct unknown_struct*) malloc(sizeof(struct unknown_struct));
+
+
+	if (*len > 0) 
+	{
+		char timestamp[100];
+		create_timestamp(timestamp);
+		snprintf(data->binaryLocation,MAX_PATH_LENGTH,"unknown_udp/received/%s",timestamp);
+		save_binarydata_to_file(data->binaryLocation,payload,*len);
+	}        
+	logger_get()->log_struct(logger_get(), conn, "server", data);
+
+       	return 0;
 }
 
 int ph_unknown_udp_handle_payload_cts(void* handler, connection_t* conn, const char* payload, ssize_t* len)
 {
+	struct unknown_struct* data = (struct unknown_struct*) malloc(sizeof(struct unknown_struct));
 
 
-	
-	if (*len > 0) {
-		char timestamp[200];
-		char location[MAX_PATH_LENGTH];
+	if (*len > 0) 
+	{
+		char timestamp[100];
 		create_timestamp(timestamp);
-		snprintf(location,1000,"unknown_udp/%s",timestamp);
-		save_binarydata_to_file(location,payload,*len);
-	}
+		snprintf(data->binaryLocation,MAX_PATH_LENGTH,"unknown_udp/received/%s",timestamp);
+		save_binarydata_to_file(data->binaryLocation,payload,*len);
+	}        
+	logger_get()->log_struct(logger_get(), conn, "client", data);
 
-
-        return 1;
+        return 0;
 
 }
 

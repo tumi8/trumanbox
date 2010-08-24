@@ -165,6 +165,7 @@ int lpg_log_struct(struct logger_t* log, connection_t* conn, const char* tag, vo
 		conn->source,conn->sport,conn->orig_dest,conn->dest,conn->dport,logdata->binaryLocation,tag,conn->timestamp
 		);
 
+		msg(MSG_DEBUG,"try to execute: %s",statement);
 		execute_statement(statement);
 	 	break;	
 	}
@@ -205,7 +206,17 @@ int lpg_log_struct(struct logger_t* log, connection_t* conn, const char* tag, vo
 		execute_statement(statement);
 		break;
 	}
-	default:
+	case UNKNOWN_UDP:
+	{
+		struct unknown_struct* logdata =  (struct unknown_struct *) data;
+
+		snprintf(statement, MAX_STATEMENT, "insert into UNKNOWN_UDP_LOGS (ClientIP,ClientPort,ServerIP,RealServerIP,ServerPort,binaryLocation,type,date,TrumanTimestamp,sample_id) Values (inet('%s'),%d,inet('%s'),inet('%s'),%d,'%s','%s', (select current_timestamp),'%s', (select distinct value from trumanbox_settings where key = 'CURRENT_SAMPLE'))",
+		conn->source,conn->sport,conn->orig_dest,conn->dest,conn->dport,logdata->binaryLocation,tag,conn->timestamp
+		);
+		msg(MSG_DEBUG,"try to execute: %s",statement);
+		execute_statement(statement);
+	 	break;	
+	}default:
 		{
 		msg(MSG_DEBUG, "Protocol not yet handled, abort...");
 		}

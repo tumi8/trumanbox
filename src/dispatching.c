@@ -186,19 +186,9 @@ void disp_run(struct dispatcher_t* disp)
 
 		}
 		else if (connection.net_proto == UDP) {
-		/*	Inet_ntop(AF_INET, &cliaddr.sin_addr, connection.source, sizeof(connection.source));
-			connection.sport = ntohs(cliaddr.sin_port);
-			msg(MSG_DEBUG,"conn source dispatching : %s port %d",connection.source,connection.sport);
-			// parse_conntrack fills in the remaining variables of connection
-			while ( parse_conntrack(&connection) != 0 ) {
-				msg(MSG_DEBUG, "could not parse conntrack table, trying again in 2sec...");
-				sleep(2);
-				tries_pars_ct++;
-				if (tries_pars_ct > 5) {
-					goto start;
-				}
-			}*/
+
 			//if ( (childpid = pm_fork_temporary()) == 0) {
+				connection.app_proto = UNKNOWN_UDP;
 				msg(MSG_DEBUG, "Forked UDP handler with pid %d", getpid());
 				struct udp_handler_t* u = udphandler_create(disp->udpfd,disp->config,&connection,disp->pi,disp->ph);
 				udphandler_run(u);
@@ -301,7 +291,7 @@ int parse_conntrack(connection_t *conn) {
 				end = strchr(begin, ' ');
 			
 				snprintf(portnum, end-begin+1, "%s", begin);
-
+				msg(MSG_DEBUG,"we found src and sport %s",portnum);
 				if (conn->sport == atoi(portnum)) {
 					// We have found right conntrack entry
 					begin = strstr(line, "dst=") + 4;
