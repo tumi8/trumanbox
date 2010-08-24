@@ -56,7 +56,7 @@ int ph_smtp_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 		int Msglength = strcspn(linePtr,"\r\n");
 		strncpy(data->Message,linePtr,Msglength);
 		linePtr = strtok(NULL,"\n");
-		logger_get()->log_struct(logger_get(), conn, "server", data);
+		if (logger_get()->log_struct(logger_get(), conn, "server", data)) ;
 	}
 
 	return 1;

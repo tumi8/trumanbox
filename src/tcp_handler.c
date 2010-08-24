@@ -141,7 +141,7 @@ void tcphandler_determine_target(struct tcp_handler_t* tcph, protocols_app app_p
 		targetServAddr->sin_port = htons((uint16_t)tcph->connection->dport);
 		memcpy(tcph->connection->dest, tcph->connection->orig_dest, strlen(tcph->connection->orig_dest));
 		tcph->connection->dest[strlen(tcph->connection->orig_dest)] = '\0'; // null termination for the address
-		msg(MSG_DEBUG,"last check: %s",tcph->connection->dest);
+		msg(MSG_DEBUG,"determine target orig_dest:  %s dest: %s",tcph->connection->orig_dest,tcph->connection->dest);
 		Inet_pton(AF_INET, tcph->connection->dest, &targetServAddr->sin_addr);
 		break;
 	default:
@@ -210,10 +210,12 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 	bzero(payload, MAXLINE);
 	tcph->targetServiceFd = Socket(AF_INET, SOCK_STREAM, 0);
 	struct timeval timeoutTarget;
-	timeoutTarget.tv_sec = 5; 
+	timeoutTarget.tv_sec = 6; 
 	timeoutTarget.tv_usec = 0;
 	setsockopt(tcph->targetServiceFd,SOL_SOCKET,SO_SNDTIMEO,&timeoutTarget,sizeof(timeoutTarget));
-
+	
+	//setsockopt(tcph->targetServiceFd,SOL_SOCKET,SO_RCVTIMEO,&timeoutTarget,sizeof(timeoutTarget));
+	
 	tcphandler_determine_target(tcph, UNKNOWN, &targetServAddr);
 	msg(MSG_DEBUG,"finished determining target");
 	FD_ZERO(&rset);
@@ -225,7 +227,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 	// wait 3 seconds for initial client payload
 	// try to receive server payload if there is no 
 	// payload from the client.
-	tv.tv_sec = 3;
+	tv.tv_sec = 5;
 	tv.tv_usec = 0; 
 	
 	while (-1 != select(maxfd, &rset, NULL, NULL, &tv)) {
@@ -258,9 +260,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 		} else if (FD_ISSET(tcph->inConnFd, &rset)) {
 			bzero(payload,MAXLINE); // clean the old payload string, because we want to save new data
 			msg(MSG_DEBUG, "Received data from infected machine!");
-			// we received data from the infected machine
 			r = read(tcph->inConnFd, payload, MAXLINE - 1);
-			//msg(MSG_DEBUG, "Received %d bytes of data:",r);
 			if (!r) {
 				msg(MSG_DEBUG, "Source closed the connection...");
 				goto out;
@@ -272,7 +272,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 				} else if (!tcph->connectedToFinal) {
 					msg(MSG_DEBUG, "Identified protocol. Connecting to target");
 					tcphandler_determine_target(tcph, tcph->connection->app_proto, &targetServAddr);
-					if (-1 == Connect(tcph->targetServiceFd, (struct sockaddr*)&targetServAddr, sizeof(targetServAddr))) {
+					if ( -1 == Connect(tcph->targetServiceFd, (struct sockaddr*)&targetServAddr, sizeof(targetServAddr)) ) {
 						if (tcph->mode == half_proxy) {
 						msg(MSG_DEBUG,"dest is offline");
 						// the connection to the original target / port failed, so we change the target to our local emulation server
@@ -284,7 +284,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 								tcph->ph[tcph->connection->app_proto]->determine_target(tcph->ph[tcph->connection->app_proto]->handler, &targetServAddr);
 								Inet_ntop(AF_INET, &(&targetServAddr)->sin_addr, tcph->connection->dest, IPLENGTH);
 							}
-							
+							msg(MSG_DEBUG,"we now have the target: %s and destport %d",tcph->connection->dest,tcph->connection->dport);				
 						tcph->connection->destOffline = 1;	
 							if (-1 == Connect(tcph->targetServiceFd, (struct sockaddr*)&targetServAddr, sizeof(targetServAddr))) {
 								msg(MSG_FATAL,"Connection to emulation target not possible, abort...");

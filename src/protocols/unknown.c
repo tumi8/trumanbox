@@ -37,12 +37,34 @@ int ph_unknown_deinit(void* handler)
 int ph_unknown_handle_payload_stc(void* handler, connection_t* conn,  const char* payload, ssize_t* len)
 {
 	struct unknown_struct* data = (struct unknown_struct*) malloc(sizeof(struct unknown_struct));
-	msg(MSG_DEBUG,"Len (%d) is > 0:  %d",*len,*len>0);
 
 
 	if (*len > 0) 
 	{
-		char timestamp[100];
+			if (payload[0] == '\x16') {
+			msg(MSG_DEBUG,"Handshake");
+			if (payload[1] == '\x3' && payload[2] == '\x0') msg(MSG_DEBUG,"SSL v3");
+			else if (payload[1] == '\x3' && payload[2] == '\x1') msg(MSG_DEBUG,"TLS 1.0");
+			else if (payload[1] == '\x3' && payload[2] == '\x2') msg(MSG_DEBUG,"TLS 1.1");
+			else if (payload[1] == '\x3' && payload[2] == '\x3') msg(MSG_DEBUG,"TLS 1.2");
+			char MessageType[100];
+			switch (payload[5]) {
+				case '\x0': msg(MSG_DEBUG,"hallo"); strcpy(MessageType,"HelloRequest"); break;
+				case '\x1': msg(MSG_DEBUG,"hallo"); strcpy(MessageType,"Client Hello"); break;
+				case '\x2': msg(MSG_DEBUG,"hallo"); strcpy(MessageType,"Server Hello"); break;
+				case '\xb': msg(MSG_DEBUG,"hallo"); strcpy(MessageType,"Certificate"); break;
+				case '\xc': msg(MSG_DEBUG,"hallo"); strcpy(MessageType,"ServerKeyExchange"); break;
+				case '\xd': msg(MSG_DEBUG,"hallo"); strcpy(MessageType,"CertificateRequest"); break;
+				case '\xe': msg(MSG_DEBUG,"hallo"); strcpy(MessageType,"ServerHelloDone"); break;
+				case '\xf': msg(MSG_DEBUG,"hallo"); strcpy(MessageType,"Certificate Verify"); break;
+				case '\xf0': msg(MSG_DEBUG,"hallo"); strcpy(MessageType,"ClientKeyExchange"); break;
+				case '\xf4': msg(MSG_DEBUG,"hallo"); strcpy(MessageType,"Finished"); break; 
+			}
+			msg(MSG_DEBUG,"messagetype: %s",MessageType);
+
+		}
+		else if (payload[0] == '\x17')
+			msg(MSG_DEBUG,"application");char timestamp[100];
 		create_timestamp(timestamp);
 		snprintf(data->binaryLocation,MAX_PATH_LENGTH,"unknown/received/%s",timestamp);
 		save_binarydata_to_file(data->binaryLocation,payload,*len);
@@ -57,9 +79,32 @@ int ph_unknown_handle_payload_cts(void* handler, connection_t* conn, const char*
         msg(MSG_DEBUG,"unknown cts");
 	struct unknown_struct* data = (struct unknown_struct*) malloc(sizeof(struct unknown_struct));
 
-	msg(MSG_DEBUG,"Len (%d) is > 0:  %d",*len,*len>0);
 
 	if (*len > 0) {
+		if (payload[0] == '\x16') {
+			msg(MSG_DEBUG,"Handshake");
+			if (payload[1] == '\x3' && payload[2] == '\x0') msg(MSG_DEBUG,"SSL v3");
+			else if (payload[1] == '\x3' && payload[2] == '\x1') msg(MSG_DEBUG,"TLS 1.0");
+			else if (payload[1] == '\x3' && payload[2] == '\x2') msg(MSG_DEBUG,"TLS 1.1");
+			else if (payload[1] == '\x3' && payload[2] == '\x3') msg(MSG_DEBUG,"TLS 1.2");
+			char MessageType[100];
+			switch (payload[5]) {
+				case '\x0': msg(MSG_DEBUG,"hallo"); strcpy(MessageType,"HelloRequest"); break;
+				case '\x1': msg(MSG_DEBUG,"hallo"); strcpy(MessageType,"Client Hello"); break;
+				case '\x2': msg(MSG_DEBUG,"hallo"); strcpy(MessageType,"Server Hello"); break;
+				case '\xb': msg(MSG_DEBUG,"hallo"); strcpy(MessageType,"Certificate"); break;
+				case '\xc': msg(MSG_DEBUG,"hallo"); strcpy(MessageType,"ServerKeyExchange"); break;
+				case '\xd': msg(MSG_DEBUG,"hallo"); strcpy(MessageType,"CertificateRequest"); break;
+				case '\xe': msg(MSG_DEBUG,"hallo"); strcpy(MessageType,"ServerHelloDone"); break;
+				case '\xf': msg(MSG_DEBUG,"hallo"); strcpy(MessageType,"Certificate Verify"); break;
+				case '\xf0': msg(MSG_DEBUG,"hallo"); strcpy(MessageType,"ClientKeyExchange"); break;
+				case '\xf4': msg(MSG_DEBUG,"hallo"); strcpy(MessageType,"Finished"); break; 
+			}
+			msg(MSG_DEBUG,"messagetype: %s",MessageType);
+
+		}
+		else if (payload[0] == '\x17')
+			msg(MSG_DEBUG,"application");
 		char timestamp[100];
 		create_timestamp(timestamp);
 		snprintf(data->binaryLocation,MAX_PATH_LENGTH,"unknown/sent/%s",timestamp);

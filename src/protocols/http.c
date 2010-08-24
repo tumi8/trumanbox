@@ -252,7 +252,7 @@ int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 		extract_http_header_field(data->requestedHost,"Host:",data->requestHeader);
 		extract_http_header_field(data->userAgent,"User-Agent:",data->requestHeader);
 		if (conn->destOffline) {
-			msg(MSG_DEBUG,"ok we got all we need for the request: %s || %s || %s",data->requestedHost,data->requestedLocation,data->userAgent);
+		/*	msg(MSG_DEBUG,"ok we got all we need for the request: %s || %s || %s",data->requestedHost,data->requestedLocation,data->userAgent);
 			char statement[1000],trumantimestamp[100];
 			snprintf(statement,1000,"select max(trumantimestamp) from HTTP_LOGS where (requestedHost = '%s' or ServerIP = inet('%s')) and requestedLocation = '%s'",
 				data->requestedHost,conn->orig_dest,data->requestedLocation);
@@ -280,11 +280,11 @@ int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 		
 			if (trumantimestamp != NULL) {
 				// we found an old client request that is is similiar/identical to the one just received
-				
+					
 				strcpy(conn->timestampEmulation,trumantimestamp); // save the timestamp for future purposes
 				snprintf(statement,1000,"select ResponseBodyBinaryLocation from HTTP_LOGS where trumantimestamp = '%s'",conn->timestampEmulation); // get the server response we once already received
 				execute_query_statement_singlevalue(src,statement);	
-
+				msg(MSG_DEBUG,"Server body binary location: %s",src);
 
 			}
 	
@@ -297,7 +297,7 @@ int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 
 			copy(src,destination);
 
-
+*/
 		}
 		
 		logger_get()->log_struct(logger_get(), conn, "client", data);
@@ -351,13 +351,13 @@ int ph_http_handle_packet(void* handler, const char* packet, ssize_t len)
 
 int ph_http_determine_target(void* handler, struct sockaddr_in* addr)
 {
-	msg(MSG_DEBUG,"determine http target");
 	struct ph_http* http = (struct ph_http*)handler;
 	if (conf_get_mode(http->config) < full_proxy) {
 		bzero(addr, sizeof(struct sockaddr_in));
                 addr->sin_family = AF_INET;
                 Inet_pton(AF_INET, conf_get(http->config, "http", "http_redirect"), &addr->sin_addr);
 		addr->sin_port = htons((uint16_t)80);
+		msg(MSG_DEBUG,"set http dummy target!");
 	}
 	return 0;
 }

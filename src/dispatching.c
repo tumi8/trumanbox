@@ -301,7 +301,6 @@ int parse_conntrack(connection_t *conn) {
 				end = strchr(begin, ' ');
 			
 				snprintf(portnum, end-begin+1, "%s", begin);
-				msg(MSG_DEBUG, "Source port string: %s\nSource port int: %d", portnum, atoi(portnum));
 
 				if (conn->sport == atoi(portnum)) {
 					// We have found right conntrack entry

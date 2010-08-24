@@ -90,6 +90,64 @@ protocols_app pi_buildin_payload(struct proto_identifier_t* pi, connection_t *co
 			}
 		}
 		else {
+
+		
+                if (payload_len > 0 ) {
+			
+			bzero(conn->sslVersion,100);	
+			
+			if (payload[0] == '\x16') {
+				msg(MSG_DEBUG,"Handshake");
+                        	if (payload[1] == '\x3' && payload[2] == '\x0') strcpy(conn->sslVersion,"SSL v3 ");
+                        	else if (payload[1] == '\x3' && payload[2] == '\x1') strcpy(conn->sslVersion,"TLS 1.0 ");
+                        	else if (payload[1] == '\x3' && payload[2] == '\x2') strcpy(conn->sslVersion,"TLS 1.1 ");
+                        	else if (payload[1] == '\x3' && payload[2] == '\x3') strcpy(conn->sslVersion,"TLS 1.2 ");
+				else strcpy(conn->sslVersion,"Unknown (new/old) SSL version ");
+                        	char MessageType[100];
+				bzero(MessageType,100);
+                       		switch (payload[5]) {
+                                case '\x0':  strcpy(MessageType,"HelloRequest"); break;
+                                case '\x1':  strcpy(MessageType,"Client Hello"); break;
+                                case '\x2':  strcpy(MessageType,"Server Hello"); break;
+                                case '\xb':  strcpy(MessageType,"Certificate"); break;
+                                case '\xc':  strcpy(MessageType,"ServerKeyExchange"); break;
+                                case '\xd':  strcpy(MessageType,"CertificateRequest"); break;
+                                case '\xe':  strcpy(MessageType,"ServerHelloDone"); break;
+                                case '\xf':  strcpy(MessageType,"Certificate Verify"); break;
+                                case '\xf0':  strcpy(MessageType,"ClientKeyExchange"); break;
+                                case '\xf4':  strcpy(MessageType,"Finished"); break;
+                        }
+			if (MessageType != NULL)  {
+			
+                        	strcat(conn->sslVersion,MessageType);
+				conn->app_proto = SSL_Proto;
+				msg(MSG_DEBUG, "protocol identified by payload is: %d [%s]", conn->app_proto,conn->sslVersion);
+				return conn->app_proto;
+
+			}
+
+
+                	}
+                	else if (payload[0] == '\x17')
+               			msg(MSG_DEBUG,"application");
+		
+			else if (payload[2] == '\x1') {
+				if (payload[0] && 0x80 == 1) msg(MSG_DEBUG,"length field uses only 1 byte");
+				
+				if (payload[3] == '\x3' && payload[4] == '\x0') strcpy(conn->sslVersion,"SSL v3");
+               			else if (payload[3] == '\x3' && payload[4] == '\x1') strcpy(conn->sslVersion,"TLS 1.0");
+                        	else if (payload[3] == '\x3' && payload[4] == '\x2') strcpy(conn->sslVersion,"TLS 1.1");
+                       		else if (payload[3] == '\x3' && payload[4] == '\x3') strcpy(conn->sslVersion,"TLS 1.2");
+	
+				if (conn->sslVersion!= NULL) {
+					strcat(conn->sslVersion," and SSL v2-Client Hello");
+					msg(MSG_DEBUG,"we got: [%s]",conn->sslVersion);
+					conn->app_proto= SSL_Proto;
+					return conn->app_proto;
+				}
+			}
+		
+		}
 			conn->app_proto = UNKNOWN;
 			
 			// check if we can classfiy this tcp traffic with the data from the database
@@ -109,31 +167,6 @@ protocols_app pi_buildin_payload(struct proto_identifier_t* pi, connection_t *co
 				}
 			}
 	
-
-			/*PGconn* psql = PQconnectdb("hostaddr = '127.0.0.1' port = '5432' dbname = 'trumanlogs' user = 'trumanbox' password = 'das$)13x!#+23' connect_timeout = '10'");
-				PGresult *res = PQexec(psql, statement);
-				if (PQresultStatus(res) != PGRES_TUPLES_OK)
-					{
-					msg(MSG_FATAL,"Status: %s",PQresStatus(PQresultStatus(res)));
-					msg(MSG_FATAL,"%s",PQresultErrorMessage(res));
-i
-					}
-				else {	
-					char* value =  PQgetvalue(res,0,0);
-					msg(MSG_DEBUG,"we have value: %s",value);
-						
-					int valueInt = atoi(value);
-					if (valueInt > 0) {
-						conn->app_proto = FTP_data;
-					}
-					else {
-						// not found, do nothing
-					}
-																														}
-			
-			PQfinish(psql);
-				*/
-
 			msg(MSG_DEBUG,"we have the following information: IPServ: [%s] IPServ2: [%s] PortServ: [%d]",conn->orig_dest,conn->dest,conn->dport);
 		}
 	}

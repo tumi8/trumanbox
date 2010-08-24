@@ -37,7 +37,7 @@
 #define PROTOCOLS_APP_H
 
 // IMPORTANT: UNKNOWN NEEDS TO BE THE LAST ELEMENT OF THIS ENUM!!!!!! (check proto_handler.c for more information)
-enum e_protocols_app {SMTP, FTP, FTP_anonym, FTP_data, HTTP, IRC, DNS, UNKNOWN_UDP, UNKNOWN};  // so if protocol is <= 3 we start from server side
+enum e_protocols_app {SMTP, FTP, FTP_anonym, FTP_data, HTTP, IRC, DNS, SSL_Proto, UNKNOWN_UDP, UNKNOWN};  // so if protocol is <= 3 we start from server side
 typedef enum e_protocols_app protocols_app;
 #endif
 
@@ -59,7 +59,7 @@ struct s_connection {
 	protocols_net net_proto;
 	protocols_app app_proto;
 	int destOffline; // indicates whether this connection should be handled in emulation mode (that is, manipulating the payload)
-	char timestamp[100]; // form of timestamp: "[secs-msecs]"  (since epoch - 1.1.1970)
+	char timestamp[100]; // indicates the system-time when the connection was initialized (form of timestamp: "[secs_msecs]") (since epoch - 1.1.1970)
 	u_int32_t multiple_client_chunks;// indicates whether we expect multiple successive chunks from client side that belong together
 	u_int32_t multiple_server_chunks; // indicates whether we expect multiple successive chunks from server side that belong together
 	void* log_client_struct_ptr; // pointer to client logging structure (CTS)
@@ -67,6 +67,7 @@ struct s_connection {
 	u_int16_t log_client_struct_initialized; // indicates if the client log_struct (CTS) was already malloced (that is, if the log_struct ptr already points to a valid destination)
 	u_int16_t log_server_struct_initialized; // indicates if the server log_struct (STC) was already malloced (that is, if the log_struct ptr already points to a valid destination)
 	char timestampEmulation[100]; // If we are in emulation mode, we need a timestamp to refer to when getting data from the the database with old logs (this timestamp serves as a key)
+	char sslVersion[100]; // If we are in SSL mode, we obtain the SSL version information in the packet inspection module (proto_truman_ident.c) and we have to write it into the connection struct
 };
 typedef struct s_connection connection_t;
 #endif

@@ -64,9 +64,16 @@ struct ftp_struct {
 	char Message[MAXLINE];
 };
 
+struct ssl_struct {
+	char server_cert[MAX_PATH_LENGTH];
+	char http_request[MAX_PATH_LENGTH];
+	char sslVersion[100];
+};
+
 struct ftp_data_struct {
 	char binaryLocation[MAX_PATH_LENGTH];
 };
+
 
 struct irc_client_struct {
 	char command[MAXLINE];

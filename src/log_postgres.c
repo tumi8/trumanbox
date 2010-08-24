@@ -195,7 +195,16 @@ int lpg_log_struct(struct logger_t* log, connection_t* conn, const char* tag, vo
 		execute_statement(statement);	
 		break;
 	}
-
+	case SSL_Proto:
+	{
+		struct ssl_struct* logdata = (struct ssl_struct *) data;
+		snprintf(statement, MAX_STATEMENT, "insert into SSL_Logs (clientIP,clientport,ServerIP,RealServerIP,Serverport, Client_Hello_SSL_Version, server_certificate_location, http_request_location,date, Trumantimestamp,sample_id) VALUES (inet('%s'),%d,inet('%s'),inet('%s'),%d,'%s', '%s', '%s', (select current_timestamp), '%s',(select distinct value from trumanbox_settings where key = 'CURRENT_SAMPLE'))",
+		conn->source,conn->sport,conn->orig_dest,conn->dest,conn->dport,logdata->sslVersion,logdata->server_cert,logdata->http_request,conn->timestamp
+		);
+		msg(MSG_DEBUG,"try to insert: %s",statement);
+		execute_statement(statement);
+		break;
+	}
 	default:
 		{
 		msg(MSG_DEBUG, "Protocol not yet handled, abort...");

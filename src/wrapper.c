@@ -54,8 +54,6 @@ int Connect(int fd, const struct sockaddr *sa, socklen_t salen) {
 
 	if ((status = connect(fd, sa, salen)) < 0) {
 		msg(MSG_ERROR, "connect error: %s", strerror(errno));
-		if (errno == ECONNREFUSED) // these are the error codes of ECONNREFUSED
-			return -2;
 	}
 	return status;
 }
