@@ -6,6 +6,60 @@
 #include <stdlib.h>
 #include <string.h>
 
+
+static void emulate_server_response(struct http_client_struct* data,connection_t* conn) {
+	
+	strcpy(data->responseReturnedType,"old");
+	msg(MSG_DEBUG,"ok we got all we need for the request: %s || %s || %s",data->requestedHost,data->requestedLocation,data->userAgent);
+	char statement[1000],trumantimestamp[100];
+	snprintf(statement,1000,"select max(trumantimestamp) from HTTP_LOGS where (requestedHost = '%s' or ServerIP = inet('%s')) and requestedLocation = '%s' and responseReturnedType = 'new'",
+		data->requestedHost,conn->orig_dest,data->requestedLocation);
+	msg(MSG_DEBUG,"execute: %s",statement);
+	execute_query_statement_singlevalue(trumantimestamp,statement);
+	char destination[MAX_PATH_LENGTH],path[MAX_PATH_LENGTH],filename[MAX_PATH_LENGTH],location[MAX_PATH_LENGTH];
+	strcpy(location,data->requestedLocation);
+	char src[MAX_PATH_LENGTH]; // location of the server response
+	extract_dir_and_filename_from_request(path, filename, location);
+	
+	// build path on webserver
+	build_tree(conn,path);
+
+	bzero(destination,MAX_PATH_LENGTH);
+	if (filename == NULL || strlen(filename) == 0) {
+		msg(MSG_DEBUG,"filename not given, set to index.html");
+		strcpy(filename,"index.html");
+	}
+
+	strncpy(destination, HTTP_BASE_DIR, sizeof(destination)-1);	
+	strcat(destination,path);
+	strcat(destination,filename);
+
+
+
+	if (trumantimestamp != NULL) {
+		// we found an old client request that is is similiar/identical to the one just received
+			
+		strcpy(conn->timestampEmulation,trumantimestamp); // save the timestamp for future purposes
+		snprintf(statement,1000,"select ResponseBodyBinaryLocation from HTTP_LOGS where trumantimestamp = '%s'",conn->timestampEmulation); // get the server response we once already received
+		execute_query_statement_singlevalue(src,statement);	
+		msg(MSG_DEBUG,"Server body binary location: %s",src);
+
+	}
+
+	if (src == NULL || strlen(src) ==0) {
+			// we have no old server response we can replay to the client, thus we just send a dummy reply
+			strcpy(data->responseReturnedType,"dummy");
+			strncpy(src, HTTP_BASE_DIR,sizeof(src)-1);
+			strcat(src,"/dummy.html");
+
+	}
+
+	copy(src,destination);
+
+
+
+}
+
 struct ph_http {
 	struct configuration_t* config;
 };
@@ -50,8 +104,6 @@ int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 		}
 		data = (struct http_server_struct*) malloc(sizeof(struct http_server_struct));
 		conn->log_server_struct_ptr = data;
-
-		
 
 		// we have now to log the header of the http response ( data->rcvd_content_length is always initially 0 
 		char* ptrToHeader = data->responseHeader;
@@ -173,6 +225,10 @@ int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 		data = (struct http_client_struct*) malloc(sizeof(struct http_client_struct));
 		conn->log_client_struct_ptr = data;
 
+		
+		// initially, we expect that request to be sent to the *REAL* malware server
+		strcpy(data->responseReturnedType,"new");
+
 		char* ptrToHeaderEnd = strstr(payload,"\r\n\r\n"); // every proper HTTP header ends with this string
 		char* ptrToHeader = data->requestHeader;
 		char* ptrToRequestedLocation = NULL;
@@ -251,53 +307,10 @@ int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 
 		extract_http_header_field(data->requestedHost,"Host:",data->requestHeader);
 		extract_http_header_field(data->userAgent,"User-Agent:",data->requestHeader);
+		
+		
 		if (conn->destOffline) {
-		/*	msg(MSG_DEBUG,"ok we got all we need for the request: %s || %s || %s",data->requestedHost,data->requestedLocation,data->userAgent);
-			char statement[1000],trumantimestamp[100];
-			snprintf(statement,1000,"select max(trumantimestamp) from HTTP_LOGS where (requestedHost = '%s' or ServerIP = inet('%s')) and requestedLocation = '%s'",
-				data->requestedHost,conn->orig_dest,data->requestedLocation);
-			msg(MSG_DEBUG,"execute: %s",statement);
-			execute_query_statement_singlevalue(trumantimestamp,statement);
-			char destination[MAX_PATH_LENGTH],path[MAX_PATH_LENGTH],filename[MAX_PATH_LENGTH],location[MAX_PATH_LENGTH];
-			strcpy(location,data->requestedLocation);
-			char src[MAX_PATH_LENGTH]; // location of the server response
-			extract_dir_and_filename_from_request(path, filename, location);
-			
-			// build path on webserver
-			build_tree(conn,path);
-
-			bzero(destination,MAX_PATH_LENGTH);
-			if (filename == NULL || strlen(filename) == 0) {
-				msg(MSG_DEBUG,"filename not given, set to index.html");
-				strcpy(filename,"index.html");
-			}
-
-			strncpy(destination, HTTP_BASE_DIR, sizeof(destination)-1);	
-			strcat(destination,path);
-			strcat(destination,filename);
-
-		
-		
-			if (trumantimestamp != NULL) {
-				// we found an old client request that is is similiar/identical to the one just received
-					
-				strcpy(conn->timestampEmulation,trumantimestamp); // save the timestamp for future purposes
-				snprintf(statement,1000,"select ResponseBodyBinaryLocation from HTTP_LOGS where trumantimestamp = '%s'",conn->timestampEmulation); // get the server response we once already received
-				execute_query_statement_singlevalue(src,statement);	
-				msg(MSG_DEBUG,"Server body binary location: %s",src);
-
-			}
-	
-			if (src == NULL || strlen(src) ==0) {
-					// we have no old server response we can replay to the client, thus we just send a dummy reply
-					strncpy(src, HTTP_BASE_DIR,sizeof(src)-1);
-					strcat(src,"/dummy.html");
-
-			}
-
-			copy(src,destination);
-
-*/
+			emulate_server_response(data,conn);
 		}
 		
 		logger_get()->log_struct(logger_get(), conn, "client", data);

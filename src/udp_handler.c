@@ -69,11 +69,11 @@ void udphandler_determine_target(struct udp_handler_t* udph, protocols_app app_p
 
 	case full_proxy:
 		// Connect to the original target (if this target is available)
-		msg(MSG_DEBUG, "Determine target for full proxy mode ...%s",targetServAddr);
+		msg(MSG_DEBUG, "Determine target for full proxy mode ...");
 		bzero(targetServAddr, sizeof(targetServAddr));
 		targetServAddr->sin_family = AF_INET;
 		targetServAddr->sin_port = htons((uint16_t)udph->connection->dport);
-		memcpy(udph->connection->dest, udph->connection->orig_dest, strlen(udph->connection->dest));
+		memcpy(udph->connection->dest, udph->connection->orig_dest, strlen(udph->connection->orig_dest));
 		Inet_pton(AF_INET, udph->connection->dest, &targetServAddr->sin_addr);
 		
 		break;
@@ -127,7 +127,19 @@ void udphandler_run(struct udp_handler_t* udph)
 				}
 			}
 			
-			udphandler_determine_target(udph, UNKNOWN_UDP, &targetServAddr);
+			if (found_dest) 
+				udphandler_determine_target(udph, UNKNOWN_UDP, &targetServAddr);
+			else {
+				// we have found no destination, therefore the sender gets an echo message
+				bzero(&targetServAddr, sizeof(targetServAddr));
+				targetServAddr.sin_family = AF_INET;
+				targetServAddr.sin_port = htons((uint16_t)udph->connection->sport);
+				memcpy(udph->connection->dest, udph->connection->source, strlen(udph->connection->source));
+				memcpy(udph->connection->orig_dest, udph->connection->source, strlen(udph->connection->source));
+				Inet_pton(AF_INET, udph->connection->dest, &targetServAddr.sin_addr);
+					
+			}
+			
 			// all right we finished parsing the conntrack table and we extracted all necessary information (source ip/port, dest ip/port)
 		/*	bzero(&targetServAddr, sizeof(targetServAddr));
 			targetServAddr.sin_family = AF_INET;

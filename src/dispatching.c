@@ -193,8 +193,8 @@ void disp_run(struct dispatcher_t* disp)
 				struct udp_handler_t* u = udphandler_create(disp->udpfd,disp->config,&connection,disp->pi,disp->ph);
 				udphandler_run(u);
 				udphandler_destroy(u);
-			//	Exit(0);
-			//}
+			/*	Exit(0);
+			}*/
 		}
 		else if (connection.net_proto == CONTROL) {
 			enum e_command res = read_command(disp->config, disp->controlfd);

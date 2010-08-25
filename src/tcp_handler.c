@@ -209,12 +209,13 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 
 	bzero(payload, MAXLINE);
 	tcph->targetServiceFd = Socket(AF_INET, SOCK_STREAM, 0);
-	struct timeval timeoutTarget;
-	timeoutTarget.tv_sec = 6; 
+/*
+ * 	timeout is dangerous - because we cannot operate on this socket during the blocking call of connect -> suspectible of "Operation now in progress" - error
+ * 	struct timeval timeoutTarget;
+	timeoutTarget.tv_sec = 5; 
 	timeoutTarget.tv_usec = 0;
 	setsockopt(tcph->targetServiceFd,SOL_SOCKET,SO_SNDTIMEO,&timeoutTarget,sizeof(timeoutTarget));
-	
-	//setsockopt(tcph->targetServiceFd,SOL_SOCKET,SO_RCVTIMEO,&timeoutTarget,sizeof(timeoutTarget));
+*/	
 	
 	tcphandler_determine_target(tcph, UNKNOWN, &targetServAddr);
 	msg(MSG_DEBUG,"finished determining target");
@@ -277,15 +278,13 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 						msg(MSG_DEBUG,"dest is offline");
 						// the connection to the original target / port failed, so we change the target to our local emulation server
 						
-							Close_conn(tcph->targetServiceFd, "Connection to targetservice could not be established");
 							if (tcph->connection->app_proto == UNKNOWN) {
 								bzero(tcph->connection->dest, IPLENGTH);
 							} else {
 								tcph->ph[tcph->connection->app_proto]->determine_target(tcph->ph[tcph->connection->app_proto]->handler, &targetServAddr);
 								Inet_ntop(AF_INET, &(&targetServAddr)->sin_addr, tcph->connection->dest, IPLENGTH);
 							}
-							msg(MSG_DEBUG,"we now have the target: %s and destport %d",tcph->connection->dest,tcph->connection->dport);				
-						tcph->connection->destOffline = 1;	
+							tcph->connection->destOffline = 1;	
 							if (-1 == Connect(tcph->targetServiceFd, (struct sockaddr*)&targetServAddr, sizeof(targetServAddr))) {
 								msg(MSG_FATAL,"Connection to emulation target not possible, abort...");
 								goto out;
