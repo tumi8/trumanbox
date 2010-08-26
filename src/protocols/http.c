@@ -7,6 +7,48 @@
 #include <string.h>
 
 
+static void manipulate_server_payload(const char* payload, connection_t* conn, ssize_t* len) {
+	// change the server type if possible
+	char* ptr = strstr(payload, "Server: ");
+	if (ptr != 0 && conn->timestampEmulation != NULL) {
+		char statement[1000];
+		char serverType[100];
+		snprintf(statement,1000,"select serverType from HTTP_LOGS where trumantimestamp = '%s'",conn->timestampEmulation); // get the server response we once already received
+		execute_query_statement_singlevalue(serverType,statement);
+		
+		if (serverType != NULL) {
+			ptr = ptr + 8;
+			int valueLength  = strcspn(ptr,"\r\n"); // go to the end of the line
+			
+			// we have to save the payload following the serverType information
+			char* ptrUnaffected = ptr + valueLength;
+			int lenAffected = ptrUnaffected - payload;
+			int lenUnaffected = *len - lenAffected;
+			char saved[MAXLINE*2];
+			strncpy(saved,ptrUnaffected,lenUnaffected);
+			msg(MSG_DEBUG,"saved {%s}",saved);
+
+			// now set the new serverType
+			int newServerTypeLen = strlen(serverType);
+			memcpy(ptr,serverType,newServerTypeLen);
+		
+			// now concatenate the unaffected payload to the modified payload
+			ptr = ptr + newServerTypeLen;
+			bzero(ptr,strlen(ptr));
+			memcpy(ptr,saved,lenUnaffected+1);
+
+			// set the new length of the payload
+			*len = strlen(payload);
+			msg(MSG_DEBUG,"new payload: [%s] len: %d",payload,*len);
+			//sprintf(ptr, LOCAL_EMAIL_ADDRESS);
+			//msg(MSG_DEBUG, "changed payload from client:%s", payload);
+			
+		}
+	}
+
+
+}
+
 static void emulate_server_response(struct http_client_struct* data,connection_t* conn) {
 	
 	strcpy(data->responseReturnedType,"old");
@@ -94,7 +136,10 @@ int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 	msg(MSG_DEBUG,"Received %d and multplechunks is: %d",*len,conn->multiple_server_chunks);
 	if (conn->multiple_server_chunks == 0) {
 			
-
+		if (conn->destOffline) {
+			// we now manipulate the server payload 
+			manipulate_server_payload(payload,conn,len);
+		}
 		
 		msg(MSG_DEBUG,"Payload \n%s",payload);
 		char* ptrToHeaderEnd = strstr(payload,"\r\n\r\n"); // every proper HTTP header ends with this string
@@ -116,12 +161,13 @@ int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 		strncpy(data->responseHeader,payload,headerLength);
 		*(ptrToHeader+headerLength+1) = '\0';
 		
-		
+
 		// extract header fields
 		extract_http_header_field(data->responseContentType,"Content-Type:",data->responseHeader);
 		extract_http_header_field(data->serverType,"Server:",data->responseHeader);
 		extract_http_header_field(data->responseLastModified,"Last-Modified:",data->responseHeader);
-
+		
+		
 			
 		// CONTENT-LENGTH extractor
 		char contentLengthStr[100];

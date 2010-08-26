@@ -114,15 +114,15 @@ int save_binarydata_to_file_generic(char* fileLocation, const char* dataToWrite,
 	FILE * pFile;
 	pFile = fopen ( fileLocation , mode );
 	
-	msg(MSG_DEBUG,"LengthToWrite: %d, is > 0: %d",dataLength,dataLength>0);
 	
 	if(pFile == NULL) {
 		msg(MSG_FATAL,"Error opening %s",fileLocation);
 		return 0;
 	}
 	else  {
-		count = fwrite (dataToWrite , dataLength, 1 , pFile );
-		msg(MSG_DEBUG,"wrote %zu item: %s",count,fileLocation);
+		count = fwrite (dataToWrite , 1,dataLength , pFile );
+		if (count != dataLength)  
+			msg(MSG_FATAL,"Could not write %d bytes, wrote only %d",dataLength,count);
 		fclose (pFile);
 
 	}

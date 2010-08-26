@@ -203,7 +203,8 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 	ssize_t r;
 	fd_set rset;
 	struct timeval tv;
-	char payload[MAXLINE];
+	char payloadRead[MAXLINE];
+	char payload[2*MAXLINE];
 	protocols_app app_proto = UNKNOWN;
 	struct proto_handler_t* proto_handler;
 
@@ -234,15 +235,20 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 	while (-1 != select(maxfd, &rset, NULL, NULL, &tv)) {
 		if (FD_ISSET(tcph->targetServiceFd, &rset)) {
 			// we received data from the internet server
-			bzero(payload,MAXLINE); // clean the old payload string, because we want to save new data
+			bzero(payloadRead,MAXLINE); // clean the old payload string, because we want to save new data
+			bzero(payload,MAXLINE*2);
+
 			msg(MSG_DEBUG, "Received data from target server!");
-			r = read(tcph->targetServiceFd, payload, MAXLINE - 1);
-			//msg(MSG_DEBUG,"payload received: \n%s",payload);
+			r = read(tcph->targetServiceFd, payloadRead, MAXLINE - 1);
 		
 			if (!r) {
 				msg(MSG_DEBUG, "Target closed the connection...");
 				goto out;
 			}
+			
+			// copy the payload received in a new, larger char array because we maybe need the additional space for manipulating the server response
+			strcpy(payload,payloadRead);
+
 			if (tcph->connection->app_proto == UNKNOWN) {
 				app_proto = tcph->pi->bypayload(tcph->pi, tcph->connection, payload, r);
 				if (app_proto == UNKNOWN) {
@@ -263,9 +269,10 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 			msg(MSG_DEBUG, "Received data from infected machine!");
 			r = read(tcph->inConnFd, payload, MAXLINE - 1);
 			if (!r) {
-				msg(MSG_DEBUG, "Source closed the connection...");
+				msg(MSG_DEBUG, "Infected machine closed the connection...");
 				goto out;
 			}
+
 			if (tcph->connection->app_proto == UNKNOWN) {
 				app_proto = tcph->pi->bypayload(tcph->pi, tcph->connection, payload, r);
 				if (app_proto == UNKNOWN) {
