@@ -1,11 +1,57 @@
 #include "irc.h"
-
 #include "wrapper.h"
 #include "logger.h"
 #include "msg.h"
 
 #include <stdlib.h>
 #include <string.h>
+
+static void inject_commands(const char* payload , ssize_t * len) {
+	// we would like to inject WHO #Channel when we found a command JOIN #channel 
+	char* ptr = strstr(payload,"JOIN ");
+	char channel[1000];
+	bzero(channel,1000);
+
+	if (ptr != NULL) {
+		// inject 'WHO #channel' command
+		
+		
+		// first of all find the channel name
+		ptr = ptr + 5;
+		int lengthChannel = strcspn(ptr," \r\n");
+		msg(MSG_DEBUG,"Channel: [%s] length of channelname: %d",ptr,lengthChannel);
+		memcpy(channel,ptr,lengthChannel);
+		channel[lengthChannel] = 0;
+	
+
+		//now concatenate a new command to the end of the payload
+		ptr = strrchr(payload,'\n');
+		ptr = ptr + 1;
+
+		snprintf(ptr,1000,"WHO %s\n",channel);
+		
+
+		*len = strlen(payload);	
+	}
+
+	ptr = strstr(payload,"USER ");
+
+	if (ptr != NULL) {
+		// inject LIST and USERS command to obtain information about the channels and users
+		
+	
+		// concatenate a new command to the end of the payload
+		ptr = strrchr(payload,'\n');
+		ptr = ptr + 1;
+
+		snprintf(ptr,1000,"LIST\nUSERS\n");
+			
+		*len = strlen(payload);
+	
+	}
+
+
+}
 
 struct ph_irc {
 	struct configuration_t* config;
@@ -38,7 +84,7 @@ int ph_irc_deinit(void* handler)
 
 int ph_irc_handle_payload_stc(void* handler, connection_t* conn,  const char* payload, ssize_t* len)
 {
-        char msgCopy[MAXLINE];
+        char msgCopy[MAXLINE*2];
 	char* currentLinePtr = NULL;
 	strcpy(msgCopy,payload);
 	currentLinePtr = strtok (msgCopy,"\n");
@@ -125,7 +171,7 @@ int ph_irc_handle_payload_stc(void* handler, connection_t* conn,  const char* pa
 			logger_get()->log_struct(logger_get(),conn,"server",data);
 
 		nextline:
-			currentLinePtr = strtok(NULL,"\r");
+			currentLinePtr = strtok(NULL,"\n");
 		}// end of while(finished the line)
 
 
@@ -135,15 +181,20 @@ int ph_irc_handle_payload_stc(void* handler, connection_t* conn,  const char* pa
 
 int ph_irc_handle_payload_cts(void* handler, connection_t* conn,  const char* payload, ssize_t* len)
 {
-	char msgCopy[MAXLINE];
+	
+	inject_commands(payload,len);
+	char msgCopy[MAXLINE*2];
 	char* currentLinePtr = NULL;
 	strcpy(msgCopy,payload);
 	currentLinePtr = strtok (msgCopy,"\n");
 
 
+
+	msg(MSG_DEBUG,"payload cts: %s",payload);
 	while(currentLinePtr != NULL) {
 			// we have to iterate throughout the whole received IRC message (which may contain several lines)
 		struct irc_client_struct* data = (struct irc_client_struct*) malloc(sizeof(struct irc_client_struct));
+		msg(MSG_DEBUG,"cts command: '%s'",currentLinePtr);
 		char* argPtr; // pointer to the argument(s) of the IRC command
 		int commandNameLength = 0;
 
@@ -165,8 +216,9 @@ int ph_irc_handle_payload_cts(void* handler, connection_t* conn,  const char* pa
 		else {
 			strcpy(data->arguments,"N/A");
 		}
-		currentLinePtr = strtok(NULL,"\r");
-
+		currentLinePtr = strtok(NULL,"\n");
+		
+		
 
 		logger_get()->log_struct(logger_get(),conn,"client",data);	
 			

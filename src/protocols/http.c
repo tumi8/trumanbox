@@ -40,8 +40,6 @@ static void manipulate_server_payload(const char* payload, connection_t* conn, s
 			// set the new length of the payload
 			*len = strlen(payload);
 			msg(MSG_DEBUG,"new payload: [%s] len: %d",payload,*len);
-			//sprintf(ptr, LOCAL_EMAIL_ADDRESS);
-			//msg(MSG_DEBUG, "changed payload from client:%s", payload);
 			
 		}
 	}

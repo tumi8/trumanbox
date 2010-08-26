@@ -265,14 +265,17 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 				goto out;
 			}
 		} else if (FD_ISSET(tcph->inConnFd, &rset)) {
-			bzero(payload,MAXLINE); // clean the old payload string, because we want to save new data
+			bzero(payloadRead,MAXLINE); // clean the old payload string, because we want to save new data
+			bzero(payload,MAXLINE*2);
 			msg(MSG_DEBUG, "Received data from infected machine!");
-			r = read(tcph->inConnFd, payload, MAXLINE - 1);
+			r = read(tcph->inConnFd, payloadRead, MAXLINE - 1);
 			if (!r) {
 				msg(MSG_DEBUG, "Infected machine closed the connection...");
 				goto out;
 			}
-
+		
+			strcpy(payload,payloadRead);
+	
 			if (tcph->connection->app_proto == UNKNOWN) {
 				app_proto = tcph->pi->bypayload(tcph->pi, tcph->connection, payload, r);
 				if (app_proto == UNKNOWN) {
@@ -307,9 +310,9 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 			} 
 			
 			proto_handler = tcph->ph[tcph->connection->app_proto];
-			msg(MSG_DEBUG, "Sending payload to protocol handler ...");
+			msg(MSG_DEBUG, "Sending payload to protocol handler ... length before: %d",r);
 			proto_handler->handle_payload_cts(proto_handler->handler, tcph->connection, payload, &r);
-			
+			msg(MSG_DEBUG, "Length after: %d",r);
 			msg(MSG_DEBUG, "Sending payload to server...");
 			if (-1 == write(tcph->targetServiceFd, payload, r)) {
 				msg(MSG_FATAL, "Could not write to target server!");
