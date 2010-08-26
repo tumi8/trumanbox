@@ -143,6 +143,15 @@ int lpg_log_struct(struct logger_t* log, connection_t* conn, const char* tag, vo
 			execute_statement(statement);
 
 		}
+		else if (strcmp(tag,"logfile") == 0) {
+			char location[MAX_PATH_LENGTH];
+			snprintf(location,MAX_PATH_LENGTH,"irc/%s",conn->timestamp);
+			snprintf(statement, MAX_STATEMENT, "insert into IRC_LOGS (ClientIP,ClientPort,ServerIP,RealServerIP,ServerPort,logfilelocation,date,TrumanTimestamp,sample_id) Values (inet('%s'),%d,inet('%s'),inet('%s'),%d, '%s', (select current_timestamp),'%s',(select distinct value from trumanbox_settings where key = 'CURRENT_SAMPLE'))",
+			conn->source,conn->sport,conn->orig_dest,conn->dest,conn->dport,location,conn->timestamp
+			);
+			execute_statement(statement);
+	
+		}
 		else {
 			struct irc_server_struct* logdata =  (struct irc_server_struct *) data;
 			snprintf(statement, MAX_STATEMENT, "insert into IRC_SERVER_LOGS (ClientIP,ClientPort,ServerIP,RealServerIP,ServerPort,ServerName,NumericReply,RecipientNickname,Message,date,TrumanTimestamp,sample_id) Values (inet('%s'),%d,inet('%s'),inet('%s'),%d, '%s','%s','%s','%s', (select current_timestamp),'%s',(select distinct value from trumanbox_settings where key = 'CURRENT_SAMPLE'))",

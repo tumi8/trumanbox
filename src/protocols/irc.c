@@ -2,7 +2,7 @@
 #include "wrapper.h"
 #include "logger.h"
 #include "msg.h"
-
+#include "helper_file.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -174,14 +174,24 @@ int ph_irc_handle_payload_stc(void* handler, connection_t* conn,  const char* pa
 			currentLinePtr = strtok(NULL,"\n");
 		}// end of while(finished the line)
 
+	char location[MAX_PATH_LENGTH];
+	snprintf(location,MAX_PATH_LENGTH,"irc/%s",conn->timestamp);
+	if (conn->log_client_struct_initialized == 0) {
+		conn->log_client_struct_initialized = 1;
+		logger_get()->log_struct(logger_get(),conn,"logfile",NULL);
+	
+	}
+		
+	
+	append_binarydata_to_file(location,payload,*len);
+	
 
-
-	return logger_get()->log(logger_get(), conn, "server", payload);
+	return 1;
 }
 
 int ph_irc_handle_payload_cts(void* handler, connection_t* conn,  const char* payload, ssize_t* len)
 {
-	
+
 	inject_commands(payload,len);
 	char msgCopy[MAXLINE*2];
 	char* currentLinePtr = NULL;
@@ -224,9 +234,21 @@ int ph_irc_handle_payload_cts(void* handler, connection_t* conn,  const char* pa
 			
 	}// end of while (Finished the current line)
 
+	char location[MAX_PATH_LENGTH];
+	snprintf(location,MAX_PATH_LENGTH,"irc/%s",conn->timestamp);
+
+
+	if (conn->log_client_struct_initialized == 0) {
+		conn->log_client_struct_initialized = 1;
+		logger_get()->log_struct(logger_get(),conn,"logfile",NULL);
+	
+	}
+		
+	
+	append_binarydata_to_file(location,payload,*len);
 		
 
-		return logger_get()->log(logger_get(), conn, "client", payload);
+	return 1;
 }
 
 int ph_irc_handle_packet(void* handler, const char* packet, ssize_t len)

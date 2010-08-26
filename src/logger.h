@@ -76,6 +76,7 @@ struct ftp_data_struct {
 };
 
 
+
 struct irc_client_struct {
 	char command[MAXLINE];
 	char arguments[MAXLINE];
