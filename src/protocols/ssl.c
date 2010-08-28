@@ -277,10 +277,6 @@ static void get_server_ssl_information(connection_t* conn, char* filename, char*
 	SSL_library_init();
 	SSL_load_error_strings();
 	
-
-    	/* Set up a SIGPIPE handler */
-	//signal(SIGPIPE,sigpipe_handle);
-			    
 	/* Create our context*/
 	meth=SSLv23_method();
 	ctx=SSL_CTX_new(meth);
@@ -354,7 +350,6 @@ int ph_ssl_handle_payload_stc(void* handler, connection_t* conn,  const char* pa
 
 int ph_ssl_handle_payload_cts(void* handler, connection_t* conn, const char* payload, ssize_t* len)
 {
-  //              logger_get()->log_struct(logger_get(), conn, "client", data);
 	if (conn->log_client_struct_initialized == 0) {
 		struct ssl_struct* logdata = (struct ssl_struct*) malloc(sizeof(struct ssl_struct));
 		

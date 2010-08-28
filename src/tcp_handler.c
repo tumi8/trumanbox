@@ -247,7 +247,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 			}
 			
 			// copy the payload received in a new, larger char array because we maybe need the additional space for manipulating the server response
-			strcpy(payload,payloadRead);
+			memcpy(payload,payloadRead,r);
 
 			if (tcph->connection->app_proto == UNKNOWN) {
 				app_proto = tcph->pi->bypayload(tcph->pi, tcph->connection, payload, r);
@@ -274,7 +274,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 				goto out;
 			}
 		
-			strcpy(payload,payloadRead);
+			memcpy(payload,payloadRead,r);
 	
 			if (tcph->connection->app_proto == UNKNOWN) {
 				app_proto = tcph->pi->bypayload(tcph->pi, tcph->connection, payload, r);
