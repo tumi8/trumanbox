@@ -1,12 +1,4 @@
 #include "tcp_handler.h"
-#include "definitions.h"
-#include "helper_net.h"
-#include "msg.h"
-#include "configuration.h"
-#include "wrapper.h"
-
-#include "protocols/proto_handler.h"
-
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <unistd.h>
@@ -14,19 +6,16 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <stdio.h>
+#include "definitions.h"
+#include "helper_net.h"
+#include "msg.h"
+#include "configuration.h"
+#include "wrapper.h"
+#include "process_manager.h"
+#include "protocols/proto_handler.h"
+#include "ssl_handler.h"
 
-struct tcp_handler_t {
-	operation_mode_t mode; // get from config
-	struct configuration_t* config;
-	int sock;
-	connection_t* connection;
-	int inConnFd;
-	int targetServiceFd;
-	int connectedToFinal;
-	struct proto_identifier_t* pi;
-	struct proto_handler_t** ph;
-	int timeout;
-};
+
 
 struct tcp_handler_t* tcphandler_create(struct configuration_t* config, connection_t* c, int inconn, struct proto_identifier_t* pi, struct proto_handler_t** ph)
 {
@@ -39,7 +28,6 @@ struct tcp_handler_t* tcphandler_create(struct configuration_t* config, connecti
 	ret->pi = pi;
 	ret->ph = ph;
 	ret->connectedToFinal = 0;
-	ret->timeout = 0; // indicator whether the connection to the target already timedout (we only want to try once in half proxy mode!)
 	return ret;
 }
 
@@ -220,6 +208,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 	
 	tcphandler_determine_target(tcph, UNKNOWN, &targetServAddr);
 	msg(MSG_DEBUG,"finished determining target");
+	msg(MSG_DEBUG,"count reads: %d",tcph->connection->countReads);
 	FD_ZERO(&rset);
 	//FD_SET(tcph->targetServiceFd, &rset); // as this socket is not connected to anyone, it should to be responsible for select to fail
 	FD_SET(tcph->inConnFd, &rset);
@@ -245,6 +234,9 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 				msg(MSG_DEBUG, "Target closed the connection...");
 				goto out;
 			}
+		
+			//update the number of reads
+			tcph->connection->countReads++;
 			
 			// copy the payload received in a new, larger char array because we maybe need the additional space for manipulating the server response
 			memcpy(payload,payloadRead,r);
@@ -273,14 +265,42 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 				msg(MSG_DEBUG, "Infected machine closed the connection...");
 				goto out;
 			}
-		
+	
+			//update the number of reads
+			tcph->connection->countReads++;
+				
 			memcpy(payload,payloadRead,r);
 	
 			if (tcph->connection->app_proto == UNKNOWN) {
 				app_proto = tcph->pi->bypayload(tcph->pi, tcph->connection, payload, r);
+				if (app_proto == SSL_Proto) {
+					// We have found a SSL request from the client
+					pid_t childpid;
+					
+
+					if ( (childpid = pm_fork_temporary()) == 0) {        // child process
+						msg(MSG_DEBUG, "Forked SSL handler with pid %d", getpid());
+						struct ssl_handler_t* sh = sslhandler_create(tcph);
+						msg(MSG_DEBUG,"port %d",sh->sslServerPort);
+						sslhandler_run(sh);
+						sslhandler_destroy(sh);
+						Exit(0);
+					}
+					else {	 // parent process
+						// wait until the child process is finished
+						
+					}
+
+
+					msg(MSG_DEBUG,"this was the first read and we have to fork the SSL handler now [%d]",tcph->connection->countReads);
+					
+				
+				}
 				if (app_proto == UNKNOWN) {
 					tcphandler_handle_unknown(tcph, &targetServAddr);
-				} else if (!tcph->connectedToFinal) {
+				} 
+
+				else if (!tcph->connectedToFinal) {
 					msg(MSG_DEBUG, "Identified protocol. Connecting to target");
 					tcphandler_determine_target(tcph, tcph->connection->app_proto, &targetServAddr);
 					if ( -1 == Connect(tcph->targetServiceFd, (struct sockaddr*)&targetServAddr, sizeof(targetServAddr)) ) {
@@ -310,9 +330,8 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 			} 
 			
 			proto_handler = tcph->ph[tcph->connection->app_proto];
-			msg(MSG_DEBUG, "Sending payload to protocol handler ... length before: %d",r);
+			msg(MSG_DEBUG, "Sending payload to protocol handler ... ");
 			proto_handler->handle_payload_cts(proto_handler->handler, tcph->connection, payload, &r);
-			msg(MSG_DEBUG, "Length after: %d",r);
 			msg(MSG_DEBUG, "Sending payload to server...");
 			if (-1 == write(tcph->targetServiceFd, payload, r)) {
 				msg(MSG_FATAL, "Could not write to target server!");

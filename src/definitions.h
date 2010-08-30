@@ -68,6 +68,7 @@ struct s_connection {
 	u_int16_t log_server_struct_initialized; // indicates if the server log_struct (STC) was already malloced (that is, if the log_struct ptr already points to a valid destination)
 	char timestampEmulation[100]; // If we are in emulation mode, we need a timestamp to refer to when getting data from the the database with old logs (this timestamp serves as a key)
 	char sslVersion[100]; // If we are in SSL mode, we obtain the SSL version information in the packet inspection module (proto_truman_ident.c) and we have to write it into the connection struct
+	int countReads; // indicates the number of read() operations performed on a single TCP connection (server+client) 
 };
 typedef struct s_connection connection_t;
 #endif

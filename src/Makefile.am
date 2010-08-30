@@ -7,7 +7,7 @@ trumanbox_SOURCES=config.h definitions.h dns_resolver.c helper_file.h iniparser.
 	configuration.h dispatching.h helper_file.c helper_net.h main.c msg.h \
 	semaphore.h tcp_handler.c udp_handler.h process_manager.h process_manager.c \
 	logger.h logger.c log_truman.h log_truman.c log_sqlite.h log_sqlite.c \
-	log_postgres.h log_postgres.c \
+	log_postgres.h log_postgres.c ssl_handler.h ssl_handler.c\
 	protocols/proto_ident.h protocols/proto_ident.c protocols/proto_handler.h \
 	protocols/proto_handler.c protocols/proto_ident_truman.c \
 	protocols/proto_ident_truman.h protocols/proto_ident_opendpi.h protocols/proto_ident_opendpi.c \
