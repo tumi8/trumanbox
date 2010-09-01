@@ -6,11 +6,11 @@
 
 struct ssl_handler_t {
 	struct tcp_handler_t* tcphandler; 
-	int sock;
+	int serverSocket;
+	int serverConnectionSocket;
+	int clientSocket;
 	char dest[IPLENGTH];
 	u_int16_t destPort;
-	int inConnFd;
-	int targetServiceFd;
 	u_int16_t sslServerPort;
 };
 struct ssl_handler_t* sslhandler_create(struct tcp_handler_t* tcph);

@@ -137,6 +137,37 @@ void tcphandler_determine_target(struct tcp_handler_t* tcph, protocols_app app_p
 
 }
 
+
+int tcphandler_handle_ssl(struct tcp_handler_t* tcph)
+{
+	// We have found a SSL request from the client
+	pid_t childpid;
+	struct ssl_handler_t* sh = sslhandler_create(tcph);
+	msg(MSG_DEBUG,"port %d",sh->sslServerPort);
+
+
+	msg(MSG_DEBUG,"dest: %s orig_dest %s dport: %d",tcph->connection->dest,tcph->connection->orig_dest,tcph->connection->dport);
+
+	strcpy(tcph->connection->dest,"127.0.0.1");
+	tcph->connection->dport = sh->sslServerPort;
+
+	msg(MSG_DEBUG,"dest: %s orig_dest %s dport: %d",tcph->connection->dest,tcph->connection->orig_dest,tcph->connection->dport);
+	if ( (childpid = pm_fork_temporary()) == 0) {        // child process
+		msg(MSG_DEBUG, "Forked SSL handler with pid %d", getpid());
+		sslhandler_run(sh);
+		sslhandler_destroy(sh);
+		Exit(0);
+	}
+	else {	 // parent process
+		// wait until the child process is finished
+		sleep(2);
+	}
+
+
+	return 0;			
+	
+}
+
 int tcphandler_handle_unknown(struct tcp_handler_t* tcph, struct sockaddr_in* targetServAddr)
 {
 	protocols_app app_proto = UNKNOWN;
@@ -270,38 +301,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 			if (tcph->connection->app_proto == UNKNOWN) {
 				app_proto = tcph->pi->bypayload(tcph->pi, tcph->connection, payload, r);
 				if (app_proto == SSL_Proto) {
-					// We have found a SSL request from the client
-					pid_t childpid;
-					struct ssl_handler_t* sh = sslhandler_create(tcph);
-					msg(MSG_DEBUG,"port %d",sh->sslServerPort);
-
-
-					msg(MSG_DEBUG,"dest: %s orig_dest %s dport: %d",tcph->connection->dest,tcph->connection->orig_dest,tcph->connection->dport);
-
-					// now set target server to local running server !
-				/*bzero(&targetServAddr, sizeof(struct sockaddr_in));
-					targetServAddr.sin_family = AF_INET;
-					Inet_pton(AF_INET, "127.0.0.1", &(targetServAddr.sin_addr));
-					targetServAddr.sin_port = htons((uint16_t)sh->sslServerPort);*/
-					strcpy(tcph->connection->dest,"127.0.0.1");
-					tcph->connection->dport = sh->sslServerPort;
-
-					msg(MSG_DEBUG,"dest: %s orig_dest %s dport: %d",tcph->connection->dest,tcph->connection->orig_dest,tcph->connection->dport);
-					if ( (childpid = pm_fork_temporary()) == 0) {        // child process
-						msg(MSG_DEBUG, "Forked SSL handler with pid %d", getpid());
-						sslhandler_run(sh);
-						sslhandler_destroy(sh);
-						Exit(0);
-					}
-					else {	 // parent process
-						// wait until the child process is finished
-						sleep(2);
-					}
-
-
-					msg(MSG_DEBUG,"this was the first read and we have to fork the SSL handler now [%d]",tcph->connection->countReads);
-					
-				
+					tcphandler_handle_ssl(tcph);
 				}
 				if (app_proto == UNKNOWN) {
 					tcphandler_handle_unknown(tcph, &targetServAddr);
