@@ -127,8 +127,6 @@ void tcphandler_determine_target(struct tcp_handler_t* tcph, protocols_app app_p
 		bzero(targetServAddr, sizeof(*targetServAddr));
 		targetServAddr->sin_family = AF_INET;
 		targetServAddr->sin_port = htons((uint16_t)tcph->connection->dport);
-		memcpy(tcph->connection->dest, tcph->connection->orig_dest, strlen(tcph->connection->orig_dest));
-		tcph->connection->dest[strlen(tcph->connection->orig_dest)] = '\0'; // null termination for the address
 		msg(MSG_DEBUG,"determine target orig_dest:  %s dest: %s",tcph->connection->orig_dest,tcph->connection->dest);
 		Inet_pton(AF_INET, tcph->connection->dest, &targetServAddr->sin_addr);
 		break;
@@ -244,9 +242,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 			if (tcph->connection->app_proto == UNKNOWN) {
 				app_proto = tcph->pi->bypayload(tcph->pi, tcph->connection, payload, r);
 				if (app_proto == UNKNOWN) {
-					// TODO: handle this one! can we manage this?
 					msg(MSG_FATAL, "We could not determine protocol after reading from source and target! But proceed anyway...");
-					//goto out;
 				}
 			}
 			proto_handler = tcph->ph[tcph->connection->app_proto];
@@ -279,6 +275,18 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 					struct ssl_handler_t* sh = sslhandler_create(tcph);
 					msg(MSG_DEBUG,"port %d",sh->sslServerPort);
 
+
+					msg(MSG_DEBUG,"dest: %s orig_dest %s dport: %d",tcph->connection->dest,tcph->connection->orig_dest,tcph->connection->dport);
+
+					// now set target server to local running server !
+				/*bzero(&targetServAddr, sizeof(struct sockaddr_in));
+					targetServAddr.sin_family = AF_INET;
+					Inet_pton(AF_INET, "127.0.0.1", &(targetServAddr.sin_addr));
+					targetServAddr.sin_port = htons((uint16_t)sh->sslServerPort);*/
+					strcpy(tcph->connection->dest,"127.0.0.1");
+					tcph->connection->dport = sh->sslServerPort;
+
+					msg(MSG_DEBUG,"dest: %s orig_dest %s dport: %d",tcph->connection->dest,tcph->connection->orig_dest,tcph->connection->dport);
 					if ( (childpid = pm_fork_temporary()) == 0) {        // child process
 						msg(MSG_DEBUG, "Forked SSL handler with pid %d", getpid());
 						sslhandler_run(sh);
@@ -331,7 +339,7 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 			proto_handler = tcph->ph[tcph->connection->app_proto];
 			msg(MSG_DEBUG, "Sending payload to protocol handler ... ");
 			proto_handler->handle_payload_cts(proto_handler->handler, tcph->connection, payload, &r);
-			msg(MSG_DEBUG, "Sending payload to server...");
+			msg(MSG_DEBUG, "Sending payload to target server...%d bytes",r);
 			if (-1 == write(tcph->targetServiceFd, payload, r)) {
 				msg(MSG_FATAL, "Could not write to target server!");
 				goto out;

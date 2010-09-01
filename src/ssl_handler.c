@@ -18,6 +18,12 @@
 #include <stdio.h>
 
 static char *pass;
+static int client_auth=0;
+static int s_server_auth_session_id_context = 2;
+#define CLIENT_AUTH_REQUEST 1
+#define CLIENT_AUTH_REQUIRE 2
+#define CLIENT_AUTH_REHANDSHAKE 3
+
 
 /*The password code is not thread safe*/
 static int password_cb(char *buf,int num,
@@ -168,18 +174,117 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 		   }
 
 		
+		msg(MSG_DEBUG,"initialized BIOs");
 	   	sbio=BIO_new_socket(serverSocket,BIO_NOCLOSE);
 		ssl=SSL_new(ctx);
 		SSL_set_bio(ssl,sbio,sbio);
-					           
+		
+		msg(MSG_DEBUG,"ready for SSL accept");
 		if((r=SSL_accept(ssl)<=0))
 		{
 			msg(MSG_FATAL,"SSL accept error");
-			continue;
+			goto shutdown;
 		}
-				
+
 
 		//TODO: SSL Client initialization
+
+
+
+		char buf[2*MAXLINE];
+		int r,len;
+		BIO *io,*ssl_bio;
+
+		io=BIO_new(BIO_f_buffer());
+		ssl_bio=BIO_new(BIO_f_ssl());
+		BIO_set_ssl(ssl_bio,ssl,BIO_CLOSE);
+		BIO_push(io,ssl_bio);
+
+		while(1){
+			r=BIO_gets(io,buf,2*MAXLINE-1);
+
+			switch(SSL_get_error(ssl,r)){
+			case SSL_ERROR_NONE:
+				len=r;
+			  	break;
+			case SSL_ERROR_ZERO_RETURN:
+			  	goto shutdown;
+			  	break;
+			default:
+			  	msg(MSG_FATAL,"SSL read problem");
+			}
+
+	 	msg(MSG_DEBUG,"we rcvd %d bytes",r);
+
+
+		/* Look for the blank line that signals
+		 the end of the HTTP headers */
+		if(!strcmp(buf,"\r\n") || strcmp(buf,"\n"))
+			break;
+		}
+		/* Now perform renegotiation if requested */
+		if(client_auth==CLIENT_AUTH_REHANDSHAKE){
+		SSL_set_verify(ssl,SSL_VERIFY_PEER |
+		SSL_VERIFY_FAIL_IF_NO_PEER_CERT,0);
+
+		/* Stop the client from just resuming the
+		 un-authenticated session */
+		SSL_set_session_id_context(ssl,
+		(void *)&s_server_auth_session_id_context,
+		sizeof(s_server_auth_session_id_context));
+
+		if(SSL_renegotiate(ssl)<=0)
+		msg(MSG_FATAL,"SSL renegotiation error");
+		if(SSL_do_handshake(ssl)<=0)
+		msg(MSG_FATAL,"SSL renegotiation error");
+		ssl->state=SSL_ST_ACCEPT;
+		if(SSL_do_handshake(ssl)<=0)
+		msg(MSG_FATAL,"SSL renegotiation error");
+		}
+
+		if((r=BIO_puts
+		(io,"HTTP/1.0 200 OK\r\n"))<=0)
+		msg(MSG_FATAL,"Write error");
+		if((r=BIO_puts
+		(io,"Server: EKRServer\r\n\r\n"))<=0)
+		msg(MSG_FATAL,"Write error");
+		if((r=BIO_puts
+		(io,"Server test page\r\n"))<=0)
+		msg(MSG_FATAL,"Write error");
+
+		if((r=BIO_flush(io))<0)
+		msg(MSG_FATAL,"Error flushing BIO");
+
+
+		shutdown:
+		r=SSL_shutdown(ssl);
+		if(!r){
+		/* If we called SSL_shutdown() first then
+		 we always get return value of '0'. In
+		 this case, try again, but first send a
+		 TCP FIN to trigger the other side's
+		 close_notify*/
+		shutdown(serverSocket,1);
+		r=SSL_shutdown(ssl);
+		}
+
+		switch(r){  
+		case 1:
+		break; /* Success */
+		case 0:
+		case -1:
+		default:
+		msg(MSG_FATAL,"Shutdown failed");
+		}
+
+		SSL_free(ssl);
+		close(serverSocket);
+		exit(0);
+
+
+
+
+				
 	
 		//TODO: select() the fds connected 
 		
@@ -191,72 +296,5 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 
 
 	}
-	/*int maxfd;
-	struct sockaddr_in targetServAddr;
-	ssize_t r;
-	fd_set rset;
-	struct timeval tv;
-		
-
-	// TODO: SSL Server initialization
-	
-	// TODO: SSL Client initializiation
-
-	
-	
-	FD_ZERO(&rset);
-	//FD_SET(sslh->targetServiceFd, &rset); // as this socket is not connected to anyone, it should to be responsible for select to fail
-	FD_SET(sslh->inConnFd, &rset);
-	//maxfd = max(sslh->targetServiceFd, sslh->inConnFd) + 1;
-	maxfd = sslh->inConnFd + 1;
-
-	// wait 3 seconds for initial client payload
-	// try to receive server payload if there is no 
-	// payload from the client.
-	tv.tv_sec = 5;
-	tv.tv_usec = 0; 
-	
-	while (-1 != select(maxfd, &rset, NULL, NULL, &tv)) {
-		if (FD_ISSET(sslh->targetServiceFd, &rset)) {
-			// we received data from the internet server
-
-			msg(MSG_DEBUG, "Received data from target server!");
-			r = read(sslh->targetServiceFd, payloadRead, MAXLINE - 1);
-			
-			// TODO: Read payload and log to file
-
-			// TODO: write payload to the client socket
-
-			if (!r) {
-				msg(MSG_DEBUG, "Target closed the connection...");
-				goto out;
-			}
-			
-		} else if (FD_ISSET(sslh->inConnFd, &rset)) {
-			msg(MSG_DEBUG, "Received data from infected machine!");
-			r = read(sslh->inConnFd, payloadRead, MAXLINE - 1);
-			if (!r) {
-				msg(MSG_DEBUG, "Infected machine closed the connection...");
-				goto out;
-			}
-
-			// TODO: read payload and log to file
-			//
-			// TODO: write payload to the server socket
-		} else {
-
-		}
-		FD_ZERO(&rset);
-		FD_SET(sslh->targetServiceFd, &rset); // as this socket is not connected to anyone, it should to be responsible for select to fail
-		FD_SET(sslh->inConnFd, &rset);
-		maxfd = max(sslh->targetServiceFd, sslh->inConnFd) + 1;
-		tv.tv_sec = 300;
-		tv.tv_usec = 0; 
-	}
-
-out:
-	Close_conn(sslh->inConnFd, "incoming connection, because we are done with this connection");
-	Close_conn(sslh->targetServiceFd, "connection to targetservice, because we are done with this connection");
-*/
 }
 

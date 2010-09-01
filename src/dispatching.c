@@ -305,6 +305,7 @@ int parse_conntrack(connection_t *conn) {
 
 					snprintf(portnum, end-begin+1, "%s", begin);
 
+					strcpy(conn->dest, conn->orig_dest);
 					conn->dport = atoi(portnum);
 					msg(MSG_DEBUG,"we found as source/client: %s %d and as destination/server: %s %d",conn->source,conn->sport,conn->orig_dest,conn->dport);		
 					return 0;

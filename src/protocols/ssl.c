@@ -350,7 +350,7 @@ int ph_ssl_handle_payload_stc(void* handler, connection_t* conn,  const char* pa
 
 int ph_ssl_handle_payload_cts(void* handler, connection_t* conn, const char* payload, ssize_t* len)
 {
-	if (conn->log_client_struct_initialized == 0) {
+	if (conn->log_client_struct_initialized == 100) {
 		struct ssl_struct* logdata = (struct ssl_struct*) malloc(sizeof(struct ssl_struct));
 		
 		snprintf(logdata->server_cert,MAX_PATH_LENGTH,"ssl/Cert_Info_%s",conn->timestamp);
