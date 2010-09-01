@@ -276,19 +276,18 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 				if (app_proto == SSL_Proto) {
 					// We have found a SSL request from the client
 					pid_t childpid;
-					
+					struct ssl_handler_t* sh = sslhandler_create(tcph);
+					msg(MSG_DEBUG,"port %d",sh->sslServerPort);
 
 					if ( (childpid = pm_fork_temporary()) == 0) {        // child process
 						msg(MSG_DEBUG, "Forked SSL handler with pid %d", getpid());
-						struct ssl_handler_t* sh = sslhandler_create(tcph);
-						msg(MSG_DEBUG,"port %d",sh->sslServerPort);
 						sslhandler_run(sh);
 						sslhandler_destroy(sh);
 						Exit(0);
 					}
 					else {	 // parent process
 						// wait until the child process is finished
-						
+						sleep(2);
 					}
 
 
