@@ -197,7 +197,7 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 	BIO *sbio;
 	BIO *cbio;
 	SSL_CTX *ctx;
-	SSL *ssl;
+	SSL *ssl = NULL;
 	SSL *sslClient;
 	int r;
 
@@ -208,32 +208,50 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 
 	SSL_CTX_set_session_id_context(ctx,(void*)&s_server_session_id_context,sizeof s_server_session_id_context); 
 
-	while(1) {
-		msg(MSG_DEBUG,"entered endless loop..");
-	      if((sslh->serverConnectionSocket=accept(sslh->serverSocket,0,0))<0)
-	           {
-		   	msg(MSG_FATAL,"problem accepting");
-			continue;
-		   }
 
-		
-		msg(MSG_DEBUG,"initialized BIOs");
-	   	sbio=BIO_new_socket(sslh->serverConnectionSocket,BIO_NOCLOSE);
-		ssl=SSL_new(ctx);
-		SSL_set_bio(ssl,sbio,sbio);
-		
-		msg(MSG_DEBUG,"ready for SSL accept");
-		if((r=SSL_accept(ssl)<=0))
-		{
-			msg(MSG_FATAL,"SSL accept error");
+	// PREPARING THE SSL SERVER (which will communicate with the trumanbox)
+	
+	if((sslh->serverConnectionSocket=accept(sslh->serverSocket,0,0))<0)
+	{
+			msg(MSG_FATAL,"problem accepting");
 			goto shutdown;
-		}
+	}
 
-    	sslh->clientSocket=tcp_connect(sslh->dest,sslh->destPort);
-	if (sslh->clientSocket == -1) goto shutdown;
+	// Initialize SSL SERVER BIOS 
+	
+	sbio=BIO_new_socket(sslh->serverConnectionSocket,BIO_NOCLOSE);
+	ssl=SSL_new(ctx);
+	SSL_set_bio(ssl,sbio,sbio);
+	
+	
+	if((r=SSL_accept(ssl)<=0))
+	{
+		msg(MSG_FATAL,"SSL accept error");
+		goto shutdown;
+	}
+
+
+
+	// PREPARING THE SSL CLIENT (which will communicate with the *REAL* SSL server)
+	
+    	// Connect the Client SSL socket 
+
+	SSL_CTX *clctx;
+    	SSL_METHOD *clmeth;
     
-    	/* Connect the Client SSL socket */
-    	sslClient=SSL_new(ctx);
+	/* Global system initialization*/
+	SSL_library_init();
+	SSL_load_error_strings();
+	
+	/* Create our context*/
+	clmeth=SSLv23_method();
+	clctx=SSL_CTX_new(clmeth);
+
+	sslh->clientSocket=tcp_connect(sslh->dest,sslh->destPort);
+	if (sslh->clientSocket == -1) 
+		goto shutdown;
+    
+    	sslClient=SSL_new(clctx);
     	cbio=BIO_new_socket(sslh->clientSocket,BIO_NOCLOSE);
     	SSL_set_bio(sslClient,cbio,cbio);
 
@@ -243,30 +261,20 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 		goto shutdown;
 	}
 	
-	struct timeval tv;
-	tv.tv_sec = 5;
-	tv.tv_usec = 0;
+	char buf[MAXLINE];
+	int len;
+	BIO *io,*ssl_bio;
 
-	int maxfd;
-	fd_set rset;
-	FD_ZERO(&rset);
-	FD_SET(sslh->serverConnectionSocket, &rset);
-	maxfd = sslh->serverConnectionSocket + 1;
-		char buf[2*MAXLINE];
-		int len;
-		BIO *io,*ssl_bio;
+	io=BIO_new(BIO_f_buffer());
+	ssl_bio=BIO_new(BIO_f_ssl());
+	BIO_set_ssl(ssl_bio,ssl,BIO_CLOSE);
+	BIO_push(io,ssl_bio);
+		
+		 	while (1) {
+	
+				r=BIO_gets(io,buf,MAXLINE-1);
 
-		io=BIO_new(BIO_f_buffer());
-		ssl_bio=BIO_new(BIO_f_ssl());
-		BIO_set_ssl(ssl_bio,ssl,BIO_CLOSE);
-		BIO_push(io,ssl_bio);
-
-
-		while (-1 != select(maxfd, &rset, NULL, NULL, &tv)) {
-			if (FD_ISSET(sslh->serverConnectionSocket, &rset)) {
-				msg(MSG_DEBUG,"received something from the malware client");
-				r=BIO_gets(io,buf,2*MAXLINE-1);
-
+				msg(MSG_DEBUG,"payload: %s",buf);
 				switch(SSL_get_error(ssl,r)){
 				case SSL_ERROR_NONE:
 					len=r;
@@ -278,8 +286,7 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 					msg(MSG_FATAL,"SSL read problem");
 				}
 
-			msg(MSG_DEBUG,"we rcvd %d bytes",r);
-			
+			msg(MSG_DEBUG,"rcvd %d bytes from Malware",r);
 			int bytesWritten= 0;
 			while (bytesWritten != r) {
 				msg(MSG_DEBUG,"try to write '%s'",buf+bytesWritten);
@@ -297,66 +304,81 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 						goto shutdown;
 						}
 				}
-			}
+			}	
+			
 			/* Look for the blank line that signals
 			 the end of the HTTP headers */
-			if(!strcmp(buf,"\r\n") || strcmp(buf,"\n"))
-				break;
+			//if(!strcmp(buf,"\r\n") || strcmp(buf,"\n"))
+				if (!strcmp(buf,"\r\n")) {
+					bzero(buf,MAXLINE);
+				    /* Now read the server's response, assuming
+				       that it's terminated by a close */
+				    while(1){
+				      r=SSL_read(sslClient,buf,MAXLINE);
+				      switch(SSL_get_error(sslClient,r)){
+					case SSL_ERROR_NONE:
+					  //len=r;
+					  msg(MSG_DEBUG,"no error");
+					  
+					/* Now perform renegotiation if requested */
+					if(client_auth==CLIENT_AUTH_REHANDSHAKE){
+					SSL_set_verify(ssl,SSL_VERIFY_PEER |
+					SSL_VERIFY_FAIL_IF_NO_PEER_CERT,0);
+
+					/* Stop the client from just resuming the
+					 un-authenticated session */
+					SSL_set_session_id_context(ssl,
+					(void *)&s_server_auth_session_id_context,
+					sizeof(s_server_auth_session_id_context));
+
+					if(SSL_renegotiate(ssl)<=0)
+					msg(MSG_FATAL,"SSL renegotiation error");
+					if(SSL_do_handshake(ssl)<=0)
+					msg(MSG_FATAL,"SSL renegotiation error");
+					ssl->state=SSL_ST_ACCEPT;
+					if(SSL_do_handshake(ssl)<=0)
+					msg(MSG_FATAL,"SSL renegotiation error");
+					
+					}
+					int bwritten = BIO_write(io,buf,r);
+					
+					msg(MSG_DEBUG,"written to truman: %d bytes",bwritten);
+
+					if((r=BIO_flush(io))<0)
+						msg(MSG_FATAL,"Error flushing BIO");
+						
+				
+					  break;
+					case SSL_ERROR_ZERO_RETURN:
+					  goto shutdown;
+					case SSL_ERROR_SYSCALL:
+					  msg(MSG_FATAL,"SSL Error: Premature close\n");
+					  goto shutdown;
+					default:
+					  {
+						msg(MSG_FATAL,"SSL read problem");
+						goto shutdown;
+					 }         
+					}
+
+				    }
+				
+
+
+
+			}	
+		}
+
+
 			
-			/* Now perform renegotiation if requested */
-			if(client_auth==CLIENT_AUTH_REHANDSHAKE){
-			SSL_set_verify(ssl,SSL_VERIFY_PEER |
-			SSL_VERIFY_FAIL_IF_NO_PEER_CERT,0);
-
-			/* Stop the client from just resuming the
-			 un-authenticated session */
-			SSL_set_session_id_context(ssl,
-			(void *)&s_server_auth_session_id_context,
-			sizeof(s_server_auth_session_id_context));
-
-			if(SSL_renegotiate(ssl)<=0)
-			msg(MSG_FATAL,"SSL renegotiation error");
-			if(SSL_do_handshake(ssl)<=0)
-			msg(MSG_FATAL,"SSL renegotiation error");
-			ssl->state=SSL_ST_ACCEPT;
-			if(SSL_do_handshake(ssl)<=0)
-			msg(MSG_FATAL,"SSL renegotiation error");
-			}
-
-			if((r=BIO_puts
-			(io,"HTTP/1.0 200 OK\r\n"))<=0)
-			msg(MSG_FATAL,"Write error");
-			if((r=BIO_puts
-			(io,"Server: EKRServer\r\n\r\n"))<=0)
-			msg(MSG_FATAL,"Write error");
-			if((r=BIO_puts
-			(io,"Server test page\r\n"))<=0)
-			msg(MSG_FATAL,"Write error");
-
-			if((r=BIO_flush(io))<0)
-			msg(MSG_FATAL,"Error flushing BIO");
 
 
-		}
-		else if (FD_ISSET(sslh->clientSocket, &rset)) {
 
-			msg(MSG_DEBUG,"omg we received something from the ssl real server!");
-		}
-		else {
-                        // We received a timeout. There are now two possiblities:
-                        // 1.) We already identified the protocol: There is something wrong, as there should not be any timeout
-                        // 2.) We did not identify the payload: We need to perform some  actions to enable payload identification
-                        msg(MSG_DEBUG,"Received a timeout???");
-                }
-                FD_ZERO(&rset);
-                FD_SET(sslh->clientSocket, &rset); // as this socket is not connected to anyone, it should to be responsible for select to fail
-                FD_SET(sslh->serverConnectionSocket, &rset);
-                maxfd = max(sslh->serverConnectionSocket, sslh->clientSocket) + 1;
-                tv.tv_sec = 300;
-                tv.tv_usec = 0;
 
-	}
+		
+
 		shutdown:
+		msg(MSG_DEBUG,"'OHOH shutdown called");
 		r=SSL_shutdown(ssl);
 		if(!r){
 		/* If we called SSL_shutdown() first then
@@ -381,7 +403,7 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 		close(sslh->serverConnectionSocket);
 		SSL_CTX_free(ctx);
 	       	close(sslh->clientSocket);
-		exit(0);
+		return;
 
 
 
@@ -398,5 +420,4 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 
 
 	}
-}
 
