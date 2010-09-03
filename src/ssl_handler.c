@@ -198,8 +198,10 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 	BIO *cbio;
 	SSL_CTX *ctx;
 	SSL *ssl = NULL;
-	SSL *sslClient;
-	int r;
+	SSL *sslClient = NULL;;
+	SSL_CTX *clctx = NULL;
+    	SSL_METHOD *clmeth;
+	 int r;
 
 	msg(MSG_DEBUG,"Build our SSL context");
 	ctx=initialize_ctx("sslserver.pem","password");
@@ -236,9 +238,7 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 	
     	// Connect the Client SSL socket 
 
-	SSL_CTX *clctx;
-    	SSL_METHOD *clmeth;
-    
+   
 	/* Global system initialization*/
 	SSL_library_init();
 	SSL_load_error_strings();
@@ -260,7 +260,15 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 		msg(MSG_FATAL,"SSL connect error");
 		goto shutdown;
 	}
-	
+	struct timeval tv;
+	tv.tv_sec = 5;
+	tv.tv_usec = 0;
+
+	int maxfd;
+	fd_set rset;
+	FD_ZERO(&rset);
+	FD_SET(sslh->serverConnectionSocket, &rset);
+	maxfd = sslh->serverConnectionSocket + 1;	
 	char buf[MAXLINE];
 	int len;
 	BIO *io,*ssl_bio;
@@ -270,8 +278,11 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 	BIO_set_ssl(ssl_bio,ssl,BIO_CLOSE);
 	BIO_push(io,ssl_bio);
 		
-		 	while (1) {
-	
+	while (-1 != select(maxfd, &rset, NULL, NULL, &tv)) {
+			if (FD_ISSET(sslh->serverConnectionSocket, &rset)) {
+
+			while(1) {
+				msg(MSG_DEBUG,"weiter ghts in loop");
 				r=BIO_gets(io,buf,MAXLINE-1);
 
 				msg(MSG_DEBUG,"payload: %s",buf);
@@ -309,7 +320,19 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 			/* Look for the blank line that signals
 			 the end of the HTTP headers */
 			//if(!strcmp(buf,"\r\n") || strcmp(buf,"\n"))
-				if (!strcmp(buf,"\r\n")) {
+		/*	
+			if (strstr(buf,"POST /") || strstr(buf,"PUT /")) {
+				httpPost = 1;
+			}
+		
+			
+			if (!strcmp(buf,"\r\n") && httpPost == 1) {
+				httpPost ++;
+				msg(MSG_DEBUG,"ok found the first space");
+				goto end;
+			}*/
+			
+			if (!strcmp(buf,"\r\n") ) {
 					bzero(buf,MAXLINE);
 				    /* Now read the server's response, assuming
 				       that it's terminated by a close */
@@ -319,7 +342,6 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 					case SSL_ERROR_NONE:
 					  //len=r;
 					  msg(MSG_DEBUG,"no error");
-					  
 					/* Now perform renegotiation if requested */
 					if(client_auth==CLIENT_AUTH_REHANDSHAKE){
 					SSL_set_verify(ssl,SSL_VERIFY_PEER |
@@ -367,10 +389,17 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 
 
 			}	
-		}
 
-
-			
+			}
+		 }
+                FD_ZERO(&rset);
+        //        FD_SET(sslh->clientSocket, &rset); // as this socket is not connected to anyone, it should to be responsible for select to fail
+                FD_SET(sslh->serverConnectionSocket, &rset);
+                //maxfd = max(sslh->serverConnectionSocket, sslh->clientSocket) + 1;
+                maxfd = sslh->serverConnectionSocket + 1;
+		tv.tv_sec = 300;
+                tv.tv_usec = 0;	 
+	}
 
 
 
@@ -400,24 +429,16 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 		}
 
 		SSL_free(ssl);
+		SSL_free(sslClient);
 		close(sslh->serverConnectionSocket);
 		SSL_CTX_free(ctx);
+		SSL_CTX_free(clctx);
 	       	close(sslh->clientSocket);
 		return;
 
 
 
 
-				
-	
-		//TODO: select() the fds connected 
 		
-		//TODO: If Server FD -> write to real target fd (client fd)
-
-		//TODO: If Client FD -> write to trumanbox (server fd)
-	
-	
-
-
 	}
 

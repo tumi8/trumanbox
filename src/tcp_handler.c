@@ -140,7 +140,7 @@ void tcphandler_determine_target(struct tcp_handler_t* tcph, protocols_app app_p
 
 int tcphandler_handle_ssl(struct tcp_handler_t* tcph)
 {
-	// We have found a SSL request from the client
+// We have found a SSL request from the client
 	pid_t childpid;
 	struct ssl_handler_t* sh = sslhandler_create(tcph);
 	msg(MSG_DEBUG,"port %d",sh->sslServerPort);
