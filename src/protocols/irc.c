@@ -9,6 +9,7 @@
 static void inject_commands(const char* payload , ssize_t * len) {
 	// we would like to inject WHO #Channel when we found a command JOIN #channel 
 	char* ptr = strstr(payload,"JOIN ");
+	char* tmpPtr = NULL;
 	char channel[1000];
 	bzero(channel,1000);
 
@@ -26,8 +27,13 @@ static void inject_commands(const char* payload , ssize_t * len) {
 
 		//now concatenate a new command to the end of the payload
 		ptr = strrchr(payload,'\n');
-		ptr = ptr + 1;
+		while (ptr != NULL) {
+			ptr = ptr + 1;
+			tmpPtr = ptr;
+			ptr = strrchr(ptr, '\n');
+		}
 
+		ptr = tmpPtr;
 		snprintf(ptr,1000,"WHO %s\n",channel);
 		
 
@@ -42,8 +48,14 @@ static void inject_commands(const char* payload , ssize_t * len) {
 	
 		// concatenate a new command to the end of the payload
 		ptr = strrchr(payload,'\n');
-		ptr = ptr + 1;
+		
+		while (ptr != NULL) {
+			ptr = ptr + 1;
+			tmpPtr = ptr;
+			ptr = strrchr(ptr, '\n');
+		}
 
+		ptr = tmpPtr;
 		snprintf(ptr,1000,"LIST\nUSERS\n");
 			
 		*len = strlen(payload);
