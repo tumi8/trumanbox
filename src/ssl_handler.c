@@ -5,6 +5,7 @@
 #include <netdb.h>
 #include "definitions.h"
 #include "helper_net.h"
+#include "helper_file.h"
 #include "msg.h"
 #include "configuration.h"
 #include "wrapper.h"
@@ -27,6 +28,9 @@ static int s_server_auth_session_id_context = 2;
 #define CLIENT_AUTH_REQUEST 1
 #define CLIENT_AUTH_REQUIRE 2
 #define CLIENT_AUTH_REHANDSHAKE 3
+#define MAX_STATEMENT 1000
+/*
+*/
 
 static int tcp_connect(char* host, int port)
   
@@ -142,6 +146,17 @@ void load_dh_params(ctx,file)
       msg(MSG_FATAL,"Couldn't set DH parameters");
   }
 
+static int log_to_db(struct ssl_handler_t* t, char* filename, char* from) {
+
+	
+	char statement[MAX_STATEMENT];
+	snprintf(statement, MAX_STATEMENT, "insert into SSL_MITM_LOGS (ClientIP,ClientPort,ServerIP,RealServerIP,ServerPort,binaryLocation,type,date,TrumanTimestamp,sample_id) Values (inet('%s'),%d,inet('%s'),inet('%s'),%d,'%s','%s', (select current_timestamp),'%s', (select distinct value from trumanbox_settings where key = 'CURRENT_SAMPLE'))",
+	t->tcphandler->connection->source,t->tcphandler->connection->sport,t->dest,t->dest,t->destPort,filename,from,t->tcphandler->connection->timestamp
+	);
+	execute_statement(statement);				    
+	return 0;
+
+}
 
 struct ssl_handler_t* sslhandler_create(struct tcp_handler_t* tcph)
 {
@@ -280,9 +295,12 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 		
 	while (-1 != select(maxfd, &rset, NULL, NULL, &tv)) {
 			if (FD_ISSET(sslh->serverConnectionSocket, &rset)) {
+			char filename[MAX_PATH_LENGTH];
+			char timestamp[100];
+			create_timestamp(timestamp);
+			snprintf(filename,MAX_PATH_LENGTH,"ssl_mitm/received/%s",timestamp);
 
 			while(1) {
-				msg(MSG_DEBUG,"weiter ghts in loop");
 				r=BIO_gets(io,buf,MAXLINE-1);
 
 				msg(MSG_DEBUG,"payload: %s",buf);
@@ -295,10 +313,13 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 					break;
 				default:
 					msg(MSG_FATAL,"SSL read problem");
+					goto shutdown;
 				}
 
 			msg(MSG_DEBUG,"rcvd %d bytes from Malware",r);
 			int bytesWritten= 0;
+			
+			append_binarydata_to_file(filename,buf,r);
 			while (bytesWritten != r) {
 				msg(MSG_DEBUG,"try to write '%s'",buf+bytesWritten);
 				bytesWritten = bytesWritten + SSL_write(sslClient,buf+bytesWritten,r-bytesWritten);
@@ -334,7 +355,11 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 			
 			if (!strcmp(buf,"\r\n") ) {
 					bzero(buf,MAXLINE);
-				    /* Now read the server's response, assuming
+					log_to_db(sslh,filename,"client");
+					create_timestamp(timestamp);
+					snprintf(filename,MAX_PATH_LENGTH,"ssl_mitm/sent/%s",timestamp);
+
+	/* Now read the server's response, assuming
 				       that it's terminated by a close */
 				    while(1){
 				      r=SSL_read(sslClient,buf,MAXLINE);
@@ -342,6 +367,7 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 					case SSL_ERROR_NONE:
 					  //len=r;
 					  msg(MSG_DEBUG,"no error");
+					append_binarydata_to_file(filename,buf,r);
 					/* Now perform renegotiation if requested */
 					if(client_auth==CLIENT_AUTH_REHANDSHAKE){
 					SSL_set_verify(ssl,SSL_VERIFY_PEER |
@@ -372,20 +398,23 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 				
 					  break;
 					case SSL_ERROR_ZERO_RETURN:
-					  goto shutdown;
+					  goto finish_log;
 					case SSL_ERROR_SYSCALL:
 					  msg(MSG_FATAL,"SSL Error: Premature close\n");
-					  goto shutdown;
+					  goto finish_log;
 					default:
 					  {
 						msg(MSG_FATAL,"SSL read problem");
-						goto shutdown;
+						goto finish_log;
 					 }         
 					}
 
 				    }
-				
 
+			finish_log:
+
+			log_to_db(sslh,filename,"server");
+			//goto shutdown
 
 
 			}	
