@@ -259,7 +259,8 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 	SSL_load_error_strings();
 	
 	/* Create our context*/
-	clmeth=SSLv23_method();
+	//clmeth=SSLv23_method();
+	clmeth = TLSv1_method();
 	clctx=SSL_CTX_new(clmeth);
 
 	sslh->clientSocket=tcp_connect(sslh->dest,sslh->destPort);
@@ -414,7 +415,7 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 			finish_log:
 
 			log_to_db(sslh,filename,"server");
-			//goto shutdown
+			goto shutdown;
 
 
 			}	
