@@ -188,14 +188,14 @@ void disp_run(struct dispatcher_t* disp)
 		}
 		else if (connection.net_proto == UDP) {
 
-			//if ( (childpid = pm_fork_temporary()) == 0) {
+		//	if ( (childpid = pm_fork_temporary()) == 0) {
 				connection.app_proto = UNKNOWN_UDP;
 				msg(MSG_DEBUG, "Forked UDP handler with pid %d", getpid());
 				struct udp_handler_t* u = udphandler_create(disp->udpfd,disp->config,&connection,disp->pi,disp->ph);
 				udphandler_run(u);
-				udphandler_destroy(u);
-			/*	Exit(0);
-			}*/
+			udphandler_destroy(u);
+			//	Exit(0);
+		//	}
 		}
 		else if (connection.net_proto == CONTROL) {
 			enum e_command res = read_command(disp->config, disp->controlfd);
@@ -233,22 +233,29 @@ static enum e_command read_command(struct configuration_t* config, int fd)
 	ssize_t r;
 	socklen_t clilen;
 	struct sockaddr_in cliaddr;
-	const char* magic_string = conf_get(config, "main", "magic_string");
+	const char* remote_pw_string = conf_get(config, "main", "remotepw");
+	const char* restart_string = conf_get(config, "main", "logger_restart_string");
 	const char* start_string = conf_get(config, "main", "logger_start_string");
 	const char* stop_string = conf_get(config, "main", "logger_stop_string");
 
 	r = Recvfrom(fd, payload, MAXLINE, 0, (SA *)  &cliaddr, &clilen);
-	msg(MSG_DEBUG, "Received %s, magic string: %s", payload, magic_string);
 	// TODO: remove -1. i need this because i'm testing with netcat which adds an additional \n
-	if (!strncmp(payload, magic_string, r - 1)) {
-		return restart_analysis;
+	int pwlen = strlen(remote_pw_string);
+	if (!strncmp(payload,remote_pw_string,pwlen)) {
+		msg(MSG_DEBUG,"Password successfully received!");
+		if (strstr(payload,restart_string) != 0) {
+			return restart_analysis;
+		}
+		else if (strstr(payload,start_string) != 0) {
+			return start_analysis;
+		}
+		else if (strstr(payload,stop_string) != 0)  {
+			return stop_analysis;
+		}
+		msg(MSG_DEBUG,"unknown command entered");
+
 	}
-	else if (!strncmp(payload,start_string,r-1)) {
-		return start_analysis;
-	}
-	else if (!strncmp(payload,stop_string,r-1)) {
-		return stop_analysis;
-	}
+	
 	return unknown_command;
 }
 
