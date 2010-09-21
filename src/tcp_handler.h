@@ -11,6 +11,7 @@ struct tcp_handler_t {
 	int sock;
 	connection_t* connection;
 	int inConnFd;
+	int sslMitmActive;
 	int targetServiceFd;
 	int connectedToFinal;
 	struct proto_identifier_t* pi;

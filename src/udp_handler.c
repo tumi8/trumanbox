@@ -58,6 +58,7 @@ void udphandler_determine_target(struct udp_handler_t* udph, protocols_app app_p
 		// This mode can therefore not determine applications which contain
 		// initial server payload and do not use standard ports
 		msg(MSG_DEBUG, "Determine target for full emulation mode...");
+		// set goal to nepenthes for port 1434 sql slammer protection
 		if (app_proto == UNKNOWN_UDP) {
 			bzero(udph->connection->dest, IPLENGTH);
 		} else {

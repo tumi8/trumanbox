@@ -19,8 +19,10 @@
 
 struct tcp_handler_t* tcphandler_create(struct configuration_t* config, connection_t* c, int inconn, struct proto_identifier_t* pi, struct proto_handler_t** ph)
 {
+	const char* sslactive = conf_get(config, "ssl", "mitm_active");
 	struct tcp_handler_t* ret = (struct tcp_handler_t*)malloc(sizeof(struct tcp_handler_t));
 	ret->config = config;
+	ret->sslMitmActive = atoi(sslactive);
 	ret->mode = conf_get_mode(config);
 	ret->connection = c;
 	ret->inConnFd = inconn;
@@ -140,7 +142,11 @@ void tcphandler_determine_target(struct tcp_handler_t* tcph, protocols_app app_p
 
 int tcphandler_handle_ssl(struct tcp_handler_t* tcph)
 {
-	// We have found a SSL request from the client
+	if (tcph->sslMitmActive == 0) {
+		msg(MSG_DEBUG,"SSL MITM Mode inactive");
+		return 0;
+}
+// We have found a SSL request from the client
 	pid_t childpid;
 	struct ssl_handler_t* sh = sslhandler_create(tcph);
 	msg(MSG_DEBUG,"port %d",sh->sslServerPort);
@@ -171,19 +177,47 @@ int tcphandler_handle_ssl(struct tcp_handler_t* tcph)
 int tcphandler_handle_unknown(struct tcp_handler_t* tcph, struct sockaddr_in* targetServAddr)
 {
 	protocols_app app_proto = UNKNOWN;
+	const char* nepenthesactive = conf_get(tcph->config, "nepenthes", "active");
+	int nepactive = atoi(nepenthesactive);
+	if (nepactive != 0)  {
+		msg(MSG_DEBUG,"nepenthes is active with port %d",tcph->connection->dport);
+		switch (tcph->connection->dport) {
+						case 42:
+						case 135:
+						case 139:
+						case 445:
+						case 1023:
+						case 1025:
+						case 1433:
+							targetServAddr->sin_family = AF_INET;
+							Inet_pton(AF_INET, conf_get(tcph->config, "nepenthes", "nepenthes_redirect"), &targetServAddr->sin_addr);
+							Inet_ntop(AF_INET, &targetServAddr->sin_addr, tcph->connection->dest, IPLENGTH);
 
+							msg(MSG_DEBUG,"we changed target IP: %s",tcph->connection->dest);
+							return -1;
+							break;
+						default:
+							break;
+			}
+
+	}
+	// check for nepenthes
+/*	*/
 	// try to save the day
 	switch (tcph->mode) {
 	case full_emulation:
 		app_proto = tcph->pi->byport(tcph->pi, tcph->connection);
 		// if portbased failed:
 		if (app_proto == UNKNOWN) {
+			// set nepenthes goal for ports:
+			// 42, 135, 139, 445, 1023, 1025, 1433
 			msg(MSG_ERROR, "Cannot identify application protocol in full_emulation mode!");
-			return -1;
+
 		}
 		tcphandler_determine_target(tcph, app_proto, targetServAddr);
 		break;
 	case  half_proxy:
+
 		tcphandler_determine_target(tcph, app_proto, targetServAddr);
 		break;
 	case full_proxy:
