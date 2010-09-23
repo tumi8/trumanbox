@@ -56,6 +56,7 @@ struct s_connection {
 	char orig_dest[IPLENGTH];
 	u_int16_t sport;
 	u_int16_t dport;
+	u_int16_t orig_dport;
 	protocols_net net_proto;
 	protocols_app app_proto;
 	int destOffline; // indicates whether this connection should be handled in emulation mode (that is, manipulating the payload)

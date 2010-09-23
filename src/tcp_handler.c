@@ -20,7 +20,9 @@
 struct tcp_handler_t* tcphandler_create(struct configuration_t* config, connection_t* c, int inconn, struct proto_identifier_t* pi, struct proto_handler_t** ph)
 {
 	const char* sslactive = conf_get(config, "ssl", "mitm_active");
+	const char* nepenthesactive = conf_get(config, "nepenthes", "active");
 	struct tcp_handler_t* ret = (struct tcp_handler_t*)malloc(sizeof(struct tcp_handler_t));
+	ret->nepenthesActive = atoi(nepenthesactive);
 	ret->config = config;
 	ret->sslMitmActive = atoi(sslactive);
 	ret->mode = conf_get_mode(config);
@@ -58,6 +60,7 @@ void tcphandler_determine_target(struct tcp_handler_t* tcph, protocols_app app_p
 		} else {
 			tcph->ph[app_proto]->determine_target(tcph->ph[app_proto]->handler, targetServAddr);
 			Inet_ntop(AF_INET, &targetServAddr->sin_addr, tcph->connection->dest, IPLENGTH);
+			tcph->connection->dport = ntohs(targetServAddr->sin_port);
 		}
 		break;
 	case half_proxy:
@@ -66,63 +69,7 @@ void tcphandler_determine_target(struct tcp_handler_t* tcph, protocols_app app_p
 		// initial server string
 /*
 		msg(MSG_DEBUG, "Determine target for half proxy mode...");
-		if (tcph->connection->destOffline == 0) { // we had no timeout yet to the given target server
-
-			// first of all, we set the target as the original target (without modifying it)
-			bzero(targetServAddr, sizeof(*targetServAddr));
-			targetServAddr->sin_family = AF_INET;
-			targetServAddr->sin_port = htons((uint16_t)21);
-			memcpy(tcph->connection->dest, tcph->connection->orig_dest, strlen(tcph->connection->orig_dest));
-			tcph->connection->dest[strlen(tcph->connection->orig_dest)] = '\0'; // null termination for the address
-			Inet_pton(AF_INET, tcph->connection->dest, &targetServAddr->sin_addr);		
-
-
-			// now we try to establish a connection to the original target and the given port within the timeinterval tv  
-			int testFd = 0;
-			testFd = Socket(AF_INET, SOCK_STREAM, 0);
-			struct timeval tv;
-			tv.tv_sec = 2;
-			tv.tv_usec = 0;
-			setsockopt(testFd,SOL_SOCKET,SO_SNDTIMEO,&tv,sizeof(tv));
-			int status = Connect(testFd, (struct sockaddr *) targetServAddr, sizeof(*targetServAddr));
-			
-			if (status == -2 ) {
-				msg(MSG_DEBUG, "connection refused");
-				targetServAddr->sin_port = htons((uint16_t)tcph->connection->dport);
-			}
-			else if (status == -1)
-			{
-				msg(MSG_DEBUG,"dest is offline");
-				// the connection to the original target / port failed, so we change the target to our local emulation server
-				
-				if (app_proto == UNKNOWN) {
-					bzero(tcph->connection->dest, IPLENGTH);
-				} else {
-					tcph->ph[app_proto]->determine_target(tcph->ph[app_proto]->handler, targetServAddr);
-					Inet_ntop(AF_INET, &targetServAddr->sin_addr, tcph->connection->dest, IPLENGTH);
-				}
-				
-				tcph->connection->destOffline = 1;	
-			}
-			else {
-				// connection to the target server succeeded, thus no modification at the target is necessary
-				Close_conn(testFd, "port open");
-				targetServAddr->sin_port = htons((uint16_t)tcph->connection->dport);
-				}
-
-		}
-		else {
-
-				// we already received a timeout for this target and thus we do not forward all requests to our local services (emulation)
-				if (app_proto == UNKNOWN) {
-					bzero(tcph->connection->dest, IPLENGTH);
-				} else {
-					tcph->ph[app_proto]->determine_target(tcph->ph[app_proto]->handler, targetServAddr);
-					Inet_ntop(AF_INET, &targetServAddr->sin_addr, tcph->connection->dest, IPLENGTH);
-				}
-		}
-
-		break;*/
+					break;*/
 	case full_proxy:
 		// Connect to the original target (if this target is available)
 		msg(MSG_DEBUG, "Determine target for full proxy mode ...");
@@ -177,9 +124,8 @@ int tcphandler_handle_ssl(struct tcp_handler_t* tcph)
 int tcphandler_handle_unknown(struct tcp_handler_t* tcph, struct sockaddr_in* targetServAddr)
 {
 	protocols_app app_proto = UNKNOWN;
-	const char* nepenthesactive = conf_get(tcph->config, "nepenthes", "active");
-	int nepactive = atoi(nepenthesactive);
-	if (nepactive != 0)  {
+	if (tcph->nepenthesActive != 0)  {
+		
 		msg(MSG_DEBUG,"nepenthes is active with port %d",tcph->connection->dport);
 		switch (tcph->connection->dport) {
 						case 42:

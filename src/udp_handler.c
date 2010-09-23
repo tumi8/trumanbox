@@ -61,6 +61,7 @@ void udphandler_determine_target(struct udp_handler_t* udph, protocols_app app_p
 		// set goal to nepenthes for port 1434 sql slammer protection
 		if (app_proto == UNKNOWN_UDP) {
 			bzero(udph->connection->dest, IPLENGTH);
+			memcpy(udph->connection->dest,udph->connection->source,strlen(udph->connection->source));
 		} else {
 			udph->ph[app_proto]->determine_target(udph->ph[app_proto]->handler, targetServAddr);
 			Inet_ntop(AF_INET, &targetServAddr->sin_addr, udph->connection->dest, IPLENGTH);
@@ -135,10 +136,10 @@ void udphandler_run(struct udp_handler_t* udph)
 				bzero(&targetServAddr, sizeof(targetServAddr));
 				targetServAddr.sin_family = AF_INET;
 				targetServAddr.sin_port = htons((uint16_t)udph->connection->sport);
-				memcpy(udph->connection->dest, udph->connection->source, strlen(udph->connection->source));
-				memcpy(udph->connection->orig_dest, udph->connection->source, strlen(udph->connection->source));
+				//memcpy(udph->connection->dest, udph->connection->source, strlen(udph->connection->source));
+				//memcpy(udph->connection->orig_dest, udph->connection->source, strlen(udph->connection->source));
 				Inet_pton(AF_INET, udph->connection->dest, &targetServAddr.sin_addr);
-					
+				Inet_pton(AF_INET, udph->connection->orig_dest, &targetServAddr.sin_addr);
 			}
 			
 			// all right we finished parsing the conntrack table and we extracted all necessary information (source ip/port, dest ip/port)

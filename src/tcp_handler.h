@@ -12,6 +12,7 @@ struct tcp_handler_t {
 	connection_t* connection;
 	int inConnFd;
 	int sslMitmActive;
+	int nepenthesActive;
 	int targetServiceFd;
 	int connectedToFinal;
 	struct proto_identifier_t* pi;

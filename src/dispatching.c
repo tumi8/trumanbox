@@ -314,6 +314,7 @@ int parse_conntrack(connection_t *conn) {
 
 					strcpy(conn->dest, conn->orig_dest);
 					conn->dport = atoi(portnum);
+					conn->orig_dport = conn->dport;
 					msg(MSG_DEBUG,"we found as source/client: %s %d and as destination/server: %s %d",conn->source,conn->sport,conn->orig_dest,conn->dport);		
 					return 0;
 				}

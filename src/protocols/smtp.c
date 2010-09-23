@@ -75,6 +75,7 @@ int ph_smtp_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 	if (strncasecmp(payload, "rcpt to:", 8) == 0) {
 		ptr = strchr(payload, ':');
 		ptr++;
+		bzero(ptr,strlen(ptr));
 		sprintf(ptr, LOCAL_EMAIL_ADDRESS);
 		msg(MSG_DEBUG, "changed payload from client:%s", payload);
 			*len = strlen(payload);
