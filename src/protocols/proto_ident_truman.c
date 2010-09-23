@@ -65,7 +65,7 @@ protocols_app pi_buildin_payload(struct proto_identifier_t* pi, connection_t *co
 		if (strstr(payload,"HTTP/")!=0) {
 			conn->app_proto = HTTP;
 		}
-		else if ((strncmp(payload, "CAP ",4) == 0) ||(strncmp(payload, "NICK ", 5) == 0))
+		else if ((strncmp(payload, "CAP ",4) == 0) || (strstr(payload,"NICK ") != 0)  || (strstr(payload,"USER ") != 0))
 			conn->app_proto = IRC;
 		else if (strncmp(payload, "FTP_data", 8) == 0) {
 			conn->app_proto = FTP_data;

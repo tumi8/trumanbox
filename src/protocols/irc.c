@@ -40,7 +40,7 @@ static void inject_commands(const char* payload , ssize_t * len) {
 		*len = strlen(payload);	
 	}
 
-	ptr = strstr(payload,"USER ");
+	ptr = strstr(payload,"NICK ");
 
 	if (ptr != NULL) {
 		// inject LIST and USERS command to obtain information about the channels and users

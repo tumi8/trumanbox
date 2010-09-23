@@ -142,7 +142,7 @@ void tcphandler_determine_target(struct tcp_handler_t* tcph, protocols_app app_p
 
 int tcphandler_handle_ssl(struct tcp_handler_t* tcph)
 {
-	if (tcph->sslMitmActive == 0) {
+	if (tcph->sslMitmActive == 0 || tcph->mode == full_emulation) {
 		msg(MSG_DEBUG,"SSL MITM Mode inactive");
 		return 0;
 }
