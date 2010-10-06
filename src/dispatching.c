@@ -30,8 +30,7 @@ struct dispatcher_t {
 
 enum e_command { unknown_command, start_analysis, stop_analysis, restart_analysis };
 
-static enum e_command read_command(struct configuration_t* disp, int fd);
-//static int parse_conntrack(connection_t *conn);
+static enum e_command read_command(struct configuration_t* disp, int fd, char** filename);
 
 struct dispatcher_t* disp_create(struct configuration_t* c)
 {
@@ -188,17 +187,20 @@ void disp_run(struct dispatcher_t* disp)
 		}
 		else if (connection.net_proto == UDP) {
 
-		//	if ( (childpid = pm_fork_temporary()) == 0) {
+		if ( (childpid = pm_fork_temporary()) == 0) {
 				connection.app_proto = UNKNOWN_UDP;
 				msg(MSG_DEBUG, "Forked UDP handler with pid %d", getpid());
 				struct udp_handler_t* u = udphandler_create(disp->udpfd,disp->config,&connection,disp->pi,disp->ph);
 				udphandler_run(u);
 			udphandler_destroy(u);
-			//	Exit(0);
-		//	}
+			Exit(0);
+		}
 		}
 		else if (connection.net_proto == CONTROL) {
-			enum e_command res = read_command(disp->config, disp->controlfd);
+			char malwaresample_filename[MAX_PATH_LENGTH];
+			bzero(malwaresample_filename,MAX_PATH_LENGTH);
+			char* ptrToSamplefilename = malwaresample_filename;
+			enum e_command res = read_command(disp->config, disp->controlfd,&ptrToSamplefilename);
 			if (res == restart_analysis) {
 				msg(MSG_DEBUG, "Got restart analysis command. Killing Processes.");
 				pm_kill_temporary();
@@ -209,8 +211,16 @@ void disp_run(struct dispatcher_t* disp)
 				msg(MSG_DEBUG, "Restarted logging process!");
 			}
 			else if (res == start_analysis) {
-				msg(MSG_DEBUG,"Got start analysis command");
-				logger_get()->create_log(logger_get());
+				msg(MSG_DEBUG,"Got start analysis command for sample :'%s'",malwaresample_filename);
+				char update_trumanbox_runtime_id[1000] = "update trumanbox_settings set value = value+1 where key = 'CURRENT_SAMPLE'";
+				execute_statement(update_trumanbox_runtime_id);
+				char new_malware_dataset[1000];
+				snprintf(new_malware_dataset,1000,"insert into malwaresamples (id,beginlogging,comments) values ((select t.value from trumanbox_settings t where t.key = 'CURRENT_SAMPLE'), (select current_timestamp), '%s' )",malwaresample_filename);
+				execute_statement(new_malware_dataset);
+
+				
+				
+//				logger_get()->create_log(logger_get());
 				msg(MSG_DEBUG,"Started logging process");
 			}
 			else if (res == stop_analysis) {
@@ -226,7 +236,7 @@ void disp_run(struct dispatcher_t* disp)
 	}
 }
 
-static enum e_command read_command(struct configuration_t* config, int fd)
+static enum e_command read_command(struct configuration_t* config, int fd, char** filename)
 {
 	// TODO: extend dummy interface
 	char payload[MAXLINE];
@@ -237,7 +247,7 @@ static enum e_command read_command(struct configuration_t* config, int fd)
 	const char* restart_string = conf_get(config, "main", "logger_restart_string");
 	const char* start_string = conf_get(config, "main", "logger_start_string");
 	const char* stop_string = conf_get(config, "main", "logger_stop_string");
-
+	char* ptrToFilename = NULL;
 	r = Recvfrom(fd, payload, MAXLINE, 0, (SA *)  &cliaddr, &clilen);
 	// TODO: remove -1. i need this because i'm testing with netcat which adds an additional \n
 	int pwlen = strlen(remote_pw_string);
@@ -246,7 +256,13 @@ static enum e_command read_command(struct configuration_t* config, int fd)
 		if (strstr(payload,restart_string) != 0) {
 			return restart_analysis;
 		}
-		else if (strstr(payload,start_string) != 0) {
+		else if ((ptrToFilename = strstr(payload,start_string)) != 0) {
+			// we now extract the filename of the malware sample, given as third argument
+			ptrToFilename = strstr(ptrToFilename," ");
+			ptrToFilename ++;
+			char keys[] = "\n\r \0";
+			int len = strcspn(ptrToFilename,keys);
+			memcpy(*filename,ptrToFilename,len);
 			return start_analysis;
 		}
 		else if (strstr(payload,stop_string) != 0)  {
@@ -299,7 +315,6 @@ int parse_conntrack(connection_t *conn) {
 				end = strchr(begin, ' ');
 			
 				snprintf(portnum, end-begin+1, "%s", begin);
-				msg(MSG_DEBUG,"we found src and sport %s",portnum);
 				if (conn->sport == atoi(portnum)) {
 					// We have found right conntrack entry
 					begin = strstr(line, "dst=") + 4;
@@ -315,7 +330,7 @@ int parse_conntrack(connection_t *conn) {
 					strcpy(conn->dest, conn->orig_dest);
 					conn->dport = atoi(portnum);
 					conn->orig_dport = conn->dport;
-					msg(MSG_DEBUG,"we found as source/client: %s %d and as destination/server: %s %d",conn->source,conn->sport,conn->orig_dest,conn->dport);		
+					fclose(fd);
 					return 0;
 				}
 				else {
@@ -334,6 +349,7 @@ int parse_conntrack(connection_t *conn) {
 		}
 	}
 
+	fclose(fd);
 	return -1;
 }
 

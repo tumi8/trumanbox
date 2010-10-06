@@ -279,7 +279,7 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 	struct timeval tv;
 	tv.tv_sec = 5;
 	tv.tv_usec = 0;
-
+	int requestWithBody = 0;
 	int maxfd;
 	fd_set rset;
 	FD_ZERO(&rset);
@@ -299,7 +299,7 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 			char filename[MAX_PATH_LENGTH];
 			char timestamp[100];
 			create_timestamp(timestamp);
-			snprintf(filename,MAX_PATH_LENGTH,"ssl_mitm/received/%s",timestamp);
+			snprintf(filename,MAX_PATH_LENGTH,"ssl_mitm/sent/%s",timestamp);
 
 			while(1) {
 				r=BIO_gets(io,buf,MAXLINE-1);
@@ -339,26 +339,19 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 				}
 			}	
 			
-			/* Look for the blank line that signals
-			 the end of the HTTP headers */
-			//if(!strcmp(buf,"\r\n") || strcmp(buf,"\n"))
-		/*	
-			if (strstr(buf,"POST /") || strstr(buf,"PUT /")) {
-				httpPost = 1;
+			if (requestWithBody == 0) {		
+				if (strstr(buf,"Content-Length:") != 0) {
+					requestWithBody = 1;
+				
+				}
 			}
-		
-			
-			if (!strcmp(buf,"\r\n") && httpPost == 1) {
-				httpPost ++;
-				msg(MSG_DEBUG,"ok found the first space");
-				goto end;
-			}*/
-			
-			if (!strcmp(buf,"\r\n") ) {
+
+
+			if (!strcmp(buf,"\r\n")) {
 					bzero(buf,MAXLINE);
 					log_to_db(sslh,filename,"client");
 					create_timestamp(timestamp);
-					snprintf(filename,MAX_PATH_LENGTH,"ssl_mitm/sent/%s",timestamp);
+					snprintf(filename,MAX_PATH_LENGTH,"ssl_mitm/received/%s",timestamp);
 
 	/* Now read the server's response, assuming
 				       that it's terminated by a close */
@@ -413,10 +406,12 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 				    }
 
 			finish_log:
-
+			
 			log_to_db(sslh,filename,"server");
-			goto shutdown;
-
+			if (requestWithBody != 1) { 
+				goto shutdown;
+			}
+			
 
 			}	
 

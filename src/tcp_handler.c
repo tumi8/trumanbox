@@ -55,6 +55,7 @@ void tcphandler_determine_target(struct tcp_handler_t* tcph, protocols_app app_p
 		// This mode can therefore not determine applications which contain
 		// initial server payload and do not use standard ports
 		msg(MSG_DEBUG, "Determine target for full emulation mode...");
+		tcph->connection->destOffline = 1;
 		if (app_proto == UNKNOWN) {
 			bzero(tcph->connection->dest, IPLENGTH);
 		} else {
@@ -135,6 +136,8 @@ int tcphandler_handle_unknown(struct tcp_handler_t* tcph, struct sockaddr_in* ta
 						case 1023:
 						case 1025:
 						case 1433:
+						case 3127:
+						case 3128:
 							targetServAddr->sin_family = AF_INET;
 							Inet_pton(AF_INET, conf_get(tcph->config, "nepenthes", "nepenthes_redirect"), &targetServAddr->sin_addr);
 							Inet_ntop(AF_INET, &targetServAddr->sin_addr, tcph->connection->dest, IPLENGTH);
@@ -267,12 +270,16 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 			bzero(payloadRead,MAXLINE); // clean the old payload string, because we want to save new data
 			bzero(payload,MAXLINE*2);
 			msg(MSG_DEBUG, "Received data from infected machine!");
-			r = read(tcph->inConnFd, payloadRead, MAXLINE - 1);
-			if (!r) {
+			r = Read(tcph->inConnFd, payloadRead, MAXLINE - 1);
+			msg(MSG_DEBUG,"read the data");
+			if (r <= 0) {
 				msg(MSG_DEBUG, "Infected machine closed the connection...");
 				goto out;
 			}
-	
+			else {
+				msg(MSG_DEBUG,"r is not null '%d'",r);
+			
+			}
 			//update the number of reads
 			tcph->connection->countReads++;
 				

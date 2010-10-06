@@ -41,7 +41,8 @@ int execute_nonquery_statement(char* stmt) {
         if (PQresultStatus(res) != PGRES_COMMAND_OK)
                 {
                 msg(MSG_FATAL,"ERROR: %s",PQresultErrorMessage(res));
-                result = 0;
+                msg(MSG_FATAL,"while executing '%s'",stmt);
+		result = 0;
                 }
                 else
                 {

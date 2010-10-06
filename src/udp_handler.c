@@ -59,13 +59,12 @@ void udphandler_determine_target(struct udp_handler_t* udph, protocols_app app_p
 		// initial server payload and do not use standard ports
 		msg(MSG_DEBUG, "Determine target for full emulation mode...");
 		// set goal to nepenthes for port 1434 sql slammer protection
-		if (app_proto == UNKNOWN_UDP) {
-			bzero(udph->connection->dest, IPLENGTH);
-			memcpy(udph->connection->dest,udph->connection->source,strlen(udph->connection->source));
-		} else {
-			udph->ph[app_proto]->determine_target(udph->ph[app_proto]->handler, targetServAddr);
-			Inet_ntop(AF_INET, &targetServAddr->sin_addr, udph->connection->dest, IPLENGTH);
-		}
+		bzero(udph->connection->dest,IPLENGTH);
+		bzero(targetServAddr, sizeof(targetServAddr));
+		targetServAddr->sin_family = AF_INET;
+		targetServAddr->sin_port = htons((uint16_t)udph->connection->dport);
+		memcpy(udph->connection->dest, udph->connection->source, strlen(udph->connection->source));
+		Inet_pton(AF_INET, udph->connection->dest, &targetServAddr->sin_addr);
 		break;
 	case half_proxy:
 
@@ -129,25 +128,28 @@ void udphandler_run(struct udp_handler_t* udph)
 				}
 			}
 			
-			if (found_dest) 
+			if (found_dest) {
+				msg(MSG_DEBUG,"src: '%s' dest '%s'",udph->connection->source,udph->connection->dest);
 				udphandler_determine_target(udph, UNKNOWN_UDP, &targetServAddr);
+				msg(MSG_DEBUG,"src: '%s' dest '%s'",udph->connection->source,udph->connection->dest);
+				if(strstr(udph->connection->dest,"192.168.27.255") != 0) {
+					goto out;	
+					}
+			}		
 			else {
-				// we have found no destination, therefore the sender gets an echo message
+				msg(MSG_DEBUG,"we have found no destination, therefore the sender gets an echo message");
 				bzero(&targetServAddr, sizeof(targetServAddr));
 				targetServAddr.sin_family = AF_INET;
 				targetServAddr.sin_port = htons((uint16_t)udph->connection->sport);
-				//memcpy(udph->connection->dest, udph->connection->source, strlen(udph->connection->source));
+				bzero(udph->connection->dest,IPLENGTH);
+				bzero(udph->connection->orig_dest,IPLENGTH);
+				strcpy(udph->connection->dest, udph->connection->source);
+				strcpy(udph->connection->orig_dest,udph->connection->source);
 				//memcpy(udph->connection->orig_dest, udph->connection->source, strlen(udph->connection->source));
 				Inet_pton(AF_INET, udph->connection->dest, &targetServAddr.sin_addr);
 				Inet_pton(AF_INET, udph->connection->orig_dest, &targetServAddr.sin_addr);
 			}
 			
-			// all right we finished parsing the conntrack table and we extracted all necessary information (source ip/port, dest ip/port)
-		/*	bzero(&targetServAddr, sizeof(targetServAddr));
-			targetServAddr.sin_family = AF_INET;
-			targetServAddr.sin_port = htons((uint16_t)udph->connection->dport);
-			Inet_pton(AF_INET, udph->connection->orig_dest, &targetServAddr.sin_addr);
-		*/
 
 			msg(MSG_DEBUG,"num bytes rcvd: %d",r);
 			proto_handler = udph->ph[UNKNOWN_UDP];
@@ -161,6 +163,7 @@ void udphandler_run(struct udp_handler_t* udph)
 			}
 			memset(payload, 0, sizeof(payload));
 		}
+		out:
 		FD_ZERO(&rset);
 		FD_SET(udph->udpfd, &rset);
 		maxfdp = udph->udpfd + 1;
