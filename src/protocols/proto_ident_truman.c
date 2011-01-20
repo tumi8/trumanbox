@@ -28,9 +28,9 @@ protocols_app pi_buildin_port(struct proto_identifier_t* pi, connection_t *conn)
 		case 25:
 			conn->app_proto = SMTP;
 			break;
-		case 80:
-			conn->app_proto = HTTP;
-			break;
+		//case 80:
+		//	conn->app_proto = HTTP;
+		//	break;
 		case 6667:
 			conn->app_proto = IRC;
 			break;
@@ -96,6 +96,7 @@ protocols_app pi_buildin_payload(struct proto_identifier_t* pi, connection_t *co
 			
 			bzero(conn->sslVersion,100);	
 			
+			int sslHellorequest = 0;
 			if (payload[0] == '\x16') {
 				msg(MSG_DEBUG,"Handshake");
                         	if (payload[1] == '\x3' && payload[2] == '\x0') strcpy(conn->sslVersion,"SSL v3 ");
@@ -106,7 +107,9 @@ protocols_app pi_buildin_payload(struct proto_identifier_t* pi, connection_t *co
                         	char MessageType[100];
 				bzero(MessageType,100);
                        		switch (payload[5]) {
-                                case '\x0':  strcpy(MessageType,"HelloRequest"); break;
+                                case '\x0':  strcpy(MessageType,"HelloRequest");
+					sslHellorequest = 1;
+					break;
                                 case '\x1':  strcpy(MessageType,"Client Hello"); break;
                                 case '\x2':  strcpy(MessageType,"Server Hello"); break;
                                 case '\xb':  strcpy(MessageType,"Certificate"); break;
@@ -117,7 +120,7 @@ protocols_app pi_buildin_payload(struct proto_identifier_t* pi, connection_t *co
                                 case '\xf0':  strcpy(MessageType,"ClientKeyExchange"); break;
                                 case '\xf4':  strcpy(MessageType,"Finished"); break;
                         }
-			if (MessageType != NULL)  {
+			if (MessageType != NULL && sslHellorequest != 0)  {
 			
                         	strcat(conn->sslVersion,MessageType);
 				conn->app_proto = SSL_Proto;
