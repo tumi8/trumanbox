@@ -1,0 +1,158 @@
+The TrumanBox is configured via ini files. The ini-files contain several
+sections which configure the TrumanBox modules. This file documents the
+available options
+
+Section: [main]
+===============
+
+mode = 2 # 1 == full emulation, 2 == half proxy, 3 == full proxy
+
+	Possible values:
+			1, (full emulation)
+			2, (half proxy)
+			3, (full proxy)
+
+	The "mode" options configures how the TrumanBox handels intercepted
+	connections from the malware to the Internet. The TrumanBox has three
+	possiblities to cope with a connection:
+	
+	1.) It can drop the connection
+	2.) It can forward the connection to the Internet
+	3.) It may redirect the connection to a local service
+
+	The mode defines the behavior: 
+		full emulation mode will try to redirect the connection to a
+		local service or drop the connection if that is not possible
+
+		half proxy, will try to forward the connection to the internet
+		and redirect to a local service in case the internet servcie
+		is not reachable
+
+		full proxy will only try to pass the connection to the
+		internet
+
+
+
+config_dir=/etc/trumanbox
+
+	Non-functional at the moment
+
+protocol_identifier = 0 # 0 == buildin, 1 == opendpi
+
+	Defines how the trumanbox will try to identify application layer
+	protocols. The buildin mode is the only mode currenlty supported.
+	
+global_redirect="127.0.0.1"
+
+	Default redirect address that will be used by the TrumanBox for
+	redirecting connections. This value may be overriden for special
+	services
+
+work_dir="/var/local/truman-box"
+
+	Directory that will be used as working directory for the trumanbox. It
+	must exists before the trumanbox starts. The program will then try to
+	change into this directory. All relative paths are relative to
+	work_dir.
+
+remotepw="strenggeheim"
+
+	To be documented. 
+
+logger_restart_string="restart"
+
+	to be documented
+
+logger_start_string="start"
+
+	to be documented 
+
+logger_stop_string="stop"
+
+	to be documented
+
+Section: [dns]
+==============
+
+The TrumanBox ships a small buildin DNS resolver, that can resolve malware DNS
+requests and influence to which address the malware connects.
+
+port = 53
+
+	The port at which the DNS server will listen
+
+listen_address = "192.168.27.254"
+
+	The IP address on which the DNS server will listen.
+
+fake_address = "192.168.28.1"
+
+	The address that should be returned if a domain name is no longer
+	resolvable by the standard resolving process.
+
+return_original = 1 
+	Possible values:
+		0 == always return fake, 
+		1 == return original if resolving is possible
+
+	By default, the buildin DNS server aims at resolving the domain name,
+	which is requested by the Malware. This resolving may sucecced or
+	fail. This option defines what happens in the case that the requested
+	domain can be resolved.
+
+Section [ftp]:
+==============
+
+protocol_dir=/var/local/truman-box/ftp
+ftp_redirect = "127.0.0.1"
+
+Section [http]:
+===============
+
+protocol_dir=/var/local/truman-box/http
+http_redirect = "127.0.0.1"
+
+Section [irc]:
+==============
+
+protocol_dir=/var/local/truman-box/irc
+irc_redirect = "127.0.0.1"
+
+Section [smtp]:
+===============
+
+protocol_dir=/var/local/truman-box/smtp
+smtp_redirect = "127.0.0.1"
+
+
+Section [ssl]:
+==============
+
+mitm_active = 1 # 1==active , 0 == inactive
+
+Section [nepenthes]:
+====================
+
+active = 1 # 1 == active, 0 == inactive
+nepenthes_redirect = "127.0.0.1"
+
+Section [logging]:
+==================
+
+type=postgresql
+db_file="/var/local/truman-box/trumanbox.db"
+testmode = 0  # 0 == no test mode (productive mode) , 1 == productive mode
+
+# use the following configuration options to configure the old
+# trumanbox style logging.
+#type="truman"
+#log_base="/var/local/truman-box/"
+#server_responses="/var/local/truman-box/server-responses"
+#ftp="/var/local/truman-box/ftp"
+#irc="/var/local/truman-box/irc"
+#smtp="/var/local/truman-box/smtp"
+#http="/var/local/truman-box/http"
+#dump="/var/local/truman-box/dump"
+#dns="/var/local/truman-box/dns"
+#xml="/var/local/output.xml"
+
