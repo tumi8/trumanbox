@@ -1,48 +1,30 @@
 How to install the Trumanbox:
 
+The TrumanBox is currenlty under heavy development and does not support system
+wide installation right now. We currently run it from the source directories
+right now. 
+
 Assuming your system fulfils all requirements (see below) you just have to follow these steps:
  
-#1.) change the configurations files according your system
-#	configuration files are:
-#		* src/definitions.h
-#		* etc/trumanbox/bridge_config.sh
-
 1.) run autoreconf -i
 
 2.) run configure 
 
-2.) run 'make'
+3.) run 'make'
 
-#3.) run 'make install' (as root) (not supported right now)
+4.) edit your config file (see src/configs for example configuration files)
 
-#4.) run '/etc/trumanbox/setting_up_the_bridge.sh" (as root) (not supported right now)
+5.) Adopt the configuration parameters (MALWARE_IF, INTERNET_IF, MALWARE_IF_IP) to 
+    your system settings. Run etc/trumanbox/tb_setup.sh
 
-5.) run 'trumanbox' (as root)
-
-#6.) run 'make uninstall' (only if you don't like the trumanbox)
-
-
-#add 2.):
-#'make' will compile the program and build the executable called 'trumanbox'
-
-#add 3.):
-#'make install' will copy 
-#- the executable file named trumanbox to /usr/sbin
-#- all files in etc/trumanbox to /etc/trumanbox (which will be created before by mkdir)
-
-#add 6.):
-#'make uninstall' will remove 
-#- the executable /usr/sbin/trumanbox
-#- all files in /etc/trumanbox and delete including the folder /etc/trumanbox itself
-
+5.) run 'trumanbox -f <configfile.ini>' (as root)
 
 Requirements:
-- iptables (we use v1.3.6)
-- ebtables (we use v2.0.6)
-- bridge-utils (we use 1.2)
-- libipq (included in iptables-dev, where we use v1.3.6)
-- standard libraries for developing
+- iptables (we use v1.4.6)
+- standard development libraries
 - arbitrary HTTP, FTP, IRC, SMTP server services listening locally on their standart ports (we use Lighttpd, ProFTPD, UnrealIRC and Exim)
 - autotools 
 - opendpi (optional)
+- libsqlite-dev
+- postgres development files
 
