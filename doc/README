@@ -1,0 +1,37 @@
+The usual setup for running the trumanbox consists of at least two PCs:
+
+PC1 (running the malware) -> PC2 (running trumanbox) -> Internet
+
+PC2 needs two interfaces: One interface (e.g. eth0) connects to PC1, the other
+interface (e.g. eth1) connects to the Internet. Hence, PC2 is acting as the
+default router for PC2.
+
+It is possible to run a virtual machine on PC2, which executes the malware.
+However, we tried to run such setups and ran into many problems with the
+virtual network interfaces of some of the popular virtualization products.
+
+I recommend a setup which looks like this
+
+PC1 (runs a virtualized or native Windows/Linux/whatever platform your malware
+runs on, in our example it runs VMWare):
+
+Host interface of eth0: some private IP address, e.g. 192.168.0.1
+Vmware Setup: Bridging with eth0, virtual machine IP in the same subnet, e.g. 192.168.0.2
+DNS-Servers for the virtual machine: IP of PC2 (trumanbox ships a DNS server)
+Default Gateway for the virutal machine: IP of PC2
+
+PC2 (runs the TrumanBox):
+
+eth0 (connected to PC1), IP, e.g. 192.168.0.254
+eth1 (connected to the Internet),  public IP from your ISP
+
+The trumanbox will intercept any connection that is done from the malware to
+the Internet (if you did setup it correctly, see INSTALL for more information). 
+
+When the TrumanBox (on PC2) intercepts a connection from the malware (PC1), it
+has two possibilities to cope with the connection. It may pass the connection
+to the Internet (in case the destination host is still reachable), or it can
+redirect the connection to a local service, e.g. a locally installed ProFTP
+server. The decision depends on your trumanbox configuration and/or on whether
+the target service is reachable (see CONFIGURATION for more information).
+
