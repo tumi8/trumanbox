@@ -1,46 +1,3 @@
-/*
- * here comes the first version of the truman-box working in 4 different modes:
- *	- simulation
- *	- half-proxy
- *	- full-proxy
- *	- transparent
- *
- * - dispatcher and interception are both driven by the same process
- * - in the modes simulation, half-proxy and full-proxy a new process
- *   is forked for every new connection accepted by the dispatcher
- * - every connection is used bi-directional
- * - so far we only support tcp/ip
- *
- * this version does (in half-proxy mode):
- *  IRC:
- *    - logging
- *  FTP:
- *    - logging
- *    - payload alteration
- *      + replaying original banner, if possible
- *      + altering ftp passive response
- *    - triggering other functions:
- *	+ build filesystem structure on demand
- *  HTTP:
- *    - payload alteration:
- *      + remove encoding flag
- *    - triggering other functions:
- *	+ build filesystem structure on demand
- *	+ create index file in every created path
- *  SMTP:
- *    - payload alteration:
- *	+ replaying original banner, if possible
- *
- *
- * IMPORTANT:
- * for the transparent mode it might be necessary to apply more memspace
- * by altering the proc filesystem...
- *
- * TODO:
- * in content substitution and logging are unnecessary string copy functions...
- *
- */
-
 #include "msg.h"
 #include "configuration.h"
 #include "helper_file.h"
@@ -139,11 +96,6 @@ int main(int argc, char **argv) {
 		msg(MSG_FATAL, "Failure while initializing logging module. Exiting ...");
 		return -1;
 	}
-
-
-
-
-
 
 	dns_resolver = dns_create_resolver(config);
 	dispatcher = disp_create(config);
