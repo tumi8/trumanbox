@@ -20,6 +20,17 @@
 #define MAX_FILE_NAME 256
 #define DOCUMENT_ENCODING "ISO-8859-1"
 
+static const char* _log_base = "log/";
+static const char* _ftp = "log/ftp";
+static const char* _irc = "log/irc";
+static const char* _smtp = "log/smtp";
+static const char* _http = "log/http";
+static const char* _dump = "log/dump";
+static const char* _dns = "log/dns";
+static const char* _xml = "log/xml";
+static const char* _serv_response = "log/serv-resp";
+
+
 struct lt_data { 
 	const char* basedir;
 	const char* serv_response;
@@ -99,9 +110,10 @@ static int create_or_clean_dir(const char* dirname, mode_t mode)
 				if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, ".."))
 					continue;
 				snprintf(file, MAX_FILE_NAME -1, "%s/%s", dirname, ent->d_name);
-				if (-1 == unlink(file)) {
-					msg(MSG_DEBUG, "Cannot clean file %s: %s", file, strerror(errno));
-				}
+				// TODO: why did we want to clean the directory??? Seems like a stupid idea to me!?!?
+				//if (-1 == unlink(file)) {
+				//	msg(MSG_DEBUG, "Cannot clean file %s: %s", file, strerror(errno));
+				//}
 			}
 			closedir(dir);
 		} else {
@@ -157,55 +169,46 @@ int lt_init(struct logger_t* logger)
 	struct lt_data* data = (struct lt_data*)malloc(sizeof(struct lt_data));
 	data->basedir = conf_get(logger->config, "logging", "log_base");
 	if (!data->basedir) {
-		msg(MSG_FATAL, "No basedir given in configuration file!");
-		goto out;
+		data->basedir = _log_base;
 	}
 
 	data->serv_response = conf_get(logger->config, "logging", "server_responses");
-	if (!data->basedir) {
-		msg(MSG_FATAL, "No server_responses dir given in configuration file!");
-		goto out;
+	if (!data->serv_response) {
+		data->serv_response = _serv_response;
 	}
 
 	data->ftp = conf_get(logger->config, "logging", "ftp");
-	if (!data->basedir) {
-		msg(MSG_FATAL, "No ftp dir given in configuration file!");
-		goto out;
+	if (!data->ftp) {
+		data->ftp = _ftp;
 	}
 
 	data->irc = conf_get(logger->config, "logging", "irc");
-	if (!data->basedir) {
-		msg(MSG_FATAL, "No logging dir given in configuration file!");
-		goto out;
+	if (!data->irc) {
+		data->irc = _irc;
 	}
 
 	data->smtp = conf_get(logger->config, "logging", "smtp");
-	if (!data->basedir) {
-		msg(MSG_FATAL, "No smtp dir given in configuration file!");
-		goto out;
+	if (!data->smtp) {
+		data->smtp = _smtp;
 	}
 	data->http = conf_get(logger->config, "logging", "http");
-	if (!data->basedir) {
-		msg(MSG_FATAL, "No http dir given in configuration file!");
-		goto out;
+	if (!data->http) {
+		data->http = _http;
 	}
 	
 	data->dump = conf_get(logger->config, "logging", "dump");
-	if (!data->basedir) {
-		msg(MSG_FATAL, "No dump dir given in configuration file!");
-		goto out;
+	if (!data->dump) {
+		data->dump = _dump;
 	}
 
 	data->dns = conf_get(logger->config, "logging", "dns");
-	if (!data->basedir) {
-		msg(MSG_FATAL, "No dns dir given in configuration file!");
-		goto out;
+	if (!data->dns) {
+		data->dns = _dns;
 	}
 
 	data->xml = conf_get(logger->config, "logging", "xml");
-	if (!data->basedir) {
-		msg(MSG_FATAL, "No xml result file given in configuration file!");
-		goto out;
+	if (!data->xml) {
+		data->xml = _xml;
 	}
 
 	ret = init_directories(data);
