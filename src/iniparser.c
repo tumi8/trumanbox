@@ -1,5 +1,5 @@
 /*
- Changed by Lothar Braun <lothar@lobraun.de> @ 2008
+ Changed by Lothar Braun <lothar@lobraun.de> @ 2008-2011
 
  Based upon libiniparser, by Nicolas Devillard
  Hacked into 1 file (m-iniparser) by Freek/2005
@@ -645,7 +645,7 @@ const char * iniparser_getvalue(dictionary *d, const char *section, const char *
 	snprintf(tmp, ASCIILINESZ, "%s:%s", section, key);
 
         if(!(ret=iniparser_getstring(d, tmp, NULL))) {
-                fprintf(stderr, "iniparser: value is NULL, maybe looking for wrong key? Section: %s, key: %s\n", section, key);
+                //fprintf(stderr, "iniparser: value is NULL, maybe looking for wrong key? Section: %s, key: %s\n", section, key);
         }
 
         return ret;
