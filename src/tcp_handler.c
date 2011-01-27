@@ -22,9 +22,17 @@ struct tcp_handler_t* tcphandler_create(struct configuration_t* config, connecti
 	const char* sslactive = conf_get(config, "ssl", "mitm_active");
 	const char* nepenthesactive = conf_get(config, "nepenthes", "active");
 	struct tcp_handler_t* ret = (struct tcp_handler_t*)malloc(sizeof(struct tcp_handler_t));
-	ret->nepenthesActive = atoi(nepenthesactive);
+	if (nepenthesactive) {
+		ret->nepenthesActive = atoi(nepenthesactive);
+	} else {
+		ret->nepenthesActive = 0;
+	}
 	ret->config = config;
-	ret->sslMitmActive = atoi(sslactive);
+	if (sslactive) {
+		ret->sslMitmActive = atoi(sslactive);
+	} else {
+		ret->sslMitmActive = 0;
+	}
 	ret->mode = conf_get_mode(config);
 	ret->connection = c;
 	ret->inConnFd = inconn;

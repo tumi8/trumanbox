@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
 		// no mode given, check if config file specifies a mode
 		mode = conf_get_mode(config);
 		if (mode == invalid) {
-			msg(MSG_DEBUG, "No valid operation mode in config file %s. Starting interactive mode...");
+			msg(MSG_DEBUG, "No valid operation mode in config file. Starting interactive mode...");
 			do {
 				mode = interactive_menu();
 			} while (mode == invalid);
