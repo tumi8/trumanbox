@@ -150,6 +150,7 @@ static int log_to_db(struct ssl_handler_t* t, char* filename, char* from) {
 
 	
 	char statement[MAX_STATEMENT];
+	 
 	snprintf(statement, MAX_STATEMENT, "insert into SSL_MITM_LOGS (ClientIP,ClientPort,orig_ServerIP,ServerIP,orig_serverport,ServerPort,binaryLocation,type,date,TrumanTimestamp,sample_id) Values (inet('%s'),%d,inet('%s'),inet('%s'),%d,%d,'%s','%s', (select current_timestamp),'%s', (select distinct value from trumanbox_settings where key = 'CURRENT_SAMPLE'))",
 	t->tcphandler->connection->source,t->tcphandler->connection->sport,t->dest,t->dest,t->destPort,t->destPort,filename,from,t->tcphandler->connection->timestamp
 	);

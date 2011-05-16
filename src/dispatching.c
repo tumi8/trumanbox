@@ -217,8 +217,6 @@ void disp_run(struct dispatcher_t* disp)
 				char new_malware_dataset[1000];
 				snprintf(new_malware_dataset,1000,"insert into malwaresamples (id,beginlogging,comments) values ((select t.value from trumanbox_settings t where t.key = 'CURRENT_SAMPLE'), (select current_timestamp), '%s' )",malwaresample_filename);
 				execute_statement(new_malware_dataset);
-
-				
 				
 //				logger_get()->create_log(logger_get());
 				msg(MSG_DEBUG,"Started logging process");

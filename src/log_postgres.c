@@ -19,14 +19,38 @@
 
 
 #define MAX_STATEMENT 8000
+#define CONN_INFO 100
 
 static char statement[MAX_STATEMENT];
+
+struct log_postgres {
+//	char hostaddr[CONN_INFO];
+//	char port[CONN_INFO];
+//	char dbname[CONN_INFO];
+//	char user[CONN_INFO];
+//	char pw[CONN_INFO];
+	const char* hostaddr;
+	const char* port;
+	const char* dbname;
+	const char* user;
+	const char* pw;
+};
+
+/* TODO: Fix this hack
+ * We are for now keeping a global log_postgres struct to store the
+ * db information. These hacky execute_* functions will open a new
+ * db connection every time they insert something. This is the most 
+ * inefficient and stupid idea and needs to be fixed ... 
+ */
+struct log_postgres lg_psql;
 
 
 int execute_nonquery_statement(char* stmt) {
  
 	int result = 0;
-	PGconn* psql  = PQconnectdb("hostaddr = '127.0.0.1' port = '5432' dbname = 'trumanlogs' user = 'trumanbox' password = 'das$)13x!#+23' connect_timeout = '10'");
+	char connect_string[MAX_STATEMENT];
+	snprintf(connect_string, MAX_STATEMENT, "hostaddr = '%s' port = '%s' dbname = '%s' user = '%s' password = '%s' connect_timeout = '10'", lg_psql.hostaddr, lg_psql.port, lg_psql.dbname, lg_psql.user, lg_psql.pw);
+	PGconn* psql  = PQconnectdb(connect_string);
 	if (!psql) {
                 msg(MSG_FATAL,"libpq error : PQconnectdb returned NULL.\n\n");
                 return result;
@@ -56,7 +80,9 @@ int execute_nonquery_statement(char* stmt) {
 
 int execute_query_statement_singlevalue(char* dst, char* stmt) {
 	int result = 0;
-       	PGconn* psql = PQconnectdb("hostaddr = '127.0.0.1' port = '5432' dbname = 'trumanlogs' user = 'trumanbox' password = 'das$)13x!#+23' connect_timeout = '10'");
+	char connect_string[MAX_STATEMENT];
+       	snprintf(connect_string, MAX_STATEMENT, "hostaddr = '%s' port = '%s' dbname = '%s' user = '%s' password = '%s' connect_timeout = '10'", lg_psql.hostaddr, lg_psql.port, lg_psql.dbname, lg_psql.user, lg_psql.pw);
+	PGconn* psql  = PQconnectdb(connect_string);
 	if (!psql) {
                 msg(MSG_FATAL,"libpq error : PQconnectdb returned NULL.\n\n");
                 return result;
@@ -99,8 +125,14 @@ int execute_statement(char* stmt) {
 // Returns: Whether connection is successful AND if tables are already present
 int lpg_init(struct logger_t* logger)
 {
-	// TODO:
-	// Check if tables are already created
+	// TODO: We assume that the database has been correctly set up
+	struct configuration_t* c = logger->config;
+	lg_psql.hostaddr = conf_get(c, "logging", "host");
+	lg_psql.port = conf_get(c, "logging", "port");
+	lg_psql.dbname = conf_get(c, "logging", "dbname");
+	lg_psql.user = conf_get(c, "logging", "dbuser");
+	lg_psql.pw = conf_get(c, "logging", "dbuser");
+
 	return 1;	
 	
 

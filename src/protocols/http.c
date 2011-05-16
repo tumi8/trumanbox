@@ -56,6 +56,7 @@ static void emulate_server_response(struct http_client_struct* data,connection_t
 		data->requestedHost,conn->orig_dest,data->requestedLocation);
 	msg(MSG_DEBUG,"execute: %s",statement);
 	execute_query_statement_singlevalue(trumantimestamp,statement);
+
 	char destination[MAX_PATH_LENGTH],path[MAX_PATH_LENGTH],filename[MAX_PATH_LENGTH],location[MAX_PATH_LENGTH];
 	strcpy(location,data->requestedLocation);
 	char src[MAX_PATH_LENGTH]; // location of the server response
@@ -81,7 +82,9 @@ static void emulate_server_response(struct http_client_struct* data,connection_t
 			
 		strcpy(conn->timestampEmulation,trumantimestamp); // save the timestamp for future purposes
 		snprintf(statement,1000,"select ResponseBodyBinaryLocation from HTTP_LOGS where trumantimestamp = '%s'",conn->timestampEmulation); // get the server response we once already received
+
 		execute_query_statement_singlevalue(src,statement);	
+
 		msg(MSG_DEBUG,"Server body binary location: %s",src);
 
 	}
