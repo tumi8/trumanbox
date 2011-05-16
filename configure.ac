@@ -14,8 +14,9 @@ AX_LIB_SQLITE3(3.0)
 AX_LIB_POSTGRESQL([8.3])
 
 
-AC_CHECK_LIB([ssl], [SSL_library_init], [], [AC_MSG_FAILURE([could not find 
-ssl])])
+#AC_CHECK_LIB([ssl], [SSL_library_init], [], [AC_MSG_FAILURE([could not find 
+#ssl])])
+AX_CHECK_OPENSSL()
 
 # new argument --with-opendpi:
 #	if used: use opendpi for protocol payload identification
