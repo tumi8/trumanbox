@@ -78,7 +78,7 @@ CREATE TABLE HTTP_LOGS (
 	RequestedLocation text,
 	UserAgent	text,
 	Method		text,
-	RequestHandler	text,
+	RequestHeader	text,
 	RequestBodyBinaryLocation text,
 	ResponseLastModified text,
 	ResponseContentType text,
