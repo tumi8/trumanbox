@@ -134,9 +134,30 @@ nepenthes_redirect = "127.0.0.1"
 Section [logging]:
 ==================
 
+
 type=postgresql
-db_file="/var/local/truman-box/trumanbox.db"
+	logger type. please use "postgres" only here
+
+host="127.0.0.1"
+	IP address that can be used for connecting to the postgres db
+
+port="5432"
+	Port that is used to connect to the postgres db
+
+dbname="mydbname"
+	Database name for trumanbox logs (you should have created this one. See INSTALL for more information)
+
+dbuser="myuser"
+	DB-User that should connect to the database
+
+dbpw="mypassword"
+	Password for DB-User
+
 testmode = 0  # 0 == no test mode (productive mode) , 1 == productive mode
+	
+
+
+HINT: The sqlite3 and truman logger don't work right now. please use the postgres logger now
 
 # use the following configuration options to configure the old
 # trumanbox style logging.
