@@ -11,6 +11,10 @@ AC_CHECK_HEADERS(sys/wait.h time.h unistd.h dirent.h)
 
 AM_PATH_XML2(2.4.0,,AC_MSG_ERROR([*** LibXML version $XML_VERSION not found!]))
 AX_LIB_SQLITE3(3.0)
+AX_LIB_POSTGRESQL([6.0])
+
+AC_CHECK_LIB([ssl], [SSL_library_init], [], [AC_MSG_FAILURE([could not find 
+ssl])])
 
 # new argument --with-opendpi:
 #	if used: use opendpi for protocol payload identification
