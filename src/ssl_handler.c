@@ -83,7 +83,7 @@ SSL_CTX *initialize_ctx(keyfile,password)
   char *keyfile;
   char *password;
   {
-    SSL_METHOD *meth;
+    const SSL_METHOD *meth;
     SSL_CTX *ctx;
     
       msg(MSG_DEBUG,"Global ssl system initialization");
@@ -215,7 +215,7 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 	SSL *ssl = NULL;
 	SSL *sslClient = NULL;;
 	SSL_CTX *clctx = NULL;
-    	SSL_METHOD *clmeth;
+    	const SSL_METHOD *clmeth;
 	 int r;
 
 	msg(MSG_DEBUG,"Build our SSL context");

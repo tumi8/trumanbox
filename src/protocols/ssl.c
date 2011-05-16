@@ -271,7 +271,7 @@ static void get_server_ssl_information(connection_t* conn, char* filename, char*
 	int sock;
 	/* Build our SSL context*/
 
-    	SSL_METHOD *meth;
+    	const SSL_METHOD *meth;
     
 		/* Global system initialization*/
 	SSL_library_init();
