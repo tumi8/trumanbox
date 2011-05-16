@@ -4,7 +4,8 @@ The TrumanBox is currenlty under heavy development and does not support system
 wide installation right now. We currently run it from the source directories
 right now. 
 
-Assuming your system fulfils all requirements (see below) you just have to follow these steps:
+Assuming your system fulfils all requirements (see below) you just have to
+follow these steps:
  
 1.) run autoreconf -i
 
@@ -12,12 +13,28 @@ Assuming your system fulfils all requirements (see below) you just have to follo
 
 3.) run 'make'
 
-4.) edit your config file (see src/configs for example configuration files)
+4.) If you use the postgresql logger, you need to set up the postgres database
+    first. Make sure it is installed correctly and running. You need to create
+    a db user and a database for your trumanbox first. After you did this,
+    make sure you can run 
+    
+    etc/trumanbox/setupdb.sh <db-user> <dbname>
 
-5.) Adopt the configuration parameters (MALWARE_IF, INTERNET_IF, MALWARE_IF_IP) to 
-    your system settings. Run etc/trumanbox/tb_setup.sh
+    where <db-user> and <dbname> are the username and the database you just
+    created. The script uses the "psql" tool for connecting to your database,
+    and will prompt you for <db-user>s password (so make sure you can connect
+    to this db using psql -U <db-user> -W <dbname>). 
 
-5.) run 'trumanbox -f <configfile.ini>' (as root)
+
+5.) Before running the trumanbox for the first time (and after each system
+    restart), you need to run the script /etc/trumanbox/tb_setup.sh. This will
+    set up the correct netfilter tables. Before runnig it, you have to adopt
+    the configuration parameters (MALWARE_IF, INTERNET_IF, MALWARE_IF_IP) to
+    your system settings.
+
+6.) edit your config file (see src/configs for example configuration files)
+
+7.) run 'trumanbox -f <configfile.ini>' (as root)
 
 Requirements:
 - iptables (we use v1.4.6)
@@ -25,6 +42,7 @@ Requirements:
 - arbitrary HTTP, FTP, IRC, SMTP server services listening locally on their standart ports (we use Lighttpd, ProFTPD, UnrealIRC and Exim)
 - autotools 
 - opendpi (optional)
-- libsqlite-dev
-- postgres development files
+- libsqlite3-dev
+- libopenssl-dev
+- postgres development files (most systems: libpqxx)
 
