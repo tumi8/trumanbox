@@ -2,14 +2,8 @@
 #define _HELPER_FILE_H_
 
 #include "definitions.h"
-#include <postgresql/libpq-fe.h>
 
 
-//int execute_statement(char* stmt); // execute sql command
-//PGconn* connect_to_db();
-int execute_nonquery_statement(char* stmt); 
-int execute_statement(char* stmt);
-int execute_query_statement_singlevalue(char* dst, char* stmt);
 int save_binarydata_to_file_generic(char* fileLocation, const char* dataToWrite, int dataLength, const char* mode);
 int save_binarydata_to_file(char* fileLocation, const char* dataToWrite, int dataLength);
 int append_binarydata_to_file(char* fileLocation, const char* dataToWrite, int dataLength);
