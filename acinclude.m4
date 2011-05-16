@@ -238,6 +238,7 @@ AC_DEFUN([AX_LIB_POSTGRESQL],
             AC_MSG_RESULT([yes])
         else
             found_postgresql="no"
+	    AC_MSG_ERROR(Could not find postgresql!)
             AC_MSG_RESULT([no])
         fi
     fi
@@ -283,6 +284,7 @@ AC_DEFUN([AX_LIB_POSTGRESQL],
         if test "$postgresql_version_check" = "1"; then
             AC_MSG_RESULT([yes])
         else
+	    AC_MSG_ERROR(Could not find postgresql!)
             AC_MSG_RESULT([no])
         fi
     fi
