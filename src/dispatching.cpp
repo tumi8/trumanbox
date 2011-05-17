@@ -28,7 +28,7 @@ static enum e_command read_command(const Configuration& config, int fd, char** f
 Dispatcher::Dispatcher(const Configuration& config)
 	: config(config)
 {
-	this->protoIdent = new ProtoIdent();// o= pi_create(c, conf_getint(c, "main", "protocol_identifier", 0));
+	this->protoIdent = pi_create(config);
 
 	int val=1; // will enable SO_REUSEADDR
 
@@ -71,7 +71,7 @@ Dispatcher::Dispatcher(const Configuration& config)
 Dispatcher::~Dispatcher()
 {
 	pm_destroy();
-	ph_destroy(this->ph);
+	ph_destroy(this->protoHandlers);
 }
 
 /*
@@ -159,7 +159,7 @@ void Dispatcher::run()
 			if ( (childpid = pm_fork_temporary()) == 0) {        /* child process */
 				msg(MSG_DEBUG, "Forked TCP handler with pid %d", getpid());
 				Close(this->tcpfd);     /* close listening socket within child process */
-				TcpHandler t(inconnfd, this->config, &connection, this->protoIdent, this->ph);
+				TcpHandler t(inconnfd, this->config, &connection, this->protoIdent, this->protoHandlers);
 				t.run();
 				Exit(0);
 			}
@@ -170,7 +170,7 @@ void Dispatcher::run()
 		if ( (childpid = pm_fork_temporary()) == 0) {
 				connection.app_proto = UNKNOWN_UDP;
 				msg(MSG_DEBUG, "Forked UDP handler with pid %d", getpid());
-				UdpHandler u(this->udpfd, this->config, &connection, this->protoIdent, this->ph);
+				UdpHandler u(this->udpfd, this->config, &connection, this->protoIdent, this->protoHandlers);
 				u.run();
 				Exit(0);
 		}

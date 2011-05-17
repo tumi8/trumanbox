@@ -53,14 +53,9 @@ std::map<protocols_app, ProtoHandler*> ph_create(const Configuration& config)
 	return ret;
 }
 
-
-int ph_destroy(ProtoHandler** p)
+void ph_destroy(std::map<protocols_app, ProtoHandler*> handlers) 
 {
-	int i = 0;
-	for (i = 0; i != UNKNOWN; i++) {
-		delete p[i];
-	}
-	delete p;
-	return 0;
+	for (std::map<protocols_app, ProtoHandler*>::interator i = handlers.begin(); i != handlers.end(); ++i)
+		delete i->second;
 }
 

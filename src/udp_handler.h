@@ -9,7 +9,7 @@ class Configuration;
 
 class UdpHandler {
 	public:
-		UdpHandler(int udpfd, const Configuration& config, connection_t* conn, ProtoIdent* ident, struct proto_handler_t** ph);
+		UdpHandler(int udpfd, const Configuration& config, connection_t* conn, ProtoIdent* ident, std::map<protocols_app, ProtoHandler*> protoHandlers);
 		~UdpHandler();
 	
 		void run();
@@ -24,7 +24,7 @@ class UdpHandler {
 		connection_t* connection;
 		int connectedToFinal;
 		ProtoIdent* protoIdent;
-		struct proto_handler_t** ph;
+		std::map<protocols_app, ProtoHandler*> protoHandlers;
 };
 
 

@@ -10,7 +10,7 @@ class SSLHandler;
 
 class TcpHandler {
 	public:
-		TcpHandler(int inconnfd, const Configuration& config, connection_t* conn, ProtoIdent* ident, struct proto_handler_t** ph);
+		TcpHandler(int inconnfd, const Configuration& config, connection_t* conn, ProtoIdent* ident, std::map<protocols_app, ProtoHandler*> ph);
 		~TcpHandler();
 	
 		void run();
@@ -30,7 +30,7 @@ class TcpHandler {
 		int targetServiceFd;
 		int connectedToFinal;
 		class ProtoIdent* protoIdent;
-		struct proto_handler_t** ph;
+		std::map<protocols_app, ProtoHandler*> protoHandlers;
 	friend class SSLHandler;
 };
 

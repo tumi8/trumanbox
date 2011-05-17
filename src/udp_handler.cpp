@@ -15,21 +15,21 @@
 #include <unistd.h>
 
 
-UdpHandler::UdpHandler(int udpfd, const Configuration& config, connection_t* c, ProtoIdent* ident, struct proto_handler_t** ph)
+UdpHandler::UdpHandler(int udpfd, const Configuration& config, connection_t* c, ProtoIdent* ident, std::map<protocols_app, ProtoHandler*> protoHandlers)
 	:config(config)
 {
 	this->udpfd = udpfd;
         this->mode = config.getMode();
         this->connection = c;
         this->protoIdent = protoIdent;
-        this->ph = ph;
+        this->protoHandlers = protoHandlers;
         this->connectedToFinal = 0;
 }
 
 
 UdpHandler::~UdpHandler()
 {
-	ph_destroy(this->ph);
+	ph_destroy(this->protoHandlers);
 }
 
 
@@ -77,7 +77,7 @@ void UdpHandler::run()
 	fd_set rset;
 	char payload[MAXLINE];
 	struct sockaddr_in targetServAddr;
-	struct proto_handler_t* proto_handler;
+	ProtoHandler* protoHandler;
 	
 	struct timeval tv;
 	int maxfdp;
@@ -140,14 +140,14 @@ void UdpHandler::run()
 			
 
 			msg(MSG_DEBUG,"num bytes rcvd: %d",r);
-			proto_handler = this->ph[UNKNOWN_UDP];
+			protoHandler = this->protoHandlers[UNKNOWN_UDP];
 			msg(MSG_DEBUG, "Sending payload to protocol handler ...");
 			Sendto(this->udpfd, payload, r, 0, (SA *) &targetServAddr, sizeof(targetServAddr));
 			if (found_dest) {
-				proto_handler->handle_payload_cts(proto_handler->handler, this->connection, payload, &r);
+				protoHandler->payloadClientToServer(this->connection, payload, &r);
 			}
 			else {
-				proto_handler->handle_payload_stc(proto_handler->handler, this->connection, payload, &r);
+				protoHandler->payloadServerToClient(this->connection, payload, &r);
 			}
 			memset(payload, 0, sizeof(payload));
 		}

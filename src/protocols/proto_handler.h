@@ -30,6 +30,6 @@ std::map<protocols_app, ProtoHandler*> ph_create(const Configuration& config);
 /* Frees all protcol handlers. This function will call protcolhandler_t->deinit for
  * all associated protocol handlers. 
  */
-int ph_destroy(ProtoHandler** handlers);
+int ph_destroy(std::map<protocols_app, ProtoHandler*> handlers);
 
 #endif

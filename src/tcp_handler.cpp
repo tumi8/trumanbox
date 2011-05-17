@@ -17,7 +17,7 @@
 #include <common/configuration.h>
 
 
-TcpHandler::TcpHandler(int inconnfd, const Configuration& config, connection_t* conn, ProtoIdent* ident, struct proto_handler_t** ph)
+TcpHandler::TcpHandler(int inconnfd, const Configuration& config, connection_t* conn, ProtoIdent* ident, std::map<protocols_app, ProtoHandler*> ph)
 	: config(config)
 {
 	this->sslMitmActive = config.getInt("ssl", "mitm_active");
@@ -27,14 +27,13 @@ TcpHandler::TcpHandler(int inconnfd, const Configuration& config, connection_t* 
 	this->inConnFd = inconnfd;
 	this->targetServiceFd = 0;
 	this->protoIdent = protoIdent;
-	this->ph = ph;
+	this->protoHandlers = ph;
 	this->connectedToFinal = 0;
 }
 
 
 TcpHandler::~TcpHandler() 
 {
-	ph_destroy(this->ph);
 }
 
 void TcpHandler::determineTarget(protocols_app app_proto, struct sockaddr_in* targetServAddr)
@@ -53,7 +52,7 @@ void TcpHandler::determineTarget(protocols_app app_proto, struct sockaddr_in* ta
 		if (app_proto == UNKNOWN) {
 			bzero(this->connection->dest, IPLENGTH);
 		} else {
-			this->ph[app_proto]->determine_target(this->ph[app_proto]->handler, targetServAddr);
+			this->protoHandlers[app_proto]->determineTarget(targetServAddr);
 			Inet_ntop(AF_INET, &targetServAddr->sin_addr, this->connection->dest, IPLENGTH);
 			this->connection->dport = ntohs(targetServAddr->sin_port);
 		}
@@ -199,7 +198,7 @@ void TcpHandler::run()
 	char payloadRead[MAXLINE];
 	char payload[2*MAXLINE];
 	protocols_app app_proto = UNKNOWN;
-	struct proto_handler_t* proto_handler;
+	ProtoHandler* protoHandler;
 
 	bzero(payload, MAXLINE);
 	this->targetServiceFd = Socket(AF_INET, SOCK_STREAM, 0);
@@ -252,8 +251,8 @@ void TcpHandler::run()
 					msg(MSG_FATAL, "We could not determine protocol after reading from source and target! But proceed anyway...");
 				}
 			}
-			proto_handler = this->ph[this->connection->app_proto];
-			proto_handler->handle_payload_stc(proto_handler->handler, this->connection, payload, &r);
+			protoHandler = this->protoHandlers[this->connection->app_proto];
+			protoHandler->payloadServerToClient(this->connection, payload, &r);
 			msg(MSG_DEBUG,"sending servermsg to infected machine");
 			if (-1 == write(this->inConnFd, payload, r)) {
 				msg(MSG_FATAL, "Could not write to target (infected machine)!");
@@ -298,7 +297,7 @@ void TcpHandler::run()
 							if (this->connection->app_proto == UNKNOWN) {
 								bzero(this->connection->dest, IPLENGTH);
 							} else {
-								this->ph[this->connection->app_proto]->determine_target(this->ph[this->connection->app_proto]->handler, &targetServAddr);
+								this->protoHandlers[this->connection->app_proto]->determineTarget(&targetServAddr);
 								Inet_ntop(AF_INET, &(&targetServAddr)->sin_addr, this->connection->dest, IPLENGTH);
 							}
 							this->connection->destOffline = 1;	
@@ -316,9 +315,9 @@ void TcpHandler::run()
 				}
 			} 
 			
-			proto_handler = this->ph[this->connection->app_proto];
+			protoHandler = this->protoHandlers[this->connection->app_proto];
 			msg(MSG_DEBUG, "Sending payload to protocol handler ... ");
-			proto_handler->handle_payload_cts(proto_handler->handler, this->connection, payload, &r);
+			protoHandler->payloadClientToServer(this->connection, payload, &r);
 			msg(MSG_DEBUG, "Sending payload to target server...%d bytes",r);
 			if (-1 == write(this->targetServiceFd, payload, r)) {
 				msg(MSG_FATAL, "Could not write to target server!");

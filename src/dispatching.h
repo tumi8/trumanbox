@@ -2,6 +2,7 @@
 #define _DISPATCHER_H_
 
 #include <common/definitions.h>
+#include <protocols/proto_handler.h>
 
 class Configuration;
 class ProtoIdent;
@@ -18,7 +19,7 @@ class Dispatcher
 		int controlfd;
 		int tcpfd;
 		int udpfd;
-		struct proto_handler_t** ph;
+		std::map<protocols_app, ProtoHandler*> protoHandlers;
 		int running;
 		const Configuration& config;
 		ProtoIdent* protoIdent;
