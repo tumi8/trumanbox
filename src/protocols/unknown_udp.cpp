@@ -49,7 +49,7 @@ int UnknownUdpHandler::payloadClientToServer(connection_t* conn, const char* pay
 }
 
 
-int UnknownUdpHandler(struct sockaddr_in* addr)
+int UnknownUdpHandler::determineTarget(struct sockaddr_in* addr)
 {
 	msg(MSG_DEBUG,"determine target in udp");
 	/*If necessary any time in the future to change the destination on-the-fly (like redirecting packets to 135/139/445 to special windows machines... etc)

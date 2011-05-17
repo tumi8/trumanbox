@@ -10,11 +10,11 @@ class Configuration;
 
 class ProtoHandler {
 	public:
-		ProtoHandler(const Configuration& config) : config(config) {}
+		ProtoHandler(const Configuration& config);
 
-		virtual int payloadServerToClient(connection_t* conn, const char* payload, ssize_t* len);
-		virtual int payloadClientToServer(connection_t* conn, const char* payload, ssize_t* len);
-		virtual int determineTarget(struct sockaddr_in* addr);
+		virtual int payloadServerToClient(connection_t* conn, const char* payload, ssize_t* len) = 0;
+		virtual int payloadClientToServer(connection_t* conn, const char* payload, ssize_t* len) = 0;
+		virtual int determineTarget(struct sockaddr_in* addr) = 0;
 
 	protected:
 		const Configuration& config;

@@ -13,6 +13,12 @@
 #include <common/msg.h>
 #include <common/configuration.h>
 
+ProtoHandler::ProtoHandler(const Configuration& config)
+	: config(config)
+{
+
+}
+
 ProtoHandler* create_handler(const Configuration& config, protocols_app app)
 {
 	switch (app) {
