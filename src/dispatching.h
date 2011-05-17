@@ -15,7 +15,6 @@ class Dispatcher
 		void run();
 	
 	private:
-		int parse_conntrack(connection_t *conn);
 		int controlfd;
 		int tcpfd;
 		int udpfd;
