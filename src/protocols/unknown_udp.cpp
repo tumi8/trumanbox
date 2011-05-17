@@ -1,41 +1,19 @@
 #include "unknown_udp.h"
 #include "wrapper.h"
 #include "helper_file.h"
-#include "msg.h"
-#include "logger.h"
 #include <stdlib.h>
 #include <string.h>
 
-struct ph_unknown_udp {
-	struct configuration_t* config;
-};
+#include <common/msg.h>
+#include <logging/logbase.h>
 
-void* ph_unknown_udp_create()
+UnknownUdpHandler::UnknownUdpHandler(const Configuration& config)
+	: ProtoHandler(config)
 {
-	void* ret = malloc(sizeof(struct ph_unknown_udp));
-	return ret;
+
 }
 
-int ph_unknown_udp_destroy(void* handler)
-{
-	free(handler);
-	return 0;
-}
-
-int ph_unknown_udp_init(void* handler, struct configuration_t* c)
-{
-	struct ph_unknown_udp* unknown_udp = (struct ph_unknown_udp*)handler;
-	unknown_udp->config = c;
-
-	return 0;
-}
-
-int ph_unknown_udp_deinit(void* handler)
-{
-	return 0;
-}
-
-int ph_unknown_udp_handle_payload_stc(void* handler, connection_t* conn,  const char* payload, ssize_t* len)
+int UnknownUdpHandler::payloadServerToClient(connection_t* conn,  const char* payload, ssize_t* len)
 {
 	struct unknown_struct* data = (struct unknown_struct*) malloc(sizeof(struct unknown_struct));
 
@@ -47,12 +25,12 @@ int ph_unknown_udp_handle_payload_stc(void* handler, connection_t* conn,  const 
 		snprintf(data->binaryLocation,MAX_PATH_LENGTH,"unknown_udp/received/%s",timestamp);
 		save_binarydata_to_file(data->binaryLocation,payload,*len);
 	}        
-	logger_get()->log_struct(logger_get(), conn, "server", data);
+	logger_get()->logStruct(conn, "server", data);
 
        	return 0;
 }
 
-int ph_unknown_udp_handle_payload_cts(void* handler, connection_t* conn, const char* payload, ssize_t* len)
+int UnknownUdpHandler::payloadClientToServer(connection_t* conn, const char* payload, ssize_t* len)
 {
 	struct unknown_struct* data = (struct unknown_struct*) malloc(sizeof(struct unknown_struct));
 
@@ -64,18 +42,14 @@ int ph_unknown_udp_handle_payload_cts(void* handler, connection_t* conn, const c
 		snprintf(data->binaryLocation,MAX_PATH_LENGTH,"unknown_udp/received/%s",timestamp);
 		save_binarydata_to_file(data->binaryLocation,payload,*len);
 	}        
-	logger_get()->log_struct(logger_get(), conn, "client", data);
+	logger_get()->logStruct(conn, "client", data);
 
         return 0;
 
 }
 
-int ph_unknown_udp_handle_packet(void* handler, const char* packet, ssize_t len)
-{
-	return 0;
-}
 
-int ph_unknown_udp_determine_target(void* handler, struct sockaddr_in* addr)
+int UnknownUdpHandler(struct sockaddr_in* addr)
 {
 	msg(MSG_DEBUG,"determine target in udp");
 	/*If necessary any time in the future to change the destination on-the-fly (like redirecting packets to 135/139/445 to special windows machines... etc)
