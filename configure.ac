@@ -2,6 +2,8 @@ AC_INIT
 AM_INIT_AUTOMAKE(TrumanBox, 0.2.99)
 AC_PREREQ(2.59)
 AC_PROG_RANLIB
+AC_PROG_CC
+AC_PROG_CXX
 
 AC_LANG([C])
 
@@ -46,5 +48,5 @@ AS_IF([test "x$with_opendpi" = "xdisabled"],
        ]
      )
 
-AC_CONFIG_FILES([Makefile src/Makefile src/common/Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile src/common/Makefile src/logging/Makefile])
 AC_OUTPUT

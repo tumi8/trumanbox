@@ -1,4 +1,4 @@
-SUBDIRS=common
+SUBDIRS=common logging
 
 bin_PROGRAMS=trumanbox
 
@@ -9,8 +9,6 @@ trumanbox_SOURCES=config.h dns_resolver.h dns_resolver.cpp helper_file.h \
 	wrapper.cpp \
 	dispatching.h helper_file.cpp helper_net.h \
 	semaphore.h process_manager.h process_manager.cpp \
-	logger.h logger.cpp log_truman.h log_truman.cpp log_sqlite.h log_sqlite.cpp \
-	log_postgres.h log_postgres.cpp \
 	main.h main.cpp  \
 	protocols/proto_ident.h protocols/proto_ident.cpp protocols/proto_handler.h \
 	protocols/proto_handler.cpp protocols/proto_ident_truman.cpp \
