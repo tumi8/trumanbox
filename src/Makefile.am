@@ -11,6 +11,8 @@ trumanbox_SOURCES=config.h dns_resolver.h dns_resolver.cpp helper_file.h \
 	semaphore.h process_manager.h process_manager.cpp \
 	main.h main.cpp
 
+trumanbox_LDADD= $(top_builddir)/src/protocols/libprotocols.a $(top_builddir)/src/logging/liblogging.a $(top_builddir)/src/common/libcommon.a
+
 AM_CFLAGS=   `xml2-config --cflags` $(OPENDPI_CFLAGS) $(POSTGRESQL_CFLAGS) $(OPENSSL_CFLAGS) -Wall -Werror -g -O0
 AM_LDFLAGS=`xml2-config --libs` -lsqlite3 $(POSTGRESQL_LDFLAGS) $(OPENSSL_LDFLAGS)
 LDADD=$(OPENDPI_LIBRARY)
