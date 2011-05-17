@@ -2,7 +2,8 @@
 #include "dns_resolver.h"
 #include "dispatching.h"
 #include "semaphore.h"
-#include "logger.h"
+
+#include <logging/logbase.h>
 
 #include <common/msg.h>
 #include <common/configuration.h>
@@ -21,7 +22,6 @@ int main(int argc, char **argv) {
 	std::string workdir;
 	int		c;
 	operation_mode_t mode = invalid;
-	struct dispatcher_t* dispatcher;
 	int msg_level = MSG_ERROR;
 	char* config_file = NULL;
 	
@@ -68,15 +68,14 @@ int main(int argc, char **argv) {
 	}
 
 	DNSResolver dns_resolver(config);
-	dispatcher = disp_create(config);
+	Dispatcher dispatcher(config);
 
 	msg(MSG_DEBUG, "Running dns resolver");
 	dns_resolver.start();
 	msg(MSG_DEBUG, "Running dispatcher");
-	disp_run(dispatcher);
+	dispatcher.run();
 	msg(MSG_DEBUG, "Stopping dns resolver");
 	dns_resolver.stop();
-	disp_destroy(dispatcher);
 	logger_destroy();
 
 	msg(MSG_DEBUG, "Trumanbox is quitting...");

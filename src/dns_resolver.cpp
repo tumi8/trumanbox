@@ -3,13 +3,14 @@
 #include "signals.h"
 #include "process_manager.h"
 #include "wrapper.h"
-#include "logger.h"
 #include "helper_file.h"
+
 
 #include <common/msg.h>
 #include <common/configuration.h>
 #include <common/definitions.h>
 
+#include <logging/logbase.h>
 
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -168,7 +169,7 @@ void DNSResolver::dns_worker(DNSResolver* resolver)
 		strcpy(data->realServerIP,real_addr_str);
 		strcpy(data->domain,domainname);
 
-		logger_get()->log_struct(logger_get(), &resolver->conn, "", data);
+		logger_get()->logStruct(&resolver->conn, "", data);
 		}
 }
 

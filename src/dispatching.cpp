@@ -6,7 +6,6 @@
 #include "tcp_handler.h"
 #include "process_manager.h"
 #include "wrapper.h"
-#include "logger.h"
 
 #include "protocols/proto_ident.h"
 #include "protocols/proto_handler.h"
@@ -14,6 +13,7 @@
 #include <common/configuration.h>
 #include <common/msg.h>
 
+#include <logging/logbase.h>
 
 #include <algorithm>
 #include <stdlib.h>
@@ -120,7 +120,7 @@ void Dispatcher::run()
 	Signal(SIGCHLD, sig_chld);
 	tries_pars_ct = 0;
 
-	logger_get()->create_log(logger_get());
+	logger_get()->createLog();
 	for ( ; ; ) {
 	start:
 		connection.net_proto = wait_for_incoming_connection(this->tcpfd, this->udpfd, this->controlfd);
@@ -184,9 +184,9 @@ void Dispatcher::run()
 				msg(MSG_DEBUG, "Got restart analysis command. Killing Processes.");
 				pm_kill_temporary();
 				msg(MSG_DEBUG, "Finalizing logfiles!");
-				logger_get()->finish_log(logger_get());
+				logger_get()->finishLog();
 				msg(MSG_DEBUG, "Creating new log!");
-				logger_get()->create_log(logger_get());
+				logger_get()->createLog();
 				msg(MSG_DEBUG, "Restarted logging process!");
 			}
 			else if (res == start_analysis) {
@@ -204,7 +204,7 @@ void Dispatcher::run()
 				msg(MSG_DEBUG,"Got stop analysis command");
 				pm_kill_temporary();
 				msg(MSG_DEBUG, "Finalizing logfiles!");
-				logger_get()->finish_log(logger_get());
+				logger_get()->finishLog();
 			}
 		} else {
 			msg(MSG_DEBUG, "we got some network protocol which is neither tcp nor udp");

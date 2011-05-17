@@ -15,6 +15,11 @@ class LogBase {
 public:
 	LogBase(const Configuration& config);
 	~LogBase();
+
+	virtual void logStruct(connection_t* conn, const char* tag, void* data) = 0;
+	virtual void logText(connection_t* conn, const char* tag, const char* message) = 0;
+	virtual void createLog() = 0;
+	virtual void finishLog() = 0;
 protected:
 	const Configuration& config;
 };
@@ -100,8 +105,8 @@ int logger_create(const Configuration& config);
 /**
  * Get the global logger object. logger_create MUST be called once before 
  * this function is called.
- */
-inline LogBase* logger_get();
+ */ 
+LogBase* logger_get();
 
 int logger_destroy();
 

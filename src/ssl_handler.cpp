@@ -396,7 +396,7 @@ void SSLHandler::run()
 
 			finish_log:
 			
-			log_to_db(filename,"server");
+			log_to_db(filename,(char*)"server");
 			if (requestWithBody != 1) { 
 				goto shutdown;
 			}
