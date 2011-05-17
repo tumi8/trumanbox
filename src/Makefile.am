@@ -1,3 +1,5 @@
+SUBDIRS=common
+
 bin_PROGRAMS=trumanbox
 
 trumanbox_SOURCES=config.h definitions.h dns_resolver.cpp helper_file.h iniparser.c  \
