@@ -1,4 +1,5 @@
 #include "logbase.h"
+#include "log_postgres.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -26,15 +27,15 @@ int logger_create(const Configuration& config)
 		THROWEXCEPTION("No logger type given in configuration file!");
 	}
 	
-	if (logger_type != "truman") {
+	if (logger_type == "truman") {
 		// TODO: Create logging object
 		THROWEXCEPTION("The old trumanbox logger is currently not avaialbe ...");
-	} else if (logger_type != "sqlite") {
+	} else if (logger_type == "sqlite") {
 		// TODO : create logging object
 		THROWEXCEPTION("The old sqlite logger is currently not available ...");
 	} 
-	 else if (logger_type != "postgresql") {
-		THROWEXCEPTION("The postgresql logger is currently not avaialbe ...");
+	 else if (logger_type == "postgresql") {
+		global_logger = new PostgresLogger(config);
 	} 
 	else {
 		THROWEXCEPTION("Unknown subsystem defined in configuration. Maybe even undefined!");
