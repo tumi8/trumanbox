@@ -3,12 +3,27 @@
 
 #include <common/definitions.h>
 
-struct dispatcher_t;
-struct configuration_t;
+class Configuration;
+class ProtoIdent;
 
-struct dispatcher_t* disp_create(struct configuration_t* c);
-int disp_destroy(struct dispatcher_t* d);
-int parse_conntrack(connection_t *conn);
-void disp_run(struct dispatcher_t* d);
+class Dispatcher
+{
+	public:
+		Dispatcher(const Configuration& c);
+		~Dispatcher();
+		void run();
+	
+	private:
+		int parse_conntrack(connection_t *conn);
+		int controlfd;
+		int tcpfd;
+		int udpfd;
+		struct proto_identifier_t* pi;
+		struct proto_handler_t** ph;
+		int running;
+		const Configuration& config;
+		ProtoIdent* protoIdent;
+		
+};
 
 #endif
