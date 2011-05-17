@@ -1,124 +1,66 @@
 #include "proto_handler.h"
-#include "definitions.h"
-#include "msg.h"
-
-#include "protocols/irc.h"
-#include "protocols/smtp.h"
-#include "protocols/http.h"
-#include "protocols/ftp.h"
-#include "protocols/ssl.h"
-#include "protocols/ftp_data.h"
-#include "protocols/unknown.h"
-#include "protocols/unknown_udp.h"
+#include "irc.h"
+#include "smtp.h"
+#include "http.h"
+#include "ftp.h"
+#include "ssl.h"
+#include "ftp_data.h"
+#include "unknown.h"
+#include "unknown_udp.h"
 #include <stdlib.h>
 
-static struct proto_handler_t* create_handler(protocols_app app)
+#include <common/definitions.h>
+#include <common/msg.h>
+#include <common/configuration.h>
+
+ProtoHandler* create_handler(const Configuration& config, protocols_app app)
 {
-	struct proto_handler_t* ret = (struct proto_handler_t*)malloc(sizeof(struct proto_handler_t));
 	switch (app) {
 	case FTP:
 	case FTP_anonym:
-		ret->handler = ph_ftp_create();
-		ret->init = ph_ftp_init;
-		ret->deinit = ph_ftp_deinit;
-		ret->handle_payload_stc = ph_ftp_handle_payload_stc;
-		ret->handle_payload_cts = ph_ftp_handle_payload_cts;
-		ret->handle_packet = ph_ftp_handle_packet;
-		ret->determine_target = ph_ftp_determine_target;
-		break;
+		return new FTPHandler(config);
 	case FTP_data:
-		ret->handler = ph_ftp_data_create();
-		ret->init = ph_ftp_data_init;
-		ret->deinit = ph_ftp_data_deinit;
-		ret->handle_payload_stc = ph_ftp_data_handle_payload_stc;
-		ret->handle_payload_cts = ph_ftp_data_handle_payload_cts;
-		ret->handle_packet = ph_ftp_data_handle_packet;
-		ret->determine_target = ph_ftp_data_determine_target;
-		break;	
+		return new FTPDataHandler(config);
 	case SMTP:
-		ret->handler = ph_smtp_create();
-		ret->init = ph_smtp_init;
-		ret->deinit = ph_smtp_deinit;
-		ret->handle_payload_stc = ph_smtp_handle_payload_stc;
-		ret->handle_payload_cts = ph_smtp_handle_payload_cts;
-		ret->handle_packet = ph_smtp_handle_packet;
-		ret->determine_target = ph_smtp_determine_target;
-		break;
+		return new SMTPHandler(config);
 	case HTTP:
-		ret->handler = ph_http_create();
-		ret->init = ph_http_init;
-		ret->deinit = ph_http_deinit;
-		ret->handle_payload_stc = ph_http_handle_payload_stc;
-		ret->handle_payload_cts = ph_http_handle_payload_cts;
-		ret->handle_packet = ph_http_handle_packet;
-		ret->determine_target = ph_http_determine_target;
-		break;
+		return new HTTPHandler(config);
 	case IRC:
-		ret->handler = ph_irc_create();
-		ret->init = ph_irc_init;
-		ret->deinit = ph_irc_deinit;
-		ret->handle_payload_stc = ph_irc_handle_payload_stc;
-		ret->handle_payload_cts = ph_irc_handle_payload_cts;
-		ret->handle_packet = ph_irc_handle_packet;
-		ret->determine_target = ph_irc_determine_target;
-		break;
+		return new IRCHandler(config);
 	case UNKNOWN_UDP:
-		ret->handler = ph_unknown_udp_create();
-		ret->init = ph_unknown_udp_init;
-		ret->deinit = ph_unknown_udp_deinit;
-		ret->handle_payload_stc = ph_unknown_udp_handle_payload_stc;
-		ret->handle_payload_cts = ph_unknown_udp_handle_payload_cts;
-		ret->handle_packet = ph_unknown_udp_handle_packet;
-		ret->determine_target = ph_unknown_udp_determine_target;
-		break;
+		return new UnknownUdpHandler(config);
 	case SSL_Proto:
-		ret->handler = ph_ssl_create();
-		ret->init = ph_ssl_init;
-		ret->deinit = ph_ssl_deinit;
-		ret->handle_payload_stc = ph_ssl_handle_payload_stc;
-		ret->handle_payload_cts = ph_ssl_handle_payload_cts;
-		ret->handle_packet = ph_ssl_handle_packet;
-		ret->determine_target = ph_ssl_determine_target;
-		break;
+		return new SSLHandler(config);
 	case DNS:
 		// DNS is handled by dns_resolver and not by dispatcher,
 		// thre is no need for a handler here	
 	default:
-		ret->handler = ph_unknown_create();
-		ret->init = ph_unknown_init;
-		ret->deinit = ph_unknown_deinit;
-		ret->handle_payload_stc = ph_unknown_handle_payload_stc;
-		ret->handle_payload_cts = ph_unknown_handle_payload_cts;
-		ret->handle_packet = ph_unknown_handle_packet;
-		ret->determine_target = ph_unknown_determine_target;
+		return new UnknownHandler(config);
 	}
-	return ret;
 }
 
-struct proto_handler_t** ph_create(struct configuration_t* c)
+std::map<protocols_app, ProtoHandler*> ph_create(const Configuration& config)
 {
-	struct proto_handler_t** result = (struct proto_handler_t**)malloc(sizeof(struct proto_handler_t*)*(UNKNOWN+1));
-	int i = 0;
-	for (i = 0; i <= UNKNOWN; i++) {
+	std::map<protocols_app, ProtoHandler*> ret;
+	protocols_app i = (protocols_app)0;
+	while (i != UNKNOWN) {
 		msg(MSG_DEBUG, "Creating protocol handler for %d", i);
-		result[i] = create_handler(i);
-		msg(MSG_DEBUG, "Created protocol handler for %d ... Initializing handler ...", i);
-		result[i]->init(result[i]->handler, c);
-		msg(MSG_DEBUG, "Finished handler initialization");
+		ret[i] = create_handler(config, i);
+		i = (protocols_app)(((int)i) +  1);
 	}
 	msg(MSG_DEBUG, "Created every handler!");
 
-	return result;
+	return ret;
 }
 
 
-int ph_destroy(struct proto_handler_t** p)
+int ph_destroy(ProtoHandler** p)
 {
 	int i = 0;
 	for (i = 0; i != UNKNOWN; i++) {
-		free(p[i]);
+		delete p[i];
 	}
-	free(p);
+	delete p;
 	return 0;
 }
 
