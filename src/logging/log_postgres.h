@@ -1,7 +1,7 @@
 #ifndef _LOGGER_POSTGRES_H_
 #define _LOGGER_POSTGRES_H_
 
-#include "logger.h"
+#include "logbase.h"
 
 struct log_postgres;
 

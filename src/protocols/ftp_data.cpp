@@ -2,43 +2,22 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "log_postgres.h"
+
 #include "wrapper.h"
-#include "logger.h"
 #include "helper_file.h"
-#include "msg.h"
 
-//PGconn *psql;
+#include <logging/logbase.h>
+#include <logging/log_postgres.h>
+#include <common/msg.h>
 
-struct ph_ftp_data {
-	struct configuration_t* config;
-};
 
-void* ph_ftp_data_create()
+FTPDataHandler::FTPDataHandler(const Configuration& config)
+	: ProtoHandler(config)
 {
-	void* ret = malloc(sizeof(struct ph_ftp_data));
-	return ret;
+
 }
 
-int ph_ftp_data_destroy(void* handler)
-{
-	free(handler);
-	return 0;
-}
-
-int ph_ftp_data_init(void* handler, struct configuration_t* c)
-{
-	struct ph_ftp_data* ftp_data = (struct ph_ftp_data*)handler;
-	ftp_data->config = c;
-	return 0;
-}
-
-int ph_ftp_data_deinit(void* handler)
-{
-	return 0;
-}
-
-int ph_ftp_data_handle_payload_stc(void* handler, connection_t* conn, const char* payload, ssize_t* len)
+int FTPDataHandler::payloadServerToClient(connection_t* conn, const char* payload, ssize_t* len)
 {
 	struct ftp_data_struct* data;
 	if (conn->log_server_struct_initialized == 0) {
@@ -53,7 +32,7 @@ int ph_ftp_data_handle_payload_stc(void* handler, connection_t* conn, const char
 
 		append_binarydata_to_file(data->binaryLocation,payload,*len);
 
-		logger_get()->log_struct(logger_get(), conn, "server", data);
+		logger_get()->logStruct(conn, "server", data);
 			
 		conn->multiple_server_chunks = 1;
 	}
@@ -70,7 +49,7 @@ int ph_ftp_data_handle_payload_stc(void* handler, connection_t* conn, const char
 
 }
 
-int ph_ftp_data_handle_payload_cts(void* handler, connection_t* conn, const char* payload, ssize_t* len)
+int FTPDataHandler::payloadClientToServer(connection_t* conn, const char* payload, ssize_t* len)
 {
 	struct ftp_data_struct* data;
 	if (conn->log_client_struct_initialized == 0) {
@@ -85,7 +64,7 @@ int ph_ftp_data_handle_payload_cts(void* handler, connection_t* conn, const char
 		sprintf(data->binaryLocation,"ftp_data/sent/%s",timestamp);
 		append_binarydata_to_file(data->binaryLocation,payload,*len);
 		
-		logger_get()->log_struct(logger_get(), conn, "client", data);
+		logger_get()->logStruct(conn, "client", data);
 		conn->multiple_client_chunks = 1;
 	}
 	else {
@@ -100,12 +79,7 @@ int ph_ftp_data_handle_payload_cts(void* handler, connection_t* conn, const char
 	return 1;
 }
 
-int ph_ftp_data_handle_packet(void* handler, const char* packet, ssize_t len)
-{
-	return 0;
-}
-
-int ph_ftp_data_determine_target(void* handler, struct sockaddr_in* addr)
+int FTPDataHandler::determineTarget(struct sockaddr_in* addr)
 {
 	return 0;
 }
