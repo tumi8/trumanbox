@@ -1,8 +1,6 @@
 #include "ssl.h"
 #include "wrapper.h"
 #include "helper_file.h"
-#include "msg.h"
-#include "logger.h"
 #include <stdlib.h>
 #include <string.h>
 #include <openssl/crypto.h>
@@ -13,6 +11,12 @@
 #include <netinet/tcp.h>
 #include <netdb.h>
 #include <unistd.h>
+
+#include <common/msg.h>
+#include <logging/logbase.h>
+
+
+
 static int tcp_connect(char* host, int port)
   
   {
@@ -185,7 +189,7 @@ static void print_stuff(BIO *bio, SSL *s, int full)
 static int http_request(SSL* ssl, char* host, int port, char* filename)
   {
   char *REQUEST_TEMPLATE=
-     "GET / HTTP/1.1\r\nUser-Agent: HTTPS-Client\r\nHost: %s:%d\r\n\r\n";
+    (char*) "GET / HTTP/1.1\r\nUser-Agent: HTTPS-Client\r\nHost: %s:%d\r\n\r\n";
     char *request = 0;
     char buf[MAX_LINE_LENGTH];
     int r;
@@ -312,43 +316,19 @@ static void get_server_ssl_information(connection_t* conn, char* filename, char*
 
 }
 
-struct ph_ssl {
-	struct configuration_t* config;
-};
-
-void* ph_ssl_create()
+SSLHandler::SSLHandler(const Configuration& config)
+	: ProtoHandler(config)
 {
-	void* ret = malloc(sizeof(struct ph_ssl));
-	return ret;
+
 }
 
-int ph_ssl_destroy(void* handler)
+int SSLHandler::payloadServerToClient(connection_t* conn,  const char* payload, ssize_t* len)
 {
-	free(handler);
-	return 0;
-}
-
-int ph_ssl_init(void* handler, struct configuration_t* c)
-{
-	struct ph_ssl* ssl = (struct ph_ssl*)handler;
-	ssl->config = c;
-	return 0;
-}
-
-int ph_ssl_deinit(void* handler)
-{
-	return 0;
-}
-
-int ph_ssl_handle_payload_stc(void* handler, connection_t* conn,  const char* payload, ssize_t* len)
-{
-        
-
 	msg(MSG_DEBUG,"received SSL server msg");
 	return 0;
 }
 
-int ph_ssl_handle_payload_cts(void* handler, connection_t* conn, const char* payload, ssize_t* len)
+int SSLHandler::payloadClientToServer(connection_t* conn, const char* payload, ssize_t* len)
 {
 	if (conn->log_client_struct_initialized == 100) {
 		struct ssl_struct* logdata = (struct ssl_struct*) malloc(sizeof(struct ssl_struct));
@@ -358,22 +338,15 @@ int ph_ssl_handle_payload_cts(void* handler, connection_t* conn, const char* pay
 		strcpy(logdata->sslVersion,conn->sslVersion);
 		get_server_ssl_information(conn,logdata->server_cert,logdata->http_request);
 		conn->log_client_struct_initialized = 1;
-		return logger_get()->log_struct(logger_get(), conn, "client", logdata);
-
+		logger_get()->logStruct(conn, "client", logdata);
+		return 0;
 
 	}
 	msg(MSG_DEBUG,"received SSL client msg");
         return 0;
-
-
 }
 
-int ph_ssl_handle_packet(void* handler, const char* packet, ssize_t len)
-{
-	return 0;
-}
-
-int ph_ssl_determine_target(void* handler, struct sockaddr_in* addr)
+int SSLHandler::determineTarget(struct sockaddr_in* addr)
 {
 	// if necessary in the future, redirect to local running SSL Services (HTTPS, FTPS, SMTPS ....)
 	return 0;
