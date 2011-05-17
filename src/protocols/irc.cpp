@@ -1,10 +1,11 @@
 #include "irc.h"
 #include "wrapper.h"
-#include "logger.h"
-#include "msg.h"
 #include "helper_file.h"
 #include <stdlib.h>
 #include <string.h>
+
+#include <logging/logbase.h>
+#include <common/msg.h>
 
 static void inject_commands(const char* payload , ssize_t * len) {
 	// we would like to inject WHO #Channel when we found a command JOIN #channel 
@@ -65,36 +66,13 @@ static void inject_commands(const char* payload , ssize_t * len) {
 
 }
 
-struct ph_irc {
-	struct configuration_t* config;
-};
-
-void* ph_irc_create()
+IRCHandler::IRCHandler(const Configuration& config)
+	: ProtoHandler(config)
 {
-	void* ret = malloc(sizeof(struct ph_irc));
-	return ret;
-}
-
-int ph_irc_destroy(void* handler)
-{
-	free(handler);
-	return 0;
 }
 
 
-int ph_irc_init(void* handler, struct configuration_t* c)
-{
-	struct ph_irc* irc = (struct ph_irc*)handler;
-	irc->config = c;
-	return 0;
-}
-
-int ph_irc_deinit(void* handler)
-{
-	return 0;
-}
-
-int ph_irc_handle_payload_stc(void* handler, connection_t* conn,  const char* payload, ssize_t* len)
+int IRCHandler::payloadServerToClient(connection_t* conn,  const char* payload, ssize_t* len)
 {
         char msgCopy[MAXLINE*2];
 	char* currentLinePtr = NULL;
@@ -180,7 +158,7 @@ int ph_irc_handle_payload_stc(void* handler, connection_t* conn,  const char* pa
 
 			} // end of if (valid server msg)	
 			
-			logger_get()->log_struct(logger_get(),conn,"server",data);
+			logger_get()->logStruct(conn,"server",data);
 
 		nextline:
 			currentLinePtr = strtok(NULL,"\n");
@@ -190,7 +168,7 @@ int ph_irc_handle_payload_stc(void* handler, connection_t* conn,  const char* pa
 	snprintf(location,MAX_PATH_LENGTH,"irc/%s",conn->timestamp);
 	if (conn->log_client_struct_initialized == 0) {
 		conn->log_client_struct_initialized = 1;
-		logger_get()->log_struct(logger_get(),conn,"logfile",NULL);
+		logger_get()->logStruct(conn,"logfile",NULL);
 	
 	}
 		
@@ -201,7 +179,7 @@ int ph_irc_handle_payload_stc(void* handler, connection_t* conn,  const char* pa
 	return 1;
 }
 
-int ph_irc_handle_payload_cts(void* handler, connection_t* conn,  const char* payload, ssize_t* len)
+int IRCHandler::payloadClientToServer(connection_t* conn,  const char* payload, ssize_t* len)
 {
 
 	inject_commands(payload,len);
@@ -242,7 +220,7 @@ int ph_irc_handle_payload_cts(void* handler, connection_t* conn,  const char* pa
 		
 		
 
-		logger_get()->log_struct(logger_get(),conn,"client",data);	
+		logger_get()->logStruct(conn,"client",data);	
 			
 	}// end of while (Finished the current line)
 
@@ -252,7 +230,7 @@ int ph_irc_handle_payload_cts(void* handler, connection_t* conn,  const char* pa
 
 	if (conn->log_client_struct_initialized == 0) {
 		conn->log_client_struct_initialized = 1;
-		logger_get()->log_struct(logger_get(),conn,"logfile",NULL);
+		logger_get()->logStruct(conn,"logfile",NULL);
 	
 	}
 		
@@ -263,18 +241,12 @@ int ph_irc_handle_payload_cts(void* handler, connection_t* conn,  const char* pa
 	return 1;
 }
 
-int ph_irc_handle_packet(void* handler, const char* packet, ssize_t len)
+int IRCHandler::determineTarget(struct sockaddr_in* addr)
 {
-	return 0;
-}
-
-int ph_irc_determine_target(void* handler, struct sockaddr_in* addr)
-{
-	struct ph_irc* irc = (struct ph_irc*)handler;
-	if (conf_get_mode(irc->config) < full_proxy) {
+	if (config.getMode() < full_proxy) {
                 bzero(addr, sizeof(struct sockaddr_in));
                 addr->sin_family = AF_INET;
-                Inet_pton(AF_INET, conf_get(irc->config, "irc", "irc_redirect"), &addr->sin_addr);
+                Inet_pton(AF_INET, config.get("irc", "irc_redirect").c_str(), &addr->sin_addr);
 		addr->sin_port = htons((uint16_t)6667);
 	}
 	return 0;

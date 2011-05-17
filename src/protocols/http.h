@@ -4,6 +4,18 @@
 #include "configuration.h"
 #include <netinet/in.h>
 
+class HTTPHandler : public ProtoHandler
+{
+	public:
+		HTTPHandler(const Configuration& config);	
+		virtual int payloadServerToClient(connection_t* conn, const char* payload, ssize_t* len);
+		virtual int payloadClientToServer(connection_t* conn, const char* payload, ssize_t* len);
+		virtual int determineTarget(struct sockaddr_in* addr);
+
+
+};
+
+
 void* ph_http_create();
 int ph_http_destroy(void*);
 
