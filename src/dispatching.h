@@ -25,4 +25,7 @@ class Dispatcher
 		
 };
 
+int parse_conntrack(connection_t *conn);
+
+
 #endif

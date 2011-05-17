@@ -1,11 +1,13 @@
-#include "configuration.h"
-#include "dispatching.h"
-#include <arpa/inet.h>
 #include "udp_handler.h"
-#include "definitions.h"
+#include "dispatching.h"
 #include "helper_net.h"
 #include "wrapper.h"
-#include "msg.h"
+
+#include <common/definitions.h>
+#include <common/msg.h>
+#include <common/configuration.h>
+
+#include <arpa/inet.h>
 #include <stdlib.h>
 #include <sys/select.h>
 #include <netinet/in.h>
@@ -13,7 +15,7 @@
 #include <unistd.h>
 
 
-UdpHandler::UdpHandler(int udpfd, const Configuration& config, connection_t* c, ProtoIdent* ident, struct proto_handler_t** ph);
+UdpHandler::UdpHandler(int udpfd, const Configuration& config, connection_t* c, ProtoIdent* ident, struct proto_handler_t** ph)
 	:config(config)
 {
 	this->udpfd = udpfd;
@@ -84,26 +86,26 @@ void UdpHandler::run()
 	ssize_t r;
 
 	FD_ZERO(&rset);
-	FD_SET(udph->udpfd, &rset);
+	FD_SET(this->udpfd, &rset);
 	
 	tv.tv_sec = 300;
 	tv.tv_usec = 0;
 	
 	bzero(payload,MAXLINE);
-	maxfdp = udph->udpfd + 1;
+	maxfdp = this->udpfd + 1;
 	clilen = sizeof(cliaddr);
 
 	while (select(maxfdp, &rset, NULL, NULL, &tv)) {
-		if (FD_ISSET(udph->udpfd, &rset)) {
-			r = Recvfrom(udph->udpfd, payload, MAXLINE, 0, (SA *)  &cliaddr, &clilen);
-			Inet_ntop(AF_INET, &cliaddr.sin_addr, udph->connection->source, sizeof(udph->connection->source));
-			udph->connection->sport = ntohs(cliaddr.sin_port);
-			msg(MSG_DEBUG,"conn source dispatching : %s port %d",udph->connection->source,udph->connection->sport);
+		if (FD_ISSET(this->udpfd, &rset)) {
+			r = Recvfrom(this->udpfd, payload, MAXLINE, 0, (SA *)  &cliaddr, &clilen);
+			Inet_ntop(AF_INET, &cliaddr.sin_addr, this->connection->source, sizeof(this->connection->source));
+			this->connection->sport = ntohs(cliaddr.sin_port);
+			msg(MSG_DEBUG,"conn source dispatching : %s port %d",this->connection->source,this->connection->sport);
 			int tries_pars_ct = 0;
 			int found_dest = 1;
 			
 			// parse_conntrack fills in the remaining variables of connection
-			while ( parse_conntrack(udph->connection) != 0 ) {
+			while ( parse_conntrack(this->connection) != 0 ) {
 				msg(MSG_DEBUG, "could not parse conntrack table, trying again in 2sec...");
 				sleep(2);
 				tries_pars_ct++;
@@ -114,44 +116,45 @@ void UdpHandler::run()
 			}
 			
 			if (found_dest) {
-				msg(MSG_DEBUG,"src: '%s' dest '%s'",udph->connection->source,udph->connection->dest);
-				udphandler_determine_target(udph, UNKNOWN_UDP, &targetServAddr);
-				msg(MSG_DEBUG,"src: '%s' dest '%s'",udph->connection->source,udph->connection->dest);
-				if(strstr(udph->connection->dest,"192.168.27.255") != 0) {
+				msg(MSG_DEBUG,"src: '%s' dest '%s'",this->connection->source,this->connection->dest);
+				determineTarget(UNKNOWN_UDP, &targetServAddr);
+				msg(MSG_DEBUG,"src: '%s' dest '%s'",this->connection->source,this->connection->dest);
+				// TOOD: fix this crappy IP!
+				if(strstr(this->connection->dest,"192.168.27.255") != 0) {
 					goto out;	
-					}
+				}
 			}		
 			else {
 				msg(MSG_DEBUG,"we have found no destination, therefore the sender gets an echo message");
 				bzero(&targetServAddr, sizeof(targetServAddr));
 				targetServAddr.sin_family = AF_INET;
-				targetServAddr.sin_port = htons((uint16_t)udph->connection->sport);
-				bzero(udph->connection->dest,IPLENGTH);
-				bzero(udph->connection->orig_dest,IPLENGTH);
-				strcpy(udph->connection->dest, udph->connection->source);
-				strcpy(udph->connection->orig_dest,udph->connection->source);
-				//memcpy(udph->connection->orig_dest, udph->connection->source, strlen(udph->connection->source));
-				Inet_pton(AF_INET, udph->connection->dest, &targetServAddr.sin_addr);
-				Inet_pton(AF_INET, udph->connection->orig_dest, &targetServAddr.sin_addr);
+				targetServAddr.sin_port = htons((uint16_t)this->connection->sport);
+				bzero(this->connection->dest,IPLENGTH);
+				bzero(this->connection->orig_dest,IPLENGTH);
+				strcpy(this->connection->dest, this->connection->source);
+				strcpy(this->connection->orig_dest,this->connection->source);
+				//memcpy(this->connection->orig_dest, this->connection->source, strlen(this->connection->source));
+				Inet_pton(AF_INET, this->connection->dest, &targetServAddr.sin_addr);
+				Inet_pton(AF_INET, this->connection->orig_dest, &targetServAddr.sin_addr);
 			}
 			
 
 			msg(MSG_DEBUG,"num bytes rcvd: %d",r);
-			proto_handler = udph->ph[UNKNOWN_UDP];
+			proto_handler = this->ph[UNKNOWN_UDP];
 			msg(MSG_DEBUG, "Sending payload to protocol handler ...");
-			Sendto(udph->udpfd, payload, r, 0, (SA *) &targetServAddr, sizeof(targetServAddr));
+			Sendto(this->udpfd, payload, r, 0, (SA *) &targetServAddr, sizeof(targetServAddr));
 			if (found_dest) {
-				proto_handler->handle_payload_cts(proto_handler->handler, udph->connection, payload, &r);
+				proto_handler->handle_payload_cts(proto_handler->handler, this->connection, payload, &r);
 			}
 			else {
-				proto_handler->handle_payload_stc(proto_handler->handler, udph->connection, payload, &r);
+				proto_handler->handle_payload_stc(proto_handler->handler, this->connection, payload, &r);
 			}
 			memset(payload, 0, sizeof(payload));
 		}
 		out:
 		FD_ZERO(&rset);
-		FD_SET(udph->udpfd, &rset);
-		maxfdp = udph->udpfd + 1;
+		FD_SET(this->udpfd, &rset);
+		maxfdp = this->udpfd + 1;
 	}
 }
 

@@ -159,9 +159,8 @@ void Dispatcher::run()
 			if ( (childpid = pm_fork_temporary()) == 0) {        /* child process */
 				msg(MSG_DEBUG, "Forked TCP handler with pid %d", getpid());
 				Close(this->tcpfd);     /* close listening socket within child process */
-				struct tcp_handler_t* t = tcphandler_create(this->config, &connection, inconnfd, this->pi, this->ph);
-				tcphandler_run(t);
-				tcphandler_destroy(t);
+				TcpHandler t(inconnfd, this->config, &connection, this->protoIdent, this->ph);
+				t.run();
 				Exit(0);
 			}
 

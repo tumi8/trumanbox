@@ -15,11 +15,11 @@ class UdpHandler {
 		void run();
 
 	private:
-		void determinTtarget(protocols_app app_proto, struct sockaddr_in* targetServAddr);
+		void determineTarget(protocols_app app_proto, struct sockaddr_in* targetServAddr);
 
 		int udpfd;
 	        operation_mode_t mode; // get from config
-		struct configuration_t* config;
+		const Configuration& config;
 		int sock;
 		connection_t* connection;
 		int connectedToFinal;
