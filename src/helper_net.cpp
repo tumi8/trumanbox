@@ -13,10 +13,10 @@
 #include <netinet/in.h>
 
 #include "helper_net.h"
-#include "msg.h"
 #include "wrapper.h"
 #include "helper_file.h"
 
+#include <common/msg.h>
 
 int readable_timeout(int fd, int sec) {
 	fd_set rset;

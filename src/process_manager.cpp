@@ -1,11 +1,12 @@
 #include "process_manager.h"
-#include "msg.h"
 
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <signal.h>
+
+#include <common/msg.h>
 
 #define MAX_PROCESS 100
 

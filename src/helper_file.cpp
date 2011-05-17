@@ -5,7 +5,6 @@
 #include "dispatching.h"
 #include "wrapper.h"
 #include "helper_net.h"
-#include "msg.h"
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
@@ -13,6 +12,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+
+#include <common/msg.h>
 
 int create_timestamp(char* destination) {
         
