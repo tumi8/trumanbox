@@ -29,13 +29,14 @@ Dispatcher::Dispatcher(const Configuration& config)
 	: config(config)
 {
 	this->protoIdent = pi_create(config);
+	this->protoHandlers = ph_create(config);
 
 	int val=1; // will enable SO_REUSEADDR
 
 	struct sockaddr_in saddr;
 
 	pm_init();
-
+	
 	// create tcp socket...
 	this->tcpfd = Socket(AF_INET, SOCK_STREAM, 0);
 

@@ -382,6 +382,7 @@ int HTTPHandler::payloadClientToServer(connection_t* conn, const char* payload, 
 
 int HTTPHandler::determineTarget(struct sockaddr_in* addr)
 {
+	msg(MSG_DEBUG, "ajsdklfjaslkfjasdlfjsdalf");
 	if (config.getMode() < full_proxy) {
 		bzero(addr, sizeof(struct sockaddr_in));
                 addr->sin_family = AF_INET;

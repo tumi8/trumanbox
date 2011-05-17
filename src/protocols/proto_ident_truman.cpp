@@ -57,6 +57,7 @@ protocols_app ProtoIdentTruman::identify(connection_t *conn, char *payload, size
 	//int			r, anonym_ftp;
 	char			filename[30];
 
+
 	conn->app_proto = UNKNOWN;
 
 //	if (!r) {

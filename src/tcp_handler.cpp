@@ -26,7 +26,7 @@ TcpHandler::TcpHandler(int inconnfd, const Configuration& config, connection_t* 
 	this->connection = conn;
 	this->inConnFd = inconnfd;
 	this->targetServiceFd = 0;
-	this->protoIdent = protoIdent;
+	this->protoIdent = ident;
 	this->protoHandlers = ph;
 	this->connectedToFinal = 0;
 }
@@ -52,7 +52,8 @@ void TcpHandler::determineTarget(protocols_app app_proto, struct sockaddr_in* ta
 		if (app_proto == UNKNOWN) {
 			bzero(this->connection->dest, IPLENGTH);
 		} else {
-			this->protoHandlers[app_proto]->determineTarget(targetServAddr);
+			ProtoHandler* protohander = this->protoHandlers[app_proto];
+			protohander->determineTarget(targetServAddr);
 			Inet_ntop(AF_INET, &targetServAddr->sin_addr, this->connection->dest, IPLENGTH);
 			this->connection->dport = ntohs(targetServAddr->sin_port);
 		}
@@ -269,7 +270,7 @@ void TcpHandler::run()
 				goto out;
 			}
 			else {
-				msg(MSG_DEBUG,"r is not null '%d'",r);
+				msg(MSG_DEBUG,"Read '%d' bytes from infected machine.",r);
 			
 			}
 			//update the number of reads
@@ -284,11 +285,10 @@ void TcpHandler::run()
 				}
 				if (app_proto == UNKNOWN) {
 					this->handleUnknown(&targetServAddr);
-				} 
-
-				else if (!this->connectedToFinal) {
-					msg(MSG_DEBUG, "Identified protocol. Connecting to target");
+				} else if (!this->connectedToFinal) {
+					msg(MSG_DEBUG, "Identified protocol. Connecting to target ...");
 					this->determineTarget(this->connection->app_proto, &targetServAddr);
+
 					if ( -1 == Connect(this->targetServiceFd, (struct sockaddr*)&targetServAddr, sizeof(targetServAddr)) ) {
 						if (this->mode == half_proxy) {
 						msg(MSG_DEBUG,"dest is offline");
@@ -305,8 +305,7 @@ void TcpHandler::run()
 								msg(MSG_FATAL,"Connection to emulation target not possible, abort...");
 								goto out;
 							}
-						}
-						else {
+						} else {
 							Close_conn(this->inConnFd, "Connection to targetservice could not be established");
 							goto out;
 						}
