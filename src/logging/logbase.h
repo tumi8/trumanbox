@@ -14,12 +14,11 @@ class Configuration;
 class LogBase {
 public:
 	LogBase(const Configuration& config);
-	~LogBase();
 
-	virtual void logStruct(connection_t* conn, const char* tag, void* data) = 0;
-	virtual void logText(connection_t* conn, const char* tag, const char* message) = 0;
-	virtual void createLog() = 0;
-	virtual void finishLog() = 0;
+	virtual int logStruct(connection_t* conn, const char* tag, void* data) = 0;
+	virtual int logText(connection_t* conn, const char* tag, const char* message) = 0;
+	virtual int createLog() = 0;
+	virtual int finishLog() = 0;
 protected:
 	const Configuration& config;
 };

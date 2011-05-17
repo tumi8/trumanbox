@@ -8,6 +8,12 @@
 
 LogBase* global_logger = NULL;
 
+LogBase::LogBase(const Configuration& config)
+	: config(config)
+{
+
+}
+
 int logger_create(const Configuration& config)
 {
 	if (global_logger) {
@@ -37,7 +43,7 @@ int logger_create(const Configuration& config)
 	return 0;
 }
 
-inline LogBase* logger_get()
+LogBase* logger_get()
 {
 	return global_logger;
 }

@@ -1,8 +1,11 @@
 #include "log_postgres.h"
-#include "configuration.h"
-#include "msg.h"
-#include "definitions.h"
-#include "logger.h"
+#include "logbase.h"
+
+#include <common/configuration.h>
+#include <common/msg.h>
+#include <common/definitions.h>
+
+
 #include <sys/time.h>
 #include <time.h>
 #include <stdlib.h>
@@ -23,33 +26,27 @@
 
 static char statement[MAX_STATEMENT];
 
-struct log_postgres {
-//	char hostaddr[CONN_INFO];
-//	char port[CONN_INFO];
-//	char dbname[CONN_INFO];
-//	char user[CONN_INFO];
-//	char pw[CONN_INFO];
-	const char* hostaddr;
-	const char* port;
-	const char* dbname;
-	const char* user;
-	const char* pw;
-};
-
-/* TODO: Fix this hack
+/* TODO: Fix this really really dirty hack
  * We are for now keeping a global log_postgres struct to store the
  * db information. These hacky execute_* functions will open a new
  * db connection every time they insert something. This is the most 
  * inefficient and stupid idea and needs to be fixed ... 
  */
-struct log_postgres lg_psql;
+struct priv_data {
+	std::string hostaddr;
+	std::string port;
+	std::string dbname;
+	std::string user;
+	std::string pw;
+};
+struct priv_data lg_psql;
 
 
 int execute_nonquery_statement(char* stmt) {
  
 	int result = 0;
 	char connect_string[MAX_STATEMENT];
-	snprintf(connect_string, MAX_STATEMENT, "hostaddr = '%s' port = '%s' dbname = '%s' user = '%s' password = '%s' connect_timeout = '10'", lg_psql.hostaddr, lg_psql.port, lg_psql.dbname, lg_psql.user, lg_psql.pw);
+	snprintf(connect_string, MAX_STATEMENT, "hostaddr = '%s' port = '%s' dbname = '%s' user = '%s' password = '%s' connect_timeout = '10'", lg_psql.hostaddr.c_str(), lg_psql.port.c_str(), lg_psql.dbname.c_str(), lg_psql.user.c_str(), lg_psql.pw.c_str());
 	PGconn* psql  = PQconnectdb(connect_string);
 	if (!psql) {
                 msg(MSG_FATAL,"libpq error : PQconnectdb returned NULL.\n\n");
@@ -81,7 +78,7 @@ int execute_nonquery_statement(char* stmt) {
 int execute_query_statement_singlevalue(char* dst, char* stmt) {
 	int result = 0;
 	char connect_string[MAX_STATEMENT];
-       	snprintf(connect_string, MAX_STATEMENT, "hostaddr = '%s' port = '%s' dbname = '%s' user = '%s' password = '%s' connect_timeout = '10'", lg_psql.hostaddr, lg_psql.port, lg_psql.dbname, lg_psql.user, lg_psql.pw);
+       	snprintf(connect_string, MAX_STATEMENT, "hostaddr = '%s' port = '%s' dbname = '%s' user = '%s' password = '%s' connect_timeout = '10'", lg_psql.hostaddr.c_str(), lg_psql.port.c_str(), lg_psql.dbname.c_str(), lg_psql.user.c_str(), lg_psql.pw.c_str());
 	PGconn* psql  = PQconnectdb(connect_string);
 	if (!psql) {
                 msg(MSG_FATAL,"libpq error : PQconnectdb returned NULL.\n\n");
@@ -123,35 +120,25 @@ int execute_statement(char* stmt) {
 
 
 // Returns: Whether connection is successful AND if tables are already present
-int lpg_init(struct logger_t* logger)
+PostgresLogger::PostgresLogger(const Configuration& config)
+	: LogBase(config)
 {
 	// TODO: We assume that the database has been correctly set up
-	struct configuration_t* c = logger->config;
-	lg_psql.hostaddr = conf_get(c, "logging", "host");
-	lg_psql.port = conf_get(c, "logging", "port");
-	lg_psql.dbname = conf_get(c, "logging", "dbname");
-	lg_psql.user = conf_get(c, "logging", "dbuser");
-	lg_psql.pw = conf_get(c, "logging", "dbuser");
-
-	return 1;	
 	
-
-}
-
-
-// returns:
-int lpg_deinit(struct logger_t* logger)
-{
-	return 1;
+	lg_psql.hostaddr = config.get("logging", "host");
+	lg_psql.port = config.get( "logging", "port");
+	lg_psql.dbname = config.get("logging", "dbname");
+	lg_psql.user = config.get("logging", "dbuser");
+	lg_psql.pw = config.get("logging", "dbuser");
 }
 
 
 // returns: 1 if creation was successful, 0 if not
-int lpg_create_log(struct logger_t* logger)
+int PostgresLogger::createLog()
 {
-	const char* testmode = conf_get(logger->config, "logging", "testmode");	
+	std::string testmode = config.get("logging", "testmode");	
 
-	if (strcmp(testmode,"0") == 0) {
+	if (strcmp(testmode.c_str(),"0") == 0) {
                 char update_trumanbox_runtime_id[1000] = "update trumanbox_settings set value = value+1 where key = 'CURRENT_SAMPLE'";
                 if (!execute_statement(update_trumanbox_runtime_id))
                 	return 0;
@@ -171,7 +158,7 @@ int lpg_create_log(struct logger_t* logger)
 }
 
 // returns: 1 if everything was fine, 0 if error
-int lpg_finish_log(struct logger_t* logger)
+int PostgresLogger::finishLog()
 {
 	// set timestamp of logging end
 	char set_ending_timestamp[1000] = "update malwaresamples set endlogging = (select current_timestamp) where id = (select t.value from trumanbox_settings t where t. key = 'CURRENT_SAMPLE')";
@@ -180,14 +167,12 @@ int lpg_finish_log(struct logger_t* logger)
 	return 1;
 }
 
-int lpg_log_text(struct logger_t* logger, connection_t* conn, const char* tag, const char* message)
+int PostgresLogger::logText(connection_t* conn, const char* tag, const char* message)
 {
-	
-
 	return 0;
 }
 
-int lpg_log_struct(struct logger_t* log, connection_t* conn, const char* tag, void* data)
+int PostgresLogger::logStruct(connection_t* conn, const char* tag, void* data)
 {
 
 	switch (conn->app_proto) {
