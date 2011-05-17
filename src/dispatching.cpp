@@ -171,10 +171,9 @@ void Dispatcher::run()
 		if ( (childpid = pm_fork_temporary()) == 0) {
 				connection.app_proto = UNKNOWN_UDP;
 				msg(MSG_DEBUG, "Forked UDP handler with pid %d", getpid());
-				struct udp_handler_t* u = udphandler_create(this->udpfd,this->config,&connection,this->pi,this->ph);
-				udphandler_run(u);
-			udphandler_destroy(u);
-			Exit(0);
+				UdpHandler u(this->udpfd, this->config, &connection, this->protoIdent, this->ph);
+				u.run();
+				Exit(0);
 		}
 		}
 		else if (connection.net_proto == CONTROL) {

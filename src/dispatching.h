@@ -18,7 +18,6 @@ class Dispatcher
 		int controlfd;
 		int tcpfd;
 		int udpfd;
-		struct proto_identifier_t* pi;
 		struct proto_handler_t** ph;
 		int running;
 		const Configuration& config;

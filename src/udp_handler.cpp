@@ -12,44 +12,29 @@
 #include <string.h>
 #include <unistd.h>
 
-struct udp_handler_t {
-	int udpfd;
-        operation_mode_t mode; // get from config
-        struct configuration_t* config;
-        int sock;
-        connection_t* connection;
-        int connectedToFinal;
-        struct proto_identifier_t* pi;
-        struct proto_handler_t** ph;
-};
 
-
-struct udp_handler_t* udphandler_create(int udpfd, struct configuration_t* config, connection_t* c, struct proto_identifier_t* pi, struct proto_handler_t** ph)
+UdpHandler::UdpHandler(int udpfd, const Configuration& config, connection_t* c, ProtoIdent* ident, struct proto_handler_t** ph);
+	:config(config)
 {
-	struct udp_handler_t* ret = (struct udp_handler_t*)malloc(sizeof(struct udp_handler_t));
-	ret->udpfd = udpfd;
-        ret->config = config;
-        ret->mode = conf_get_mode(config);
-        ret->connection = c;
-        ret->pi = pi;
-        ret->ph = ph;
-        ret->connectedToFinal = 0;
-	return ret;
+	this->udpfd = udpfd;
+        this->mode = config.getMode();
+        this->connection = c;
+        this->protoIdent = protoIdent;
+        this->ph = ph;
+        this->connectedToFinal = 0;
 }
 
 
-void udphandler_destroy(struct udp_handler_t* u)
+UdpHandler::~UdpHandler()
 {
-	ph_destroy(u->ph);
-	pi_destroy(u->pi);
-	free(u);
+	ph_destroy(this->ph);
 }
 
 
-void udphandler_determine_target(struct udp_handler_t* udph, protocols_app app_proto, struct sockaddr_in* targetServAddr)
+void UdpHandler::determineTarget(protocols_app app_proto, struct sockaddr_in* targetServAddr)
 {
 	// Determine target service address. This address depends on the chosen program mode
-	switch (udph->mode) {
+	switch (this->mode) {
 	case full_emulation:
 		// Final target depends on the protocol, protocol identification
 		// can only be performed on the payload from the client side.
@@ -59,12 +44,12 @@ void udphandler_determine_target(struct udp_handler_t* udph, protocols_app app_p
 		// initial server payload and do not use standard ports
 		msg(MSG_DEBUG, "Determine target for full emulation mode...");
 		// set goal to nepenthes for port 1434 sql slammer protection
-		bzero(udph->connection->dest,IPLENGTH);
+		bzero(this->connection->dest,IPLENGTH);
 		bzero(targetServAddr, sizeof(targetServAddr));
 		targetServAddr->sin_family = AF_INET;
-		targetServAddr->sin_port = htons((uint16_t)udph->connection->dport);
-		memcpy(udph->connection->dest, udph->connection->source, strlen(udph->connection->source));
-		Inet_pton(AF_INET, udph->connection->dest, &targetServAddr->sin_addr);
+		targetServAddr->sin_port = htons((uint16_t)this->connection->dport);
+		memcpy(this->connection->dest, this->connection->source, strlen(this->connection->source));
+		Inet_pton(AF_INET, this->connection->dest, &targetServAddr->sin_addr);
 		break;
 	case half_proxy:
 
@@ -73,9 +58,9 @@ void udphandler_determine_target(struct udp_handler_t* udph, protocols_app app_p
 		msg(MSG_DEBUG, "Determine target for full proxy mode ...");
 		bzero(targetServAddr, sizeof(targetServAddr));
 		targetServAddr->sin_family = AF_INET;
-		targetServAddr->sin_port = htons((uint16_t)udph->connection->dport);
-		memcpy(udph->connection->dest, udph->connection->orig_dest, strlen(udph->connection->orig_dest));
-		Inet_pton(AF_INET, udph->connection->dest, &targetServAddr->sin_addr);
+		targetServAddr->sin_port = htons((uint16_t)this->connection->dport);
+		memcpy(this->connection->dest, this->connection->orig_dest, strlen(this->connection->orig_dest));
+		Inet_pton(AF_INET, this->connection->dest, &targetServAddr->sin_addr);
 		
 		break;
 	default:
@@ -85,7 +70,7 @@ void udphandler_determine_target(struct udp_handler_t* udph, protocols_app app_p
 
 }
 
-void udphandler_run(struct udp_handler_t* udph)
+void UdpHandler::run()
 {
 	fd_set rset;
 	char payload[MAXLINE];
