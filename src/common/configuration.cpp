@@ -23,12 +23,25 @@ Configuration::~Configuration()
 	iniparser_free(this->dict);
 }
 
-std::string Configuration::get(const std::string& section, const std::string& key)
+std::string Configuration::get(const std::string& section, const std::string& key, const std::string& def) const
 {
-	return std::string(iniparser_getvalue(this->dict, section.c_str(), key.c_str()));
+	const char* tmp = iniparser_getvalue(this->dict, section.c_str(), key.c_str());
+	if (!tmp) {
+		return def;
+	}
+	return tmp;
 }
 
-operation_mode_t Configuration::getMode()
+int Configuration::getInt(const std::string& section, const std::string& key, int def) const
+{
+	const char* tmp = iniparser_getvalue(this->dict, section.c_str(), key.c_str());
+	if (!tmp) {
+		return def;
+	}
+	return atoi(tmp);
+}
+
+operation_mode_t Configuration::getMode() const
 {
 	return this->mode;
 }
