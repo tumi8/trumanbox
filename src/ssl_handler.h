@@ -1,7 +1,7 @@
 #ifndef _SSL_HANDLER_H_
 #define _SSL_HANDLER_H_
 
-#include "definitions.h"
+#include <common/definitions.h>
 #include "tcp_handler.h"
 
 struct ssl_handler_t {

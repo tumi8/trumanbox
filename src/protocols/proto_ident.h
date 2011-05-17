@@ -13,7 +13,7 @@ class ProtoIdent {
 		ProtoIdent();
 		
 		virtual protocols_app identify(connection_t *conn, char* payload, size_t payload_len);
-		virtual protocols_app idenfify(connection_t *conn, uint16_t port);
+		virtual protocols_app identify(connection_t *conn);
 };
 
 #endif

@@ -7,54 +7,40 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <stdio.h>
-#include "definitions.h"
 #include "helper_net.h"
-#include "msg.h"
-#include "configuration.h"
 #include "wrapper.h"
 #include "process_manager.h"
 #include "protocols/proto_handler.h"
 
+#include <common/definitions.h>
+#include <common/msg.h>
+#include <common/configuration.h>
 
 
-struct tcp_handler_t* tcphandler_create(struct configuration_t* config, connection_t* c, int inconn, struct proto_identifier_t* pi, struct proto_handler_t** ph)
+TcpHandler::TcpHandler(int inconnfd, const Configuration& config, connection_t* conn, ProtoIdent* ident, struct proto_handler_t** ph)
+	: config(config)
 {
-	const char* sslactive = conf_get(config, "ssl", "mitm_active");
-	const char* nepenthesactive = conf_get(config, "nepenthes", "active");
-	struct tcp_handler_t* ret = (struct tcp_handler_t*)malloc(sizeof(struct tcp_handler_t));
-	if (nepenthesactive) {
-		ret->nepenthesActive = atoi(nepenthesactive);
-	} else {
-		ret->nepenthesActive = 0;
-	}
-	ret->config = config;
-	if (sslactive) {
-		ret->sslMitmActive = atoi(sslactive);
-	} else {
-		ret->sslMitmActive = 0;
-	}
-	ret->mode = conf_get_mode(config);
-	ret->connection = c;
-	ret->inConnFd = inconn;
-	ret->targetServiceFd = 0;
-	ret->pi = pi;
-	ret->ph = ph;
-	ret->connectedToFinal = 0;
-	return ret;
+	this->sslMitmActive = config.getInt("ssl", "mitm_active");
+	this->nepenthesActive = config.getInt("nepenthes", "active");
+	this->mode = config.getMode();
+	this->connection = conn;
+	this->inConnFd = inconnfd;
+	this->targetServiceFd = 0;
+	this->protoIdent = protoIdent;
+	this->ph = ph;
+	this->connectedToFinal = 0;
 }
 
 
-void tcphandler_destroy(struct tcp_handler_t* t)
+TcpHandler::~TcpHandler() 
 {
-	ph_destroy(t->ph);
-	pi_destroy(t->pi);
-	free(t);
+	ph_destroy(this->ph);
 }
 
-void tcphandler_determine_target(struct tcp_handler_t* tcph, protocols_app app_proto, struct sockaddr_in* targetServAddr)
+void TcpHandler::determineTarget(protocols_app app_proto, struct sockaddr_in* targetServAddr)
 {
 	// Determine target service address. This address depends on the chosen program mode
-	switch (tcph->mode) {
+	switch (this->mode) {
 	case full_emulation:
 		// Final target depends on the protocol, protocol identification
 		// can only be performed on the payload from the client side.
@@ -63,13 +49,13 @@ void tcphandler_determine_target(struct tcp_handler_t* tcph, protocols_app app_p
 		// This mode can therefore not determine applications which contain
 		// initial server payload and do not use standard ports
 		msg(MSG_DEBUG, "Determine target for full emulation mode...");
-		tcph->connection->destOffline = 1;
+		this->connection->destOffline = 1;
 		if (app_proto == UNKNOWN) {
-			bzero(tcph->connection->dest, IPLENGTH);
+			bzero(this->connection->dest, IPLENGTH);
 		} else {
-			tcph->ph[app_proto]->determine_target(tcph->ph[app_proto]->handler, targetServAddr);
-			Inet_ntop(AF_INET, &targetServAddr->sin_addr, tcph->connection->dest, IPLENGTH);
-			tcph->connection->dport = ntohs(targetServAddr->sin_port);
+			this->ph[app_proto]->determine_target(this->ph[app_proto]->handler, targetServAddr);
+			Inet_ntop(AF_INET, &targetServAddr->sin_addr, this->connection->dest, IPLENGTH);
+			this->connection->dport = ntohs(targetServAddr->sin_port);
 		}
 		break;
 	case half_proxy:
@@ -84,9 +70,9 @@ void tcphandler_determine_target(struct tcp_handler_t* tcph, protocols_app app_p
 		msg(MSG_DEBUG, "Determine target for full proxy mode ...");
 		bzero(targetServAddr, sizeof(*targetServAddr));
 		targetServAddr->sin_family = AF_INET;
-		targetServAddr->sin_port = htons((uint16_t)tcph->connection->dport);
-		msg(MSG_DEBUG,"determine target orig_dest:  %s dest: %s",tcph->connection->orig_dest,tcph->connection->dest);
-		Inet_pton(AF_INET, tcph->connection->dest, &targetServAddr->sin_addr);
+		targetServAddr->sin_port = htons((uint16_t)this->connection->dport);
+		msg(MSG_DEBUG,"determine target orig_dest:  %s dest: %s",this->connection->orig_dest,this->connection->dest);
+		Inet_pton(AF_INET, this->connection->dest, &targetServAddr->sin_addr);
 		break;
 	default:
 		msg(MSG_FATAL, "Unknown mode: This is an internal programming error!!!! Exiting!");
@@ -96,24 +82,24 @@ void tcphandler_determine_target(struct tcp_handler_t* tcph, protocols_app app_p
 }
 
 
-int tcphandler_handle_ssl(struct tcp_handler_t* tcph)
+int TcpHandler::handleSSL()
 {
-	if (tcph->sslMitmActive == 0 || tcph->mode == full_emulation) {
+	if (this->sslMitmActive == 0 || this->mode == full_emulation) {
 		msg(MSG_DEBUG,"SSL MITM Mode inactive");
 		return 0;
-}
+	}
 // We have found a SSL request from the client
 	pid_t childpid;
-	struct ssl_handler_t* sh = sslhandler_create(tcph);
+	struct ssl_handler_t* sh = sslhandler_create(this);
 	msg(MSG_DEBUG,"port %d",sh->sslServerPort);
 
 
-	msg(MSG_DEBUG,"dest: %s orig_dest %s dport: %d",tcph->connection->dest,tcph->connection->orig_dest,tcph->connection->dport);
+	msg(MSG_DEBUG,"dest: %s orig_dest %s dport: %d",this->connection->dest,this->connection->orig_dest,this->connection->dport);
 
-	strcpy(tcph->connection->dest,"127.0.0.1");
-	tcph->connection->dport = sh->sslServerPort;
+	strcpy(this->connection->dest,"127.0.0.1");
+	this->connection->dport = sh->sslServerPort;
 
-	msg(MSG_DEBUG,"dest: %s orig_dest %s dport: %d",tcph->connection->dest,tcph->connection->orig_dest,tcph->connection->dport);
+	msg(MSG_DEBUG,"dest: %s orig_dest %s dport: %d",this->connection->dest,this->connection->orig_dest,this->connection->dport);
 	if ( (childpid = pm_fork_temporary()) == 0) {        // child process
 		msg(MSG_DEBUG, "Forked SSL handler with pid %d", getpid());
 		sslhandler_run(sh);
@@ -130,13 +116,13 @@ int tcphandler_handle_ssl(struct tcp_handler_t* tcph)
 	
 }
 
-int tcphandler_handle_unknown(struct tcp_handler_t* tcph, struct sockaddr_in* targetServAddr)
+int TcpHandler::handleUnknown(struct sockaddr_in* targetServAddr)
 {
 	protocols_app app_proto = UNKNOWN;
-	if (tcph->nepenthesActive != 0)  {
+	if (this->nepenthesActive != 0)  {
 		
-		msg(MSG_DEBUG,"nepenthes is active with port %d",tcph->connection->dport);
-		switch (tcph->connection->dport) {
+		msg(MSG_DEBUG,"nepenthes is active with port %d",this->connection->dport);
+		switch (this->connection->dport) {
 						case 42:
 						case 135:
 						case 139:
@@ -147,10 +133,10 @@ int tcphandler_handle_unknown(struct tcp_handler_t* tcph, struct sockaddr_in* ta
 						case 3127:
 						case 3128:
 							targetServAddr->sin_family = AF_INET;
-							Inet_pton(AF_INET, conf_get(tcph->config, "nepenthes", "nepenthes_redirect"), &targetServAddr->sin_addr);
-							Inet_ntop(AF_INET, &targetServAddr->sin_addr, tcph->connection->dest, IPLENGTH);
+							Inet_pton(AF_INET, this->config.get("nepenthes", "nepenthes_redirect").c_str(), &targetServAddr->sin_addr);
+							Inet_ntop(AF_INET, &targetServAddr->sin_addr, this->connection->dest, IPLENGTH);
 
-							msg(MSG_DEBUG,"we changed target IP: %s",tcph->connection->dest);
+							msg(MSG_DEBUG,"we changed target IP: %s",this->connection->dest);
 							return -1;
 							break;
 						default:
@@ -161,9 +147,9 @@ int tcphandler_handle_unknown(struct tcp_handler_t* tcph, struct sockaddr_in* ta
 	// check for nepenthes
 /*	*/
 	// try to save the day
-	switch (tcph->mode) {
+	switch (this->mode) {
 	case full_emulation:
-		app_proto = tcph->pi->byport(tcph->pi, tcph->connection);
+		app_proto = this->protoIdent->identify(this->connection);
 		// if portbased failed:
 		if (app_proto == UNKNOWN) {
 			// set nepenthes goal for ports:
@@ -171,28 +157,28 @@ int tcphandler_handle_unknown(struct tcp_handler_t* tcph, struct sockaddr_in* ta
 			msg(MSG_ERROR, "Cannot identify application protocol in full_emulation mode!");
 
 		}
-		tcphandler_determine_target(tcph, app_proto, targetServAddr);
+		this->determineTarget(app_proto, targetServAddr);
 		break;
 	case  half_proxy:
 
-		tcphandler_determine_target(tcph, app_proto, targetServAddr);
+		this->determineTarget(app_proto, targetServAddr);
 		break;
 	case full_proxy:
 		// do nothing, we know the original target and will connect to it after this switch
 		// target is already intitialized by now
-		tcphandler_determine_target(tcph, app_proto, targetServAddr);
+		this->determineTarget(app_proto, targetServAddr);
 		break;
 	default:
 		msg(MSG_FATAL, "Unknown trumanbox mode: This is an internal programming error!!!! Exiting!");
 		exit(-1);
 	}
 	// we have to know the target now!
-	if (!tcph->connectedToFinal) {
-		if (-1 == Connect(tcph->targetServiceFd, (struct sockaddr*)targetServAddr, sizeof(*targetServAddr))) {
-			Close_conn(tcph->inConnFd, "Connection to targetservice could not be established");
+	if (!this->connectedToFinal) {
+		if (-1 == Connect(this->targetServiceFd, (struct sockaddr*)targetServAddr, sizeof(*targetServAddr))) {
+			Close_conn(this->inConnFd, "Connection to targetservice could not be established");
 			return -1;
 		}
-		tcph->connectedToFinal = 1;
+		this->connectedToFinal = 1;
 	} else {
 		if (app_proto == UNKNOWN) {
 			// we are connected but the protocol is unknown. what to do know?
@@ -204,7 +190,7 @@ int tcphandler_handle_unknown(struct tcp_handler_t* tcph, struct sockaddr_in* ta
 	return 0;
 }
 
-void tcphandler_run(struct tcp_handler_t* tcph)
+void TcpHandler::run()
 {
 	int maxfd;
 	struct sockaddr_in targetServAddr;
@@ -217,23 +203,23 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 	struct proto_handler_t* proto_handler;
 
 	bzero(payload, MAXLINE);
-	tcph->targetServiceFd = Socket(AF_INET, SOCK_STREAM, 0);
+	this->targetServiceFd = Socket(AF_INET, SOCK_STREAM, 0);
 /*
  * 	timeout is dangerous - because we cannot operate on this socket during the blocking call of connect -> suspectible of "Operation now in progress" - error
  * 	struct timeval timeoutTarget;
 	timeoutTarget.tv_sec = 5; 
 	timeoutTarget.tv_usec = 0;
-	setsockopt(tcph->targetServiceFd,SOL_SOCKET,SO_SNDTIMEO,&timeoutTarget,sizeof(timeoutTarget));
+	setsockopt(this->targetServiceFd,SOL_SOCKET,SO_SNDTIMEO,&timeoutTarget,sizeof(timeoutTarget));
 */	
 	
-	tcphandler_determine_target(tcph, UNKNOWN, &targetServAddr);
+	this->determineTarget(UNKNOWN, &targetServAddr);
 	msg(MSG_DEBUG,"finished determining target");
-	msg(MSG_DEBUG,"count reads: %d",tcph->connection->countReads);
+	msg(MSG_DEBUG,"count reads: %d",this->connection->countReads);
 	FD_ZERO(&rset);
-	//FD_SET(tcph->targetServiceFd, &rset); // as this socket is not connected to anyone, it should to be responsible for select to fail
-	FD_SET(tcph->inConnFd, &rset);
-	//maxfd = max(tcph->targetServiceFd, tcph->inConnFd) + 1;
-	maxfd = tcph->inConnFd + 1;
+	//FD_SET(this->targetServiceFd, &rset); // as this socket is not connected to anyone, it should to be responsible for select to fail
+	FD_SET(this->inConnFd, &rset);
+	//maxfd = max(this->targetServiceFd, this->inConnFd) + 1;
+	maxfd = this->inConnFd + 1;
 
 	// wait 3 seconds for initial client payload
 	// try to receive server payload if there is no 
@@ -242,13 +228,13 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 	tv.tv_usec = 0; 
 	
 	while (-1 != select(maxfd, &rset, NULL, NULL, &tv)) {
-		if (FD_ISSET(tcph->targetServiceFd, &rset)) {
+		if (FD_ISSET(this->targetServiceFd, &rset)) {
 			// we received data from the internet server
 			bzero(payloadRead,MAXLINE); // clean the old payload string, because we want to save new data
 			bzero(payload,MAXLINE*2);
 
 			msg(MSG_DEBUG, "Received data from target server!");
-			r = read(tcph->targetServiceFd, payloadRead, MAXLINE - 1);
+			r = read(this->targetServiceFd, payloadRead, MAXLINE - 1);
 		
 			if (!r) {
 				msg(MSG_DEBUG, "Target closed the connection...");
@@ -256,29 +242,29 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 			}
 		
 			//update the number of reads
-			tcph->connection->countReads++;
+			this->connection->countReads++;
 			
 			// copy the payload received in a new, larger char array because we maybe need the additional space for manipulating the server response
 			memcpy(payload,payloadRead,r);
 
-			if (tcph->connection->app_proto == UNKNOWN) {
-				app_proto = tcph->pi->bypayload(tcph->pi, tcph->connection, payload, r);
+			if (this->connection->app_proto == UNKNOWN) {
+				app_proto = this->protoIdent->identify(this->connection, payload, r);
 				if (app_proto == UNKNOWN) {
 					msg(MSG_FATAL, "We could not determine protocol after reading from source and target! But proceed anyway...");
 				}
 			}
-			proto_handler = tcph->ph[tcph->connection->app_proto];
-			proto_handler->handle_payload_stc(proto_handler->handler, tcph->connection, payload, &r);
+			proto_handler = this->ph[this->connection->app_proto];
+			proto_handler->handle_payload_stc(proto_handler->handler, this->connection, payload, &r);
 			msg(MSG_DEBUG,"sending servermsg to infected machine");
-			if (-1 == write(tcph->inConnFd, payload, r)) {
+			if (-1 == write(this->inConnFd, payload, r)) {
 				msg(MSG_FATAL, "Could not write to target (infected machine)!");
 				goto out;
 			}
-		} else if (FD_ISSET(tcph->inConnFd, &rset)) {
+		} else if (FD_ISSET(this->inConnFd, &rset)) {
 			bzero(payloadRead,MAXLINE); // clean the old payload string, because we want to save new data
 			bzero(payload,MAXLINE*2);
 			msg(MSG_DEBUG, "Received data from infected machine!");
-			r = Read(tcph->inConnFd, payloadRead, MAXLINE - 1);
+			r = Read(this->inConnFd, payloadRead, MAXLINE - 1);
 			msg(MSG_DEBUG,"read the data");
 			if (r <= 0) {
 				msg(MSG_DEBUG, "Infected machine closed the connection...");
@@ -289,53 +275,53 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 			
 			}
 			//update the number of reads
-			tcph->connection->countReads++;
+			this->connection->countReads++;
 				
 			memcpy(payload,payloadRead,r);
 	
-			if (tcph->connection->app_proto == UNKNOWN) {
-				app_proto = tcph->pi->bypayload(tcph->pi, tcph->connection, payload, r);
+			if (this->connection->app_proto == UNKNOWN) {
+				app_proto = this->protoIdent->identify(this->connection, payload, r);
 				if (app_proto == SSL_Proto) {
-					tcphandler_handle_ssl(tcph);
+					this->handleSSL();
 				}
 				if (app_proto == UNKNOWN) {
-					tcphandler_handle_unknown(tcph, &targetServAddr);
+					this->handleUnknown(&targetServAddr);
 				} 
 
-				else if (!tcph->connectedToFinal) {
+				else if (!this->connectedToFinal) {
 					msg(MSG_DEBUG, "Identified protocol. Connecting to target");
-					tcphandler_determine_target(tcph, tcph->connection->app_proto, &targetServAddr);
-					if ( -1 == Connect(tcph->targetServiceFd, (struct sockaddr*)&targetServAddr, sizeof(targetServAddr)) ) {
-						if (tcph->mode == half_proxy) {
+					this->determineTarget(this->connection->app_proto, &targetServAddr);
+					if ( -1 == Connect(this->targetServiceFd, (struct sockaddr*)&targetServAddr, sizeof(targetServAddr)) ) {
+						if (this->mode == half_proxy) {
 						msg(MSG_DEBUG,"dest is offline");
 						// the connection to the original target / port failed, so we change the target to our local emulation server
 						
-							if (tcph->connection->app_proto == UNKNOWN) {
-								bzero(tcph->connection->dest, IPLENGTH);
+							if (this->connection->app_proto == UNKNOWN) {
+								bzero(this->connection->dest, IPLENGTH);
 							} else {
-								tcph->ph[tcph->connection->app_proto]->determine_target(tcph->ph[tcph->connection->app_proto]->handler, &targetServAddr);
-								Inet_ntop(AF_INET, &(&targetServAddr)->sin_addr, tcph->connection->dest, IPLENGTH);
+								this->ph[this->connection->app_proto]->determine_target(this->ph[this->connection->app_proto]->handler, &targetServAddr);
+								Inet_ntop(AF_INET, &(&targetServAddr)->sin_addr, this->connection->dest, IPLENGTH);
 							}
-							tcph->connection->destOffline = 1;	
-							if (-1 == Connect(tcph->targetServiceFd, (struct sockaddr*)&targetServAddr, sizeof(targetServAddr))) {
+							this->connection->destOffline = 1;	
+							if (-1 == Connect(this->targetServiceFd, (struct sockaddr*)&targetServAddr, sizeof(targetServAddr))) {
 								msg(MSG_FATAL,"Connection to emulation target not possible, abort...");
 								goto out;
 							}
 						}
 						else {
-							Close_conn(tcph->inConnFd, "Connection to targetservice could not be established");
+							Close_conn(this->inConnFd, "Connection to targetservice could not be established");
 							goto out;
 						}
 					}
-					tcph->connectedToFinal = 1;
+					this->connectedToFinal = 1;
 				}
 			} 
 			
-			proto_handler = tcph->ph[tcph->connection->app_proto];
+			proto_handler = this->ph[this->connection->app_proto];
 			msg(MSG_DEBUG, "Sending payload to protocol handler ... ");
-			proto_handler->handle_payload_cts(proto_handler->handler, tcph->connection, payload, &r);
+			proto_handler->handle_payload_cts(proto_handler->handler, this->connection, payload, &r);
 			msg(MSG_DEBUG, "Sending payload to target server...%d bytes",r);
-			if (-1 == write(tcph->targetServiceFd, payload, r)) {
+			if (-1 == write(this->targetServiceFd, payload, r)) {
 				msg(MSG_FATAL, "Could not write to target server!");
 				goto out;
 			}
@@ -344,23 +330,23 @@ void tcphandler_run(struct tcp_handler_t* tcph)
 			// We received a timeout. There are now two possiblities:
 			// 1.) We already identified the protocol: There is something wrong, as there should not be any timeout
 			// 2.) We did not identify the payload: We need to perform some  actions to enable payload identification
-			if (tcph->connection->app_proto != UNKNOWN) {
+			if (this->connection->app_proto != UNKNOWN) {
 				msg(MSG_ERROR, "Connection timed out!");
 				goto out; // exit function
 			}
 			msg(MSG_DEBUG,"Received a timeout???");
-			tcphandler_handle_unknown(tcph, &targetServAddr);
+			this->handleUnknown(&targetServAddr);
 		}
 		FD_ZERO(&rset);
-		FD_SET(tcph->targetServiceFd, &rset); // as this socket is not connected to anyone, it should to be responsible for select to fail
-		FD_SET(tcph->inConnFd, &rset);
-		maxfd = max(tcph->targetServiceFd, tcph->inConnFd) + 1;
+		FD_SET(this->targetServiceFd, &rset); // as this socket is not connected to anyone, it should to be responsible for select to fail
+		FD_SET(this->inConnFd, &rset);
+		maxfd = std::max(this->targetServiceFd, this->inConnFd) + 1;
 		tv.tv_sec = 300;
 		tv.tv_usec = 0; 
 	}
 
 out:
-	Close_conn(tcph->inConnFd, "incoming connection, because we are done with this connection");
-	Close_conn(tcph->targetServiceFd, "connection to targetservice, because we are done with this connection");
+	Close_conn(this->inConnFd, "incoming connection, because we are done with this connection");
+	Close_conn(this->targetServiceFd, "connection to targetservice, because we are done with this connection");
 }
 
