@@ -1,9 +1,7 @@
 #include "dispatching.h"
 #include "signals.h"
-#include "configuration.h"
 #include "helper_file.h"
 #include "helper_net.h"
-#include "msg.h"
 #include "udp_handler.h"
 #include "tcp_handler.h"
 #include "process_manager.h"
@@ -12,6 +10,10 @@
 
 #include "protocols/proto_ident.h"
 #include "protocols/proto_handler.h"
+
+
+#include <common/configuration.h>
+#include <common/msg.h>
 
 #include <stdlib.h>
 #include <string.h>

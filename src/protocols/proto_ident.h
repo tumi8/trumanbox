@@ -1,7 +1,8 @@
 #ifndef _PROTO_IDENT_H_
 #define _PROTO_IDENT_H_
 
-#include "definitions.h"
+#include <common/definitions.h>
+#include <stdint.h>
 
 /* This class is a base class for all protocol identifier that take
  * payload from client/server communication and try to identify the 

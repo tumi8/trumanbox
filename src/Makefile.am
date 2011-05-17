@@ -2,14 +2,15 @@ SUBDIRS=common
 
 bin_PROGRAMS=trumanbox
 
-trumanbox_SOURCES=config.h dns_resolver.cpp helper_file.h \
-	main.h signals.cpp tcp_handler.h wrapper.cpp \
-	dispatching.cpp dns_resolver.h helper_net.cpp \
+trumanbox_SOURCES=config.h dns_resolver.h dns_resolver.cpp helper_file.h \
+	signals.cpp tcp_handler.h wrapper.cpp \
+	dispatching.cpp helper_net.cpp \
 	semaphore.cpp signals.h udp_handler.cpp  wrapper.h \
-	dispatching.h helper_file.cpp helper_net.h main.cpp \
+	dispatching.h helper_file.cpp helper_net.h \
 	semaphore.h tcp_handler.cpp udp_handler.h process_manager.h process_manager.cpp \
 	logger.h logger.cpp log_truman.h log_truman.cpp log_sqlite.h log_sqlite.cpp \
 	log_postgres.h log_postgres.cpp ssl_handler.h ssl_handler.cpp\
+	main.h main.cpp  \
 	protocols/proto_ident.h protocols/proto_ident.cpp protocols/proto_handler.h \
 	protocols/proto_handler.cpp protocols/proto_ident_truman.cpp \
 	protocols/proto_ident_truman.h protocols/proto_ident_opendpi.h protocols/proto_ident_opendpi.cpp \

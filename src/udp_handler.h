@@ -1,7 +1,7 @@
 #ifndef _UDP_HANDLER_H_
 #define _UDP_HANDLER_H_
 
-#include "definitions.h"
+#include <common/definitions.h>
 #include "protocols/proto_ident.h"
 #include "protocols/proto_handler.h"
 

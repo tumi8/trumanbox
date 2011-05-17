@@ -1,5 +1,5 @@
 #include "wrapper.h"
-#include "msg.h"
+#include <common/msg.h>
 
 #include <sys/socket.h>
 #include <sys/types.h>

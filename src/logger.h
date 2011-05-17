@@ -1,7 +1,7 @@
 #ifndef _LOGGER_H_
 #define _LOGGER_H_
 
-#include "definitions.h"
+#include <common/definitions.h>
 
 struct logger_t;
 struct configuration_t;

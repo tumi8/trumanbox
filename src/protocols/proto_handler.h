@@ -1,7 +1,7 @@
 #ifndef _PROTO_HANDLER_H_
 #define _PROTO_HANDLER_H_
 
-#include "definitions.h"
+#include <common/definitions.h>
 
 #include <netinet/in.h>
 

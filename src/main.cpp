@@ -18,10 +18,9 @@ static void usage(const char* progname);
 static operation_mode_t get_mode(const char* mode_string);
 
 int main(int argc, char **argv) {
-	const char *workdir;
+	std::string workdir;
 	int		c;
 	operation_mode_t mode = invalid;
-	struct dns_resolver_t* dns_resolver;
 	struct dispatcher_t* dispatcher;
 	int msg_level = MSG_ERROR;
 	char* config_file = NULL;
@@ -57,8 +56,8 @@ int main(int argc, char **argv) {
 
 	// change to working dir
 	workdir = config.get("main", "work_dir");
-  	if (chdir(workdir) < 0) {
-		msg(MSG_FATAL, "cannot change working dir to %s: %s", workdir, strerror(errno));
+  	if (chdir(workdir.c_str()) < 0) {
+		msg(MSG_FATAL, "cannot change working dir to %s: %s", workdir.c_str(), strerror(errno));
 		return -1;
 	}
 
@@ -68,16 +67,15 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 
-	dns_resolver = dns_create_resolver(config);
+	DNSResolver dns_resolver(config);
 	dispatcher = disp_create(config);
 
 	msg(MSG_DEBUG, "Running dns resolver");
-	dns_start_resolver(dns_resolver);
+	dns_resolver.start();
 	msg(MSG_DEBUG, "Running dispatcher");
 	disp_run(dispatcher);
 	msg(MSG_DEBUG, "Stopping dns resolver");
-	dns_stop_resolver(dns_resolver);
-	dns_destroy_resolver(dns_resolver);
+	dns_resolver.stop();
 	disp_destroy(dispatcher);
 	logger_destroy();
 

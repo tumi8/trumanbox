@@ -1,7 +1,7 @@
 #ifndef _DISPATCHER_H_
 #define _DISPATCHER_H_
 
-#include "definitions.h"
+#include <common/definitions.h>
 
 struct dispatcher_t;
 struct configuration_t;
