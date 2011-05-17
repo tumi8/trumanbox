@@ -48,5 +48,5 @@ AS_IF([test "x$with_opendpi" = "xdisabled"],
        ]
      )
 
-AC_CONFIG_FILES([Makefile src/Makefile src/common/Makefile src/logging/Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile src/common/Makefile src/logging/Makefile src/protocols/Makefile])
 AC_OUTPUT
