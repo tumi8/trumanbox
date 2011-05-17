@@ -6,7 +6,7 @@
 typedef void Sigfunc(int);
 #endif
 
-Sigfunc *signal(int signo, Sigfunc *func);
+Sigfunc *signal_wrapper(int signo, Sigfunc *func);
 Sigfunc *Signal(int signo, Sigfunc *func);
 void sig_chld(int signo);
 

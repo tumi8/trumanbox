@@ -1,11 +1,12 @@
 #include "signals.h"
-#include "msg.h"
+
+#include <common/msg.h>
 
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 
-Sigfunc *signal(int signo, Sigfunc *func) {
+Sigfunc *signal_wrapper(int signo, Sigfunc *func) {
         struct sigaction        act, oact;
 
         act.sa_handler = func;
