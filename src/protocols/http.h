@@ -1,8 +1,9 @@
 #ifndef _PROTO_HTTP_H_
 #define _PROTO_HTTP_H_
 
-#include "configuration.h"
+#include <common/configuration.h>
 #include <netinet/in.h>
+#include "proto_handler.h"
 
 class HTTPHandler : public ProtoHandler
 {
@@ -11,21 +12,10 @@ class HTTPHandler : public ProtoHandler
 		virtual int payloadServerToClient(connection_t* conn, const char* payload, ssize_t* len);
 		virtual int payloadClientToServer(connection_t* conn, const char* payload, ssize_t* len);
 		virtual int determineTarget(struct sockaddr_in* addr);
-
-
+	private:
+		void emulate_server_response(struct http_client_struct* data,connection_t* conn); 
+		void manipulate_server_payload(const char* payload, connection_t* conn, ssize_t* len);
+		void extract_http_header_field(char* destination, char* headername, char* header);
 };
-
-
-void* ph_http_create();
-int ph_http_destroy(void*);
-
-int ph_http_init(void* handler, struct configuration_t* c);
-int ph_http_deinit(void* handler);
-int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* payload, ssize_t* len);
-int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* payload, ssize_t* len);
-int ph_http_handle_packet(void* handler, const char* packet, ssize_t len);
-int ph_http_determine_target(void* handler, struct sockaddr_in*);
-void extract_http_header_field(char* destination, char* headername, char* header);
-
 
 #endif

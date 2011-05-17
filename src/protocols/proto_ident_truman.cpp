@@ -1,11 +1,12 @@
 #include "proto_ident_truman.h"
 #include <stdlib.h>
 #include "helper_net.h"
-#include "msg.h"
 #include "string.h"
-#include "log_postgres.h"
 #include <stdio.h>
 #include "helper_file.h"
+
+#include <common/msg.h>
+#include <logging/log_postgres.h>
 
 char *strcasestr(const char *haystack, const char *needle);
 

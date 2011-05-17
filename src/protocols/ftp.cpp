@@ -2,43 +2,20 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "log_postgres.h"
 #include "wrapper.h"
-#include "logger.h"
 #include "helper_file.h"
-#include "msg.h"
 
-//PGconn *psql;
+#include <logging/logbase.h>
+#include <logging/log_postgres.h>
+#include <common/msg.h>
 
-struct ph_ftp {
-	struct configuration_t* config;
-};
-
-void* ph_ftp_create()
+FTPHandler::FTPHandler(const Configuration& config)
+	: ProtoHandler(config)
 {
-	void* ret = malloc(sizeof(struct ph_ftp));
-	return ret;
+
 }
 
-int ph_ftp_destroy(void* handler)
-{
-	free(handler);
-	return 0;
-}
-
-int ph_ftp_init(void* handler, struct configuration_t* c)
-{
-	struct ph_ftp* ftp = (struct ph_ftp*)handler;
-	ftp->config = c;
-	return 0;
-}
-
-int ph_ftp_deinit(void* handler)
-{
-	return 0;
-}
-
-int ph_ftp_handle_payload_stc(void* handler, connection_t* conn, const char* payload, ssize_t* len)
+int FTPHandler::payloadServerToClient(connection_t* conn, const char* payload, ssize_t* len)
 {
 	struct ftp_struct* data;
 
@@ -125,14 +102,14 @@ int ph_ftp_handle_payload_stc(void* handler, connection_t* conn, const char* pay
 
 
                 linePtr = strtok(NULL,"\n"); 
-                logger_get()->log_struct(logger_get(), conn, "server", data); 
+                logger_get()->logStruct(conn, "server", data); 
         } 
 
         return 1;
 
 }
 
-int ph_ftp_handle_payload_cts(void* handler, connection_t* conn, const char* payload, ssize_t* len)
+int FTPHandler::payloadClientToServer(connection_t* conn, const char* payload, ssize_t* len)
 {
 	struct ftp_struct* data;
 
@@ -190,7 +167,7 @@ int ph_ftp_handle_payload_cts(void* handler, connection_t* conn, const char* pay
 
 
                 linePtr = strtok(NULL,"\n");
-                logger_get()->log_struct(logger_get(), conn, "client", data);
+                logger_get()->logStruct(conn, "client", data);
         }
 
 	/*char 	*ptr,
@@ -258,18 +235,13 @@ int ph_ftp_handle_payload_cts(void* handler, connection_t* conn, const char* pay
 	return 1;
 }
 
-int ph_ftp_handle_packet(void* handler, const char* packet, ssize_t len)
-{
-	return 0;
-}
 
-int ph_ftp_determine_target(void* handler, struct sockaddr_in* addr)
+int FTPHandler::determineTarget(struct sockaddr_in* addr)
 {
-	struct ph_ftp* ftp = (struct ph_ftp*)handler;
-	if (conf_get_mode(ftp->config) < full_proxy) {
+	if (config.getMode() < full_proxy) {
                 bzero(addr, sizeof(struct sockaddr_in));
                 addr->sin_family = AF_INET;
-                Inet_pton(AF_INET, conf_get(ftp->config, "ftp", "ftp_redirect"), &addr->sin_addr);
+                Inet_pton(AF_INET, config.get("ftp", "ftp_redirect").c_str(), &addr->sin_addr);
 		addr->sin_port = htons((uint16_t)21);
 	}
 	return 0;

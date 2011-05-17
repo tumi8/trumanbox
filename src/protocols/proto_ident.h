@@ -12,7 +12,7 @@ class Configuration;
  */
 class ProtoIdent {
 	public:
-		ProtoIdent(class Configuration& config) : config(config)  {}
+		ProtoIdent(const Configuration& config) : config(config)  {}
 		
 		virtual protocols_app identify(connection_t *conn, char* payload, size_t payload_len) = 0;
 		virtual protocols_app identify(connection_t *conn) = 0;

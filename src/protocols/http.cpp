@@ -1,13 +1,13 @@
 #include "http.h"
 #include "wrapper.h"
-#include "logger.h"
 #include "helper_file.h"
-#include "msg.h"
 #include <stdlib.h>
 #include <string.h>
 
+#include <logging/logbase.h>
+#include <common/msg.h>
 
-static void manipulate_server_payload(const char* payload, connection_t* conn, ssize_t* len) {
+ void HTTPHandler::manipulate_server_payload(const char* payload, connection_t* conn, ssize_t* len) {
 	// change the server type if possible
 	char* ptr = strstr(payload, "Server: ");
 	if (ptr != 0 && conn->timestampEmulation != NULL) {
@@ -47,7 +47,7 @@ static void manipulate_server_payload(const char* payload, connection_t* conn, s
 
 }
 
-static void emulate_server_response(struct http_client_struct* data,connection_t* conn) {
+void HTTPHandler::emulate_server_response(struct http_client_struct* data,connection_t* conn) {
 	
 	strcpy(data->responseReturnedType,"old");
 	msg(MSG_DEBUG,"ok we got all we need for the request: %s || %s || %s",data->requestedHost,data->requestedLocation,data->userAgent);
@@ -103,35 +103,14 @@ static void emulate_server_response(struct http_client_struct* data,connection_t
 
 }
 
-struct ph_http {
-	struct configuration_t* config;
-};
 
-void* ph_http_create()
+HTTPHandler::HTTPHandler(const Configuration& config)
+	: ProtoHandler(config)
 {
-	void* ret = malloc(sizeof(struct ph_http));
-	return ret;
+
 }
 
-int ph_http_destroy(void* handler)
-{
-	free(handler);
-	return 0;
-}
-
-int ph_http_init(void* handler, struct configuration_t* c)
-{
-	struct ph_http* http = (struct ph_http*)handler;
-	http->config = c;
-	return 0;
-}
-
-int ph_http_deinit(void* handler)
-{
-	return 0;
-}
-
-int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* payload, ssize_t* len)
+int HTTPHandler::payloadServerToClient(connection_t* conn, const char* payload, ssize_t* len)
 {
 	struct http_server_struct* data;
 	msg(MSG_DEBUG,"Received %d and multplechunks is: %d",*len,conn->multiple_server_chunks);
@@ -164,15 +143,15 @@ int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 		
 
 		// extract header fields
-		extract_http_header_field(data->responseContentType,"Content-Type:",data->responseHeader);
-		extract_http_header_field(data->serverType,"Server:",data->responseHeader);
-		extract_http_header_field(data->responseLastModified,"Last-Modified:",data->responseHeader);
+		extract_http_header_field(data->responseContentType,(char*)"Content-Type:",data->responseHeader);
+		extract_http_header_field(data->serverType,(char*)"Server:",data->responseHeader);
+		extract_http_header_field(data->responseLastModified,(char*)"Last-Modified:",data->responseHeader);
 		
 		
 			
 		// CONTENT-LENGTH extractor
 		char contentLengthStr[100];
-		extract_http_header_field(contentLengthStr,"Content-Length:",data->responseHeader);
+		extract_http_header_field(contentLengthStr,(char*)"Content-Length:",data->responseHeader);
 		int contentLength;
 		if (strncmp(contentLengthStr,"N/A",3)==0) {
 			// we have no content-length!
@@ -219,7 +198,7 @@ int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 		
 
 		// now we are finished with the initial received data, now do the logging
-		logger_get()->log_struct(logger_get(), conn, "server", data);
+		logger_get()->logStruct(conn, "server", data);
 
 	}
 	else {
@@ -244,11 +223,10 @@ int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 			conn->log_server_struct_ptr = NULL;
 			conn->multiple_server_chunks = 0;
 		}
-		else if (data->rcvd_content_length == -1) {
+		else if (data->rcvd_content_length == 0) {
 			append_binarydata_to_file(data->responseBodyBinaryLocation,payload,*len);
 			msg(MSG_DEBUG,"wrote %d bytes to %s",*len,data->responseBodyBinaryLocation);
 			data->rcvd_content_done += *len;
-					
 		}
 		
 		else
@@ -262,10 +240,8 @@ int ph_http_handle_payload_stc(void* handler, connection_t* conn, const char* pa
 }
 
 
-int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* payload, ssize_t* len)
+int HTTPHandler::payloadClientToServer(connection_t* conn, const char* payload, ssize_t* len)
 {
-	
-	
 	struct http_client_struct* data;
 	if (conn->multiple_client_chunks == 0) {
 
@@ -310,7 +286,7 @@ int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 		// CONTENT-LENGTH extractor
 		
 		char contentLengthStr[100];
-		extract_http_header_field(contentLengthStr,"Content-Length:",data->requestHeader);
+		extract_http_header_field(contentLengthStr,(char*)"Content-Length:",data->requestHeader);
 		int contentLength;
 		if (strncmp(contentLengthStr,"N/A",3)==0) {
 			// we have no content-length!
@@ -352,15 +328,15 @@ int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 	
 		}
 
-		extract_http_header_field(data->requestedHost,"Host:",data->requestHeader);
-		extract_http_header_field(data->userAgent,"User-Agent:",data->requestHeader);
+		extract_http_header_field(data->requestedHost,(char*)"Host:",data->requestHeader);
+		extract_http_header_field(data->userAgent,(char*)"User-Agent:",data->requestHeader);
 		
 		
 		if (conn->destOffline) {
 			emulate_server_response(data,conn);
 		}
 		
-		logger_get()->log_struct(logger_get(), conn, "client", data);
+		logger_get()->logStruct(conn, "client", data);
 	
 
 	}
@@ -388,7 +364,7 @@ int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 			conn->multiple_client_chunks = 0;
 			msg(MSG_DEBUG,"we are finished reading the body!");
 		}
-		else if (data->sent_content_length == -1) {
+		else if (data->sent_content_length == 0) {
 			append_binarydata_to_file(data->requestBodyBinaryLocation,payload,*len);
 			msg(MSG_DEBUG,"wrote %d bytes to %s",*len,data->requestBodyBinaryLocation);
 		}
@@ -404,18 +380,12 @@ int ph_http_handle_payload_cts(void* handler, connection_t* conn, const char* pa
 	return 1;
 }
 
-int ph_http_handle_packet(void* handler, const char* packet, ssize_t len)
+int HTTPHandler::determineTarget(struct sockaddr_in* addr)
 {
-	return 0;
-}
-
-int ph_http_determine_target(void* handler, struct sockaddr_in* addr)
-{
-	struct ph_http* http = (struct ph_http*)handler;
-	if (conf_get_mode(http->config) < full_proxy) {
+	if (config.getMode() < full_proxy) {
 		bzero(addr, sizeof(struct sockaddr_in));
                 addr->sin_family = AF_INET;
-                Inet_pton(AF_INET, conf_get(http->config, "http", "http_redirect"), &addr->sin_addr);
+                Inet_pton(AF_INET, config.get("http", "http_redirect").c_str(), &addr->sin_addr);
 		addr->sin_port = htons((uint16_t)80);
 		msg(MSG_DEBUG,"set http dummy target!");
 	}
@@ -423,7 +393,7 @@ int ph_http_determine_target(void* handler, struct sockaddr_in* addr)
 }
 
 // this method searches for the 'headername' string in the 'header' string and if the search was successful, it tries to save the value for this headername into the string 'destination'
-void extract_http_header_field(char* destination, char* headername, char* header) {
+void HTTPHandler::extract_http_header_field(char* destination, char* headername, char* header) {
 
 	char* ptrToHeaderField = NULL;
 	int nameLength = strlen(headername)+1; // we have to add +1 because typically http requests look like this: 'HeaderField: Value' - thus we have to add +1 because of the space character
