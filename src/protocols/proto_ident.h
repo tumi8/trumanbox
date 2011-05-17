@@ -3,38 +3,16 @@
 
 #include "definitions.h"
 
-struct proto_identifier_t;
-struct configuration_t;
-
-/* This function receives a descriptor from an established connection and an
- * connection object and tries to read as many bytes from the connection as are
- * needed to classify the connection or reach the decision that this connection
- * cannot be classified. The read bytes are stored to payload and the
- * identified protocol is returned.
+/* This class is a base class for all protocol identifier that take
+ * payload from client/server communication and try to identify the 
+ * application protocol involved in the communication.
  */
-typedef protocols_app (pi_identify_from_conn)(struct proto_identifier_t*, connection_t* conn, int connfd, char* payload, ssize_t* payload_len);
-typedef int (pi_init)(struct proto_identifier_t* p);
-typedef int (pi_deinit)(struct proto_identifier_t* p);
-typedef protocols_app (pi_byport)(struct proto_identifier_t* p, connection_t *conn);
-typedef protocols_app (pi_bypayload)(struct proto_identifier_t* p, connection_t *conn, char *payload, size_t payload_len);
-
-enum epi_type { inbuild, opendpi };
-typedef enum epi_type pi_type;
-
-
-struct proto_identifier_t {
-	void* identifier;
-	struct configuration_t* config;
-	operation_mode_t mode;
-	pi_type type;
-	pi_identify_from_conn* identify;
-	pi_init* init;
-	pi_deinit* deinit;
-	pi_byport* byport;
-	pi_bypayload* bypayload;
+class ProtoIdent {
+	public:
+		ProtoIdent();
+		
+		virtual protocols_app identify(connection_t *conn, char* payload, size_t payload_len);
+		virtual protocols_app idenfify(connection_t *conn, uint16_t port);
 };
-
-struct proto_identifier_t* pi_create(struct configuration_t* c, pi_type type);
-void pi_destroy(struct proto_identifier_t* p);
 
 #endif
