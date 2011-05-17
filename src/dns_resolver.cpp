@@ -1,13 +1,16 @@
 #include "dns_resolver.h"
 #include "helper_net.h"
-#include "msg.h"
 #include "signals.h"
 #include "process_manager.h"
-#include "configuration.h"
 #include "wrapper.h"
 #include "logger.h"
-#include "definitions.h"
 #include "helper_file.h"
+
+#include <common/msg.h>
+#include <common/configuration.h>
+#include <common/definitions.h>
+
+
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -22,60 +25,43 @@
 #define MAX_REQUEST_LEN 1000
 #define MAX_DOMAIN_LEN 1000
 
-struct dns_resolver_t {
-	char listen_ip[IPLENGTH];
-	char fake_addr[INET_ADDRSTRLEN];
-	uint16_t port;
-	uint8_t return_orig;
-	uint32_t response_addr;
-	pid_t pid;
-	connection_t conn;
-};
-
 static void dns_worker(struct dns_resolver_t* resolver);
 static void sig_int(int signo);
 
-struct dns_resolver_t* dns_create_resolver(struct configuration_t* c)
+DNSResolver::DNSResolver(const Configuration& config)
 {
-	struct dns_resolver_t* ret = (struct dns_resolver_t*)malloc(sizeof(struct dns_resolver_t));
-	strncpy(ret->listen_ip, conf_get(c, "dns", "listen_address"), 13);
-	strncpy(ret->fake_addr, conf_get(c, "dns", "fake_address"), INET_ADDRSTRLEN);
-	ret->port = conf_getint(c, "dns", "port", 53);
-	ret->return_orig = conf_getint(c, "dns", "return_original", 1);
-	ret->pid = 0;
-	inet_pton(AF_INET, conf_get(c, "dns", "fake_address"), &ret->response_addr);
+	
+	this->listen_ip = config.get("dns", "listen_address");
+	this->fake_addr = config.get("dns", "fake_address");
+	this->port = config.getInt("dns", "port", 53);
+	this->return_orig = config.getInt("dns", "return_original", 1);
+	this->pid = 0;
+	inet_pton(AF_INET, config.get("dns", "fake_address").c_str(), &this->response_addr);
 
-	strncpy(ret->conn.dest, ret->listen_ip, IPLENGTH);
-	create_timestamp(ret->conn.timestamp); 
-	ret->conn.dport = 53;
-	ret->conn.app_proto = DNS;
-
-	return ret;
+	strncpy(this->conn.dest, this->listen_ip.c_str(), IPLENGTH);
+	create_timestamp(this->conn.timestamp); 
+	this->conn.dport = 53;
+	this->conn.app_proto = DNS;
 }
 
-void dns_start_resolver(struct dns_resolver_t* r)
+void DNSResolver::start()
 {
-	if (0 == (r->pid = pm_fork_permanent())) {
+	if (0 == (this->pid = pm_fork_permanent())) {
 		Signal(SIGINT, sig_int);
-		dns_worker(r);
-		msg(MSG_FATAL, "DNS-Worker has finished! This should never happen!");
-		Exit(1);
-	}
+		dns_worker(this);
+		THROWEXCEPTION("DNS-Worker has finished! This should never happen!");
+	} 
 }
 
-void dns_stop_resolver(struct dns_resolver_t* r)
+void DNSResolver::stop()
 {
 	msg(MSG_DEBUG, "Stopping dns resolver");
-	if (-1 == kill(r->pid, SIGINT))
+	if (-1 == kill(this->pid, SIGINT))
 		msg(MSG_FATAL, "Could not send signal to dns_resolver: %s", strerror(errno));
 }
 
-void dns_destroy_resolver(struct dns_resolver_t* r)
-{
-	free(r);
-}
 
-static void dns_worker(struct dns_resolver_t* resolver)
+void DNSResolver::dns_worker(DNSResolver* resolver)
 {
 	int socket;
 	struct sockaddr_in saddr, cliaddr;
@@ -169,7 +155,7 @@ static void dns_worker(struct dns_resolver_t* resolver)
 			memcpy(returned_addr_str, real_addr_str, INET_ADDRSTRLEN);
 		} else {
 			memcpy(response + tmp, &resolver->response_addr, 4); tmp += 4;             // ip address
-			memcpy(returned_addr_str, resolver->fake_addr, INET_ADDRSTRLEN);
+			memcpy(returned_addr_str, resolver->fake_addr.c_str(), INET_ADDRSTRLEN);
 		}
 		Sendto(socket, response, tmp, 0, (struct sockaddr *)&cliaddr, clilen);
 

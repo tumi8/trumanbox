@@ -1,17 +1,32 @@
 #ifndef _DNS_RESOLVER_H_
 #define _DNS_RESOLVER_H_
 
+#include <common/definitions.h>
+
 #include <stdint.h>
-#include "definitions.h"
+#include <string>
 
-struct dns_resolver_t;
-struct configuration_t;
+class Configuration;
 
-struct dns_resolver_t* dns_create_resolver(struct configuration_t* c);
+class DNSResolver {
+public:
+	DNSResolver(const Configuration& conf);
 
-void dns_start_resolver(struct dns_resolver_t* r);
-void dns_stop_resolver(struct dns_resolver_t* r);
+	void start();
+	void stop();
 
-void dns_destroy_resolver(struct dns_resolver_t* r);
+private:
+	std::string listen_ip;
+	std::string fake_addr;
+	uint16_t port;
+	uint8_t return_orig;
+	uint32_t response_addr;
+	pid_t pid;
+	connection_t conn;
+
+	static void dns_worker(DNSResolver* resolver);
+
+};
+
 
 #endif
