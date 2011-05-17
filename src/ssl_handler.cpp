@@ -3,11 +3,8 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <netdb.h>
-#include "definitions.h"
 #include "helper_net.h"
 #include "helper_file.h"
-#include "msg.h"
-#include "configuration.h"
 #include "wrapper.h"
 #include "tcp_handler.h"
 #include "protocols/proto_handler.h"
@@ -22,6 +19,10 @@
 #include <strings.h>
 #include <stdio.h>
 
+#include <common/definitions.h>
+#include <common/msg.h>
+#include <common/configuration.h>
+
 static char *pass;
 static int client_auth=0;
 static int s_server_auth_session_id_context = 2;
@@ -33,7 +34,6 @@ static int s_server_auth_session_id_context = 2;
 */
 
 static int tcp_connect(char* host, int port)
-  
   {
     struct hostent *hp;
     struct sockaddr_in addr;
@@ -79,10 +79,8 @@ static int password_cb(char *buf,int num,
     return(strlen(pass));
   }
 
-SSL_CTX *initialize_ctx(keyfile,password)
-  char *keyfile;
-  char *password;
-  {
+SSL_CTX *initialize_ctx(char* keyfile, char* password)
+{
     const SSL_METHOD *meth;
     SSL_CTX *ctx;
     
@@ -120,17 +118,14 @@ SSL_CTX *initialize_ctx(keyfile,password)
     return ctx;
   }
      
-void destroy_ctx(ctx)
-  SSL_CTX *ctx;
-  {
+void destroy_ctx(SSL_CTX* ctx)
+{
     SSL_CTX_free(ctx);
-  }
+}
 
 
-void load_dh_params(ctx,file)
-  SSL_CTX *ctx;
-  char *file;
-  {
+void load_dh_params(SSL_CTX* ctx, char* file)
+{
     DH *ret=0;
     BIO *bio;
 
@@ -144,71 +139,62 @@ void load_dh_params(ctx,file)
     BIO_free(bio);
     if(SSL_CTX_set_tmp_dh(ctx,ret)<0)
       msg(MSG_FATAL,"Couldn't set DH parameters");
-  }
+}
 
-static int log_to_db(struct ssl_handler_t* t, char* filename, char* from) {
-
-	
+void SSLHandler::log_to_db(char* filename, char* from) {
 	char statement[MAX_STATEMENT];
 	 
 	snprintf(statement, MAX_STATEMENT, "insert into SSL_MITM_LOGS (ClientIP,ClientPort,orig_ServerIP,ServerIP,orig_serverport,ServerPort,binaryLocation,type,date,TrumanTimestamp,sample_id) Values (inet('%s'),%d,inet('%s'),inet('%s'),%d,%d,'%s','%s', (select current_timestamp),'%s', (select distinct value from trumanbox_settings where key = 'CURRENT_SAMPLE'))",
-	t->tcphandler->connection->source,t->tcphandler->connection->sport,t->dest,t->dest,t->destPort,t->destPort,filename,from,t->tcphandler->connection->timestamp
+	tcphandler->connection->source,tcphandler->connection->sport,dest,dest,destPort,destPort,filename,from,tcphandler->connection->timestamp
 	);
 	execute_statement(statement);				    
-	return 0;
-
 }
 
-struct ssl_handler_t* sslhandler_create(struct tcp_handler_t* tcph)
+SSLHandler::SSLHandler(TcpHandler* tcphandler)
 {
-	struct ssl_handler_t* ret = (struct ssl_handler_t*)malloc(sizeof(struct ssl_handler_t));
-	ret->tcphandler = tcph;
-	ret->serverSocket = 0; 
-	ret->serverConnectionSocket = 0;
-	ret->clientSocket = 0;
-	ret->sslServerPort = 0; // we set up the ssl server port 
-	ret->destPort = tcph->connection->dport;
-	memcpy(ret->dest,tcph->connection->dest,IPLENGTH);
+	this->tcphandler = tcphandler;
+	this->serverSocket = 0; 
+	this->serverConnectionSocket = 0;
+	this->clientSocket = 0;
+	this->sslServerPort = 0; // we set up the ssl server port 
+	this->destPort = tcphandler->connection->dport;
+	memcpy(this->dest,tcphandler->connection->dest,IPLENGTH);
 	struct sockaddr_in sin;
         int val=1;
 	    
-	if((ret->serverSocket=socket(AF_INET,SOCK_STREAM,0))<0)
+	if((this->serverSocket=socket(AF_INET,SOCK_STREAM,0))<0)
 	{
-		msg(MSG_FATAL,"Couldn't make socket");
-		return NULL;
+		THROWEXCEPTION("Couldn't make socket");
 	}
 			
 	memset(&sin,0,sizeof(sin));
 	sin.sin_addr.s_addr=INADDR_ANY;
 	sin.sin_family=AF_INET;
 	sin.sin_port=htons(0); // let the kernel choose a port
-	setsockopt(ret->serverSocket,SOL_SOCKET,SO_REUSEADDR,&val,sizeof(val));
+	setsockopt(this->serverSocket,SOL_SOCKET,SO_REUSEADDR,&val,sizeof(val));
 					
-	if(bind(ret->serverSocket,(struct sockaddr *)&sin,sizeof(sin))<0)
+	if(bind(this->serverSocket,(struct sockaddr *)&sin,sizeof(sin))<0)
 	{
-		msg(MSG_FATAL,"Couldn't bind");
-		return NULL;
+		THROWEXCEPTION("Couldn't bind");
 	}
 
 	struct sockaddr_in server_addr;
 	socklen_t addrlen = sizeof(server_addr);
-	int rc = getsockname(ret->serverSocket,(struct sockaddr *)&server_addr, &addrlen);
+	int rc = getsockname(this->serverSocket,(struct sockaddr *)&server_addr, &addrlen);
 	rc++;
-	ret->sslServerPort = ntohs(server_addr.sin_port);
-	listen(ret->serverSocket,20);  
-	return ret;
+	this->sslServerPort = ntohs(server_addr.sin_port);
+	listen(this->serverSocket,20);  
 }
 
 
-void sslhandler_destroy(struct ssl_handler_t* t)
+void thisandler_destroy(struct ssl_handler_t* t)
 {
 	free(t);
 }
 
 
-void sslhandler_run(struct ssl_handler_t* sslh)
+void SSLHandler::run()
 {
-
 	int s_server_session_id_context = 1;
 	BIO *sbio;
 	BIO *cbio;
@@ -218,18 +204,19 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 	SSL_CTX *clctx = NULL;
     	const SSL_METHOD *clmeth;
 	 int r;
+	int requestWithBody = 0;
 
 	msg(MSG_DEBUG,"Build our SSL context");
-	ctx=initialize_ctx("sslserver.pem","password");
+	ctx=initialize_ctx((char*)"sslserver.pem",(char*)"password");
 	msg(MSG_DEBUG,"initialized ctx");
-	load_dh_params(ctx,"dh1024.pem");
+	load_dh_params(ctx,(char*)"dh1024.pem");
 
-	SSL_CTX_set_session_id_context(ctx,(void*)&s_server_session_id_context,sizeof s_server_session_id_context); 
+	SSL_CTX_set_session_id_context(ctx,(const unsigned char*)&s_server_session_id_context,sizeof s_server_session_id_context); 
 
 
 	// PREPARING THE SSL SERVER (which will communicate with the trumanbox)
 	
-	if((sslh->serverConnectionSocket=accept(sslh->serverSocket,0,0))<0)
+	if((this->serverConnectionSocket=accept(this->serverSocket,0,0))<0)
 	{
 			msg(MSG_FATAL,"problem accepting");
 			goto shutdown;
@@ -237,7 +224,7 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 
 	// Initialize SSL SERVER BIOS 
 	
-	sbio=BIO_new_socket(sslh->serverConnectionSocket,BIO_NOCLOSE);
+	sbio=BIO_new_socket(this->serverConnectionSocket,BIO_NOCLOSE);
 	ssl=SSL_new(ctx);
 	SSL_set_bio(ssl,sbio,sbio);
 	
@@ -264,12 +251,12 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 	clmeth = TLSv1_method();
 	clctx=SSL_CTX_new(clmeth);
 
-	sslh->clientSocket=tcp_connect(sslh->dest,sslh->destPort);
-	if (sslh->clientSocket == -1) 
+	this->clientSocket=tcp_connect(this->dest,this->destPort);
+	if (this->clientSocket == -1) 
 		goto shutdown;
     
     	sslClient=SSL_new(clctx);
-    	cbio=BIO_new_socket(sslh->clientSocket,BIO_NOCLOSE);
+    	cbio=BIO_new_socket(this->clientSocket,BIO_NOCLOSE);
     	SSL_set_bio(sslClient,cbio,cbio);
 
     	if(SSL_connect(sslClient)<=0)
@@ -280,12 +267,12 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 	struct timeval tv;
 	tv.tv_sec = 5;
 	tv.tv_usec = 0;
-	int requestWithBody = 0;
+	requestWithBody = 0;
 	int maxfd;
 	fd_set rset;
 	FD_ZERO(&rset);
-	FD_SET(sslh->serverConnectionSocket, &rset);
-	maxfd = sslh->serverConnectionSocket + 1;	
+	FD_SET(this->serverConnectionSocket, &rset);
+	maxfd = this->serverConnectionSocket + 1;	
 	char buf[MAXLINE];
 	int len;
 	BIO *io,*ssl_bio;
@@ -296,7 +283,7 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 	BIO_push(io,ssl_bio);
 		
 	while (-1 != select(maxfd, &rset, NULL, NULL, &tv)) {
-			if (FD_ISSET(sslh->serverConnectionSocket, &rset)) {
+			if (FD_ISSET(this->serverConnectionSocket, &rset)) {
 			char filename[MAX_PATH_LENGTH];
 			char timestamp[100];
 			create_timestamp(timestamp);
@@ -325,7 +312,7 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 			while (bytesWritten != r) {
 				msg(MSG_DEBUG,"try to write '%s'",buf+bytesWritten);
 				bytesWritten = bytesWritten + SSL_write(sslClient,buf+bytesWritten,r-bytesWritten);
-				msg(MSG_DEBUG,"we have written %d bytes  to %s:%d",bytesWritten,sslh->dest,sslh->destPort);
+				msg(MSG_DEBUG,"we have written %d bytes  to %s:%d",bytesWritten,this->dest,this->destPort);
 				switch(SSL_get_error(ssl,r)){      
 					case SSL_ERROR_NONE:
 						if(bytesWritten!=r){
@@ -350,13 +337,14 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 
 			if (!strcmp(buf,"\r\n")) {
 					bzero(buf,MAXLINE);
-					log_to_db(sslh,filename,"client");
+					log_to_db(filename,(char*)"client");
 					create_timestamp(timestamp);
 					snprintf(filename,MAX_PATH_LENGTH,"ssl_mitm/received/%s",timestamp);
 
 	/* Now read the server's response, assuming
 				       that it's terminated by a close */
 				    while(1){
+				      int bwritten = 0;
 				      r=SSL_read(sslClient,buf,MAXLINE);
 				      switch(SSL_get_error(sslClient,r)){
 					case SSL_ERROR_NONE:
@@ -371,7 +359,7 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 					/* Stop the client from just resuming the
 					 un-authenticated session */
 					SSL_set_session_id_context(ssl,
-					(void *)&s_server_auth_session_id_context,
+					(const unsigned char *)&s_server_auth_session_id_context,
 					sizeof(s_server_auth_session_id_context));
 
 					if(SSL_renegotiate(ssl)<=0)
@@ -383,7 +371,7 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 					msg(MSG_FATAL,"SSL renegotiation error");
 					
 					}
-					int bwritten = BIO_write(io,buf,r);
+					bwritten = BIO_write(io,buf,r);
 					
 					msg(MSG_DEBUG,"written to truman: %d bytes",bwritten);
 
@@ -408,7 +396,7 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 
 			finish_log:
 			
-			log_to_db(sslh,filename,"server");
+			log_to_db(filename,"server");
 			if (requestWithBody != 1) { 
 				goto shutdown;
 			}
@@ -419,10 +407,10 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 			}
 		 }
                 FD_ZERO(&rset);
-        //        FD_SET(sslh->clientSocket, &rset); // as this socket is not connected to anyone, it should to be responsible for select to fail
-                FD_SET(sslh->serverConnectionSocket, &rset);
-                //maxfd = max(sslh->serverConnectionSocket, sslh->clientSocket) + 1;
-                maxfd = sslh->serverConnectionSocket + 1;
+        //        FD_SET(this->clientSocket, &rset); // as this socket is not connected to anyone, it should to be responsible for select to fail
+                FD_SET(this->serverConnectionSocket, &rset);
+                //maxfd = max(this->serverConnectionSocket, this->clientSocket) + 1;
+                maxfd = this->serverConnectionSocket + 1;
 		tv.tv_sec = 300;
                 tv.tv_usec = 0;	 
 	}
@@ -441,7 +429,7 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 		 this case, try again, but first send a
 		 TCP FIN to trigger the other side's
 		 close_notify*/
-		shutdown(sslh->serverConnectionSocket,1);
+		shutdown(this->serverConnectionSocket,1);
 		r=SSL_shutdown(ssl);
 		}
 
@@ -456,10 +444,10 @@ void sslhandler_run(struct ssl_handler_t* sslh)
 
 		SSL_free(ssl);
 		SSL_free(sslClient);
-		close(sslh->serverConnectionSocket);
+		close(this->serverConnectionSocket);
 		SSL_CTX_free(ctx);
 		SSL_CTX_free(clctx);
-	       	close(sslh->clientSocket);
+	       	close(this->clientSocket);
 		return;
 
 

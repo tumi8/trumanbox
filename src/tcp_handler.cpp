@@ -88,22 +88,21 @@ int TcpHandler::handleSSL()
 		msg(MSG_DEBUG,"SSL MITM Mode inactive");
 		return 0;
 	}
-// We have found a SSL request from the client
+	// We have found a SSL request from the client
 	pid_t childpid;
-	struct ssl_handler_t* sh = sslhandler_create(this);
-	msg(MSG_DEBUG,"port %d",sh->sslServerPort);
+	SSLHandler sh(this);
+	msg(MSG_DEBUG,"port %d",sh.getSSLPort());
 
 
 	msg(MSG_DEBUG,"dest: %s orig_dest %s dport: %d",this->connection->dest,this->connection->orig_dest,this->connection->dport);
 
 	strcpy(this->connection->dest,"127.0.0.1");
-	this->connection->dport = sh->sslServerPort;
+	this->connection->dport = sh.getSSLPort();
 
 	msg(MSG_DEBUG,"dest: %s orig_dest %s dport: %d",this->connection->dest,this->connection->orig_dest,this->connection->dport);
 	if ( (childpid = pm_fork_temporary()) == 0) {        // child process
 		msg(MSG_DEBUG, "Forked SSL handler with pid %d", getpid());
-		sslhandler_run(sh);
-		sslhandler_destroy(sh);
+		sh.run();
 		Exit(0);
 	}
 	else {	 // parent process

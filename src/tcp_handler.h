@@ -6,6 +6,7 @@
 #include "protocols/proto_handler.h"
 
 class Configuration;
+class SSLHandler;
 
 class TcpHandler {
 	public:
@@ -14,7 +15,7 @@ class TcpHandler {
 	
 		void run();
 
-	private:
+	protected:
 		void determineTarget(protocols_app app_proto, struct sockaddr_in* targetServAddr);
 		int handleSSL();
 		int handleUnknown(struct sockaddr_in* targetServAddr);
@@ -30,6 +31,7 @@ class TcpHandler {
 		int connectedToFinal;
 		class ProtoIdent* protoIdent;
 		struct proto_handler_t** ph;
+	friend class SSLHandler;
 };
 
 

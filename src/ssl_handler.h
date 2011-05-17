@@ -4,18 +4,24 @@
 #include <common/definitions.h>
 #include "tcp_handler.h"
 
-struct ssl_handler_t {
-	struct tcp_handler_t* tcphandler; 
-	int serverSocket;
-	int serverConnectionSocket;
-	int clientSocket;
-	char dest[IPLENGTH];
-	u_int16_t destPort;
-	u_int16_t sslServerPort;
-};
-struct ssl_handler_t* sslhandler_create(struct tcp_handler_t* tcph);
-void sslhandler_destroy(struct ssl_handler_t* t);
+class SSLHandler 
+{
+	public:
+		SSLHandler(TcpHandler* tcpHandler);
+		void run();
+		
+		uint16_t getSSLPort() const { return this->sslServerPort; }
+	private:
+		void log_to_db(char* filename, char* from);
 
-void sslhandler_run(struct ssl_handler_t* t);
+
+		TcpHandler* tcphandler; 
+		int serverSocket;
+		int serverConnectionSocket;
+		int clientSocket;
+		char dest[IPLENGTH];
+		u_int16_t destPort;
+		u_int16_t sslServerPort;
+};
 
 #endif
