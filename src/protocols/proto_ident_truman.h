@@ -1,12 +1,19 @@
 #ifndef _PROTO_IDENT_TRUMAN_H_
 #define _PROTO_IDENT_TRUMAN_H_
 
-#include "definitions.h"
+class Configuration;
+
 #include "proto_ident.h"
 
-int pi_buildin_init(struct proto_identifier_t* p);
-int pi_buildin_deinit(struct proto_identifier_t* p);
-protocols_app pi_buildin_port(struct proto_identifier_t* pi, connection_t *conn);
-protocols_app pi_buildin_payload(struct proto_identifier_t* pi, connection_t *conn, char *payload, size_t payload_len);
+#include <common/definitions.h>
+
+class ProtoIdentTruman : public ProtoIdent {
+	public:
+		ProtoIdentTruman(const Configuration& config);
+		
+		virtual protocols_app identify(connection_t *conn, char* payload, size_t payload_len);
+		virtual protocols_app identify(connection_t *conn);
+};
+
 
 #endif

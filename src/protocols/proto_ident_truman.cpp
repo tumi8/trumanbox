@@ -7,13 +7,16 @@
 #include <stdio.h>
 #include "helper_file.h"
 
-int pi_buildin_init(struct proto_identifier_t* p) { return 0; }
-int pi_buildin_deinit(struct proto_identifier_t* p) { return 0; }
-
 char *strcasestr(const char *haystack, const char *needle);
 
+ProtoIdentTruman::ProtoIdentTruman(const Configuration& config)
+	: ProtoIdent(config)
+{
 
-protocols_app pi_buildin_port(struct proto_identifier_t* pi, connection_t *conn)
+}
+
+
+protocols_app ProtoIdentTruman::identify(connection_t *conn)
 {
 	// here we will still implement the check, if we already know the answer by checking if we have a reponse file with corresponding ip:port name and feed payload with it
 	
@@ -48,7 +51,7 @@ protocols_app pi_buildin_port(struct proto_identifier_t* pi, connection_t *conn)
 	return conn->app_proto;
 }
 
-protocols_app pi_buildin_payload(struct proto_identifier_t* pi, connection_t *conn, char *payload, size_t payload_len) {
+protocols_app ProtoIdentTruman::identify(connection_t *conn, char *payload, size_t payload_len) {
 	// here we need to implement logging of responses to file
 	//int			r, anonym_ftp;
 	char			filename[30];
