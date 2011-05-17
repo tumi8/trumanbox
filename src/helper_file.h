@@ -1,7 +1,7 @@
 #ifndef _HELPER_FILE_H_
 #define _HELPER_FILE_H_
 
-#include "definitions.h"
+#include <common/definitions.h>
 
 int execute_nonquery_statement(char* stmt);
 int execute_query_statement_singlevalue(char* dst, char* stmt);

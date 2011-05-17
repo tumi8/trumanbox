@@ -1,7 +1,7 @@
 #ifndef _HELPER_NET_H_
 #define _HELPER_NET_H_
 
-#include "definitions.h"
+#include <common/definitions.h>
 
 int readable_timeout(int fd, int sec);
 int try_anonymous_login(int conn_fd);
