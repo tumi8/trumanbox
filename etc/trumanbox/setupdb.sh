@@ -186,6 +186,16 @@ CREATE TABLE AWAITED_PASV (
 	filename	text
 );
 
+CREATE TABLE DNS_LOGS(
+	ClientIP          Inet,
+	orig_ServerIP     Inet,
+	ServerIP          Inet,
+	DomainName        text,
+	date              timestamp,
+	trumantimestamp   text,
+	sample_id         numeric
+);  
+
 \quit
 " | 
 psql -U $dbuser $dbname -W 
